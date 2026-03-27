@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
-  ScrollView, KeyboardAvoidingView, Platform, Alert, ActivityIndicator,
+  ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator,
 } from 'react-native';
 import { format, parseISO, addMinutes } from 'date-fns';
 import { useAuthStore } from '../../../store/authStore';
@@ -42,6 +42,7 @@ export function ActivityFormScreen({ route, navigation }: Props) {
   const [priority, setPriority] = useState<ActivityPriority>(existingActivity?.priority ?? 'MEDIUM');
   const [categories, setCategories] = useState<Category[]>(SYSTEM_CATEGORIES);
   const [saving, setSaving] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) getCategories(user.id).then(setCategories).catch((err) => {
@@ -51,9 +52,10 @@ export function ActivityFormScreen({ route, navigation }: Props) {
 
   async function handleSave() {
     if (!title.trim()) {
-      Alert.alert('Title required', 'Please add a title for this activity.');
+      setErrorMessage('Please add a title for this activity.');
       return;
     }
+    setErrorMessage(null);
     if (!user) return;
     setSaving(true);
     try {
@@ -72,7 +74,7 @@ export function ActivityFormScreen({ route, navigation }: Props) {
       navigation.goBack();
     } catch (err) {
       console.error('[DayFlow] Failed to save activity:', err);
-      Alert.alert('Error', 'Failed to save activity. Please try again.');
+      setErrorMessage('Failed to save activity. Please try again.');
     } finally {
       setSaving(false);
     }
@@ -176,6 +178,10 @@ export function ActivityFormScreen({ route, navigation }: Props) {
             </TouchableOpacity>
           ))}
         </View>
+
+        {errorMessage && (
+          <Text style={{ color: '#FCA5A5', fontSize: 14, textAlign: 'center', marginTop: 12 }}>{errorMessage}</Text>
+        )}
 
         <TouchableOpacity
           style={[styles.saveButton, saving && styles.saveButtonDisabled]}

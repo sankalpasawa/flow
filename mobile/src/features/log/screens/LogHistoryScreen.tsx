@@ -66,7 +66,7 @@ export function LogHistoryScreen() {
           <View style={styles.logCard}>
             <View style={styles.logHeader}>
               <Text style={styles.logActivity} numberOfLines={1}>
-                {(item as LogWithActivity & { activity_title?: string }).activity_title ?? 'Activity'}
+                {(item as LogWithActivity).activity_title ?? 'Unknown Activity'}
               </Text>
               <Text style={styles.logDate}>
                 {format(parseISO(item.logged_at), 'MMM d, h:mm a')}

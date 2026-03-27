@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-  View, Text, TouchableOpacity, StyleSheet, SafeAreaView, Alert,
+  View, Text, TouchableOpacity, StyleSheet, SafeAreaView, Platform,
   ScrollView,
 } from 'react-native';
 import { useAuthStore } from '../../../store/authStore';
@@ -9,19 +9,25 @@ export function SettingsScreen() {
   const { user, signOut } = useAuthStore();
 
   async function handleSignOut() {
-    Alert.alert(
-      'Sign Out',
-      'Are you sure you want to sign out?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Sign Out', style: 'destructive', onPress: () => {
-          signOut().catch((err) => {
-            console.error('[DayFlow] Sign out failed:', err);
-            Alert.alert('Error', 'Could not sign out. Please try again.');
-          });
-        }},
-      ]
-    );
+    const confirmed = Platform.OS === 'web'
+      ? window.confirm('Are you sure you want to sign out?')
+      : await new Promise<boolean>((resolve) => {
+          const { Alert } = require('react-native');
+          Alert.alert(
+            'Sign Out',
+            'Are you sure you want to sign out?',
+            [
+              { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
+              { text: 'Sign Out', style: 'destructive', onPress: () => resolve(true) },
+            ]
+          );
+        });
+    if (!confirmed) return;
+    try {
+      await signOut();
+    } catch (err) {
+      console.error('[DayFlow] Sign out failed:', err);
+    }
   }
 
   return (

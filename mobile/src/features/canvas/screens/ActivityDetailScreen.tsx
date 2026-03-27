@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, ScrollView,
-  SafeAreaView, Alert,
+  SafeAreaView, Platform,
 } from 'react-native';
 import { format, parseISO, addMinutes } from 'date-fns';
 import { useActivitiesStore } from '../../../store/activitiesStore';
@@ -36,7 +36,19 @@ export function ActivityDetailScreen({ route, navigation }: Props) {
   const activity = activities.find((a) => a.id === activityId);
   const log = logs[activityId];
 
-  if (!activity) return null;
+  if (!activity) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 }}>
+          <Text style={{ color: '#F1F5F9', fontSize: 18, fontWeight: '700', marginBottom: 8 }}>Activity not found</Text>
+          <Text style={{ color: '#64748B', fontSize: 14, marginBottom: 20 }}>This activity may have been deleted.</Text>
+          <TouchableOpacity style={styles.primaryAction} onPress={() => navigation.goBack()}>
+            <Text style={styles.primaryActionText}>Go Back</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   const endTime = addMinutes(parseISO(activity.start_time), activity.duration_minutes);
   const canLog = isEditWindowOpen(endTime) && !log;
@@ -44,25 +56,26 @@ export function ActivityDetailScreen({ route, navigation }: Props) {
   const nextStatus = STATUS_TRANSITIONS[activity.status][0];
 
   async function handleDelete() {
-    Alert.alert(
-      'Delete Activity',
-      `Delete "${activity!.title}"? This cannot be undone.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete', style: 'destructive',
-          onPress: async () => {
-            try {
-              await removeActivity(activityId);
-              navigation.goBack();
-            } catch (err) {
-              console.error('[DayFlow] Failed to delete activity:', err);
-              Alert.alert('Error', 'Could not delete activity. Please try again.');
-            }
-          },
-        },
-      ]
-    );
+    const confirmed = Platform.OS === 'web'
+      ? window.confirm(`Delete "${activity!.title}"? This cannot be undone.`)
+      : await new Promise<boolean>((resolve) => {
+          const { Alert } = require('react-native');
+          Alert.alert(
+            'Delete Activity',
+            `Delete "${activity!.title}"? This cannot be undone.`,
+            [
+              { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
+              { text: 'Delete', style: 'destructive', onPress: () => resolve(true) },
+            ]
+          );
+        });
+    if (!confirmed) return;
+    try {
+      await removeActivity(activityId);
+      navigation.goBack();
+    } catch (err) {
+      console.error('[DayFlow] Failed to delete activity:', err);
+    }
   }
 
   async function handleStatusChange(newStatus: Activity['status']) {
@@ -70,7 +83,6 @@ export function ActivityDetailScreen({ route, navigation }: Props) {
       await setActivityStatus(activityId, newStatus);
     } catch (err) {
       console.error('[DayFlow] Failed to update status:', err);
-      Alert.alert('Error', 'Could not update status. Please try again.');
     }
   }
 

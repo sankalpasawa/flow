@@ -75,7 +75,7 @@ export async function getLogsForUser(userId: string, limit = 50): Promise<Experi
   return db.getAllAsync<ExperienceLog>(
     `SELECT l.*, a.title as activity_title, a.start_time
      FROM experience_logs l
-     JOIN activities a ON l.activity_id = a.id
+     LEFT JOIN activities a ON l.activity_id = a.id
      WHERE l.user_id = ? AND l.deleted = 0
      ORDER BY l.logged_at DESC
      LIMIT ?`,

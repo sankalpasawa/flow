@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, ScrollView,
-  TextInput, Alert, ActivityIndicator, Animated,
+  TextInput, ActivityIndicator, Animated,
 } from 'react-native';
 import { parseISO, addMinutes } from 'date-fns';
 import { useAuthStore } from '../../../store/authStore';
@@ -59,6 +59,7 @@ export function LogFormScreen({ route, navigation }: Props) {
   const [showSuccess, setShowSuccess] = useState(false);
   const fadeAnim = useState(new Animated.Value(0))[0];
   const [freemiumBlocked, setFreemiumBlocked] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user || editMode) return;
@@ -71,7 +72,19 @@ export function LogFormScreen({ route, navigation }: Props) {
     });
   }, [user, editMode]);
 
-  if (!activity) return null;
+  if (!activity) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.closedWindow}>
+          <Text style={styles.closedTitle}>Activity not found</Text>
+          <Text style={styles.closedBody}>This activity may have been deleted.</Text>
+          <TouchableOpacity style={styles.doneButton} onPress={navigation.goBack}>
+            <Text style={styles.doneButtonText}>Go Back</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
 
   const endTime = addMinutes(parseISO(activity.start_time), activity.duration_minutes);
   if (!isEditWindowOpen(endTime) && !editMode) {
@@ -110,7 +123,7 @@ export function LogFormScreen({ route, navigation }: Props) {
     );
   }
 
-  function determinPhase(): LogPhase {
+  function determinePhase(): LogPhase {
     const now = new Date();
     const start = parseISO(activity!.start_time);
     if (now < start) return 'BEFORE';
@@ -120,9 +133,10 @@ export function LogFormScreen({ route, navigation }: Props) {
 
   async function handleSubmit() {
     if (!mood || !energy) {
-      Alert.alert('Required', 'Please rate your mood and energy.');
+      setErrorMessage('Please rate your mood and energy.');
       return;
     }
+    setErrorMessage(null);
     if (!user) return;
     setSaving(true);
     try {
@@ -133,7 +147,7 @@ export function LogFormScreen({ route, navigation }: Props) {
         completion_pct: completion,
         reflection: reflection.trim() || undefined,
         would_repeat: wouldRepeat ?? undefined,
-        log_phase: determinPhase(),
+        log_phase: determinePhase(),
       });
       // Show success animation
       setShowSuccess(true);
@@ -144,7 +158,7 @@ export function LogFormScreen({ route, navigation }: Props) {
       ]).start(() => navigation.goBack());
     } catch (err) {
       console.error('[DayFlow] Failed to save log:', err);
-      Alert.alert('Error', 'Failed to save log. Please try again.');
+      setErrorMessage('Failed to save log. Please try again.');
     } finally {
       setSaving(false);
     }
@@ -241,6 +255,10 @@ export function LogFormScreen({ route, navigation }: Props) {
         accessibilityLabel="Reflection text"
       />
       <Text style={styles.charCount}>{reflection.length}/5000</Text>
+
+      {errorMessage && (
+        <Text style={{ color: '#FCA5A5', fontSize: 14, textAlign: 'center', marginTop: 12 }}>{errorMessage}</Text>
+      )}
 
       <TouchableOpacity
         style={[styles.submitButton, (!mood || !energy || saving) && styles.submitDisabled]}

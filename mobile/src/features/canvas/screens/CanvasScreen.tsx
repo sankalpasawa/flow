@@ -46,9 +46,10 @@ export function CanvasScreen({ navigation }: Props) {
     // Scroll to current hour on mount
     const currentHour = new Date().getHours();
     if (listRef.current && isSameDay(selectedDate, new Date())) {
-      setTimeout(() => {
+      const timer = setTimeout(() => {
         listRef.current?.scrollToLocation({ sectionIndex: currentHour, itemIndex: 0, animated: true, viewOffset: 80 });
       }, 300);
+      return () => clearTimeout(timer);
     }
   }, [activities]);
 

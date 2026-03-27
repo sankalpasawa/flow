@@ -137,7 +137,7 @@ export function OnboardingScreen({ onComplete }: Props) {
             <Text style={styles.buttonText}>Start Planning 🚀</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.skipButton} onPress={() => { markOnboardingComplete(); onComplete(); }}>
+          <TouchableOpacity style={styles.skipButton} onPress={async () => { await markOnboardingComplete(); onComplete(); }}>
             <Text style={styles.skipText}>Skip for now</Text>
           </TouchableOpacity>
         </ScrollView>

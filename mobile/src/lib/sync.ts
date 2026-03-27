@@ -37,8 +37,8 @@ export async function syncPendingActivities(userId: string): Promise<void> {
         });
       }
       await db.runAsync('UPDATE activities SET synced = 1 WHERE id = ?', [row.id]);
-    } catch {
-      // Will retry on next sync cycle
+    } catch (err) {
+      console.error('[DayFlow] Sync failed:', err);
     }
   }
 }
@@ -67,8 +67,8 @@ export async function syncPendingLogs(userId: string): Promise<void> {
         });
       }
       await db.runAsync('UPDATE experience_logs SET synced = 1 WHERE id = ?', [row.id]);
-    } catch {
-      // Will retry
+    } catch (err) {
+      console.error('[DayFlow] Sync failed:', err);
     }
   }
 }
