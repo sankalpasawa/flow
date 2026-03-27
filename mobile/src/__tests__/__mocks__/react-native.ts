@@ -1,0 +1,13 @@
+export const Platform = { OS: 'web', select: (obj: any) => obj.web ?? obj.default };
+export const Alert = { alert: jest.fn() };
+export const StyleSheet = { create: (styles: any) => styles };
+export const View = 'View';
+export const Text = 'Text';
+export const TextInput = 'TextInput';
+export const TouchableOpacity = 'TouchableOpacity';
+export const ActivityIndicator = 'ActivityIndicator';
+export const KeyboardAvoidingView = 'KeyboardAvoidingView';
+export const FlatList = 'FlatList';
+export const SectionList = 'SectionList';
+export const ScrollView = 'ScrollView';
+export const Dimensions = { get: () => ({ width: 375, height: 812 }) };

@@ -6,7 +6,8 @@
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "test": "jest"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.80.0",
@@ -37,7 +38,14 @@
     "zustand": "^5.0.12"
   },
   "devDependencies": {
+    "@testing-library/jest-native": "^5.4.3",
+    "@testing-library/react-native": "^13.3.3",
+    "@types/jest": "^30.0.0",
     "@types/react": "~19.2.2",
+    "jest": "^30.3.0",
+    "jest-expo": "^55.0.11",
+    "react-native-worklets": "^0.8.1",
+    "ts-jest": "^29.4.6",
     "typescript": "~5.9.2"
   },
   "private": true
