@@ -15,15 +15,11 @@ export function SignInScreen({ navigation }: Props) {
 
   async function handleSignIn() {
     if (!email.trim() || !password) {
-      Alert.alert('Missing fields', 'Please enter your email and password.');
+      useAuthStore.setState({ error: 'Please enter your email and password.' });
       return;
     }
     clearError();
-    try {
-      await signIn(email.trim().toLowerCase(), password);
-    } catch {
-      // error already set in store
-    }
+    await signIn(email.trim().toLowerCase(), password);
   }
 
   return (

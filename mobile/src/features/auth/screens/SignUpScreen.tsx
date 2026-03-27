@@ -16,23 +16,19 @@ export function SignUpScreen({ navigation }: Props) {
 
   async function handleSignUp() {
     if (!email.trim() || !password) {
-      Alert.alert('Missing fields', 'Please fill in all fields.');
+      useAuthStore.setState({ error: 'Please fill in all fields.' });
       return;
     }
     if (password !== confirmPassword) {
-      Alert.alert('Passwords don\'t match', 'Please make sure both passwords are the same.');
+      useAuthStore.setState({ error: 'Passwords don\'t match. Please make sure both passwords are the same.' });
       return;
     }
     if (password.length < 6) {
-      Alert.alert('Password too short', 'Password must be at least 6 characters.');
+      useAuthStore.setState({ error: 'Password must be at least 6 characters.' });
       return;
     }
     clearError();
-    try {
-      await signUp(email.trim().toLowerCase(), password);
-    } catch {
-      // error set in store
-    }
+    await signUp(email.trim().toLowerCase(), password);
   }
 
   return (
