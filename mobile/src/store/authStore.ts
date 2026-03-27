@@ -30,7 +30,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         set({ user: null, loading: false });
       }
     } catch {
-      set({ user: null, loading: false });
+      set({ user: null, loading: false, error: null });
     }
 
     supabase.auth.onAuthStateChange(async (event, session) => {
@@ -51,7 +51,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Sign in failed';
       set({ error: mapAuthError(msg), loading: false });
-      throw err;
     } finally {
       set({ loading: false });
     }
@@ -65,7 +64,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Sign up failed';
       set({ error: mapAuthError(msg), loading: false });
-      throw err;
     } finally {
       set({ loading: false });
     }
@@ -106,6 +104,9 @@ function mapAuthError(msg: string): string {
   }
   if (msg.includes('Password should be at least')) {
     return 'Password must be at least 6 characters.';
+  }
+  if (msg.includes('ISO-8859') || msg.includes('Failed to fetch') || msg.includes('NetworkError')) {
+    return 'Unable to connect to server. Please try again.';
   }
   return msg;
 }
