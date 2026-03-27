@@ -1,5 +1,5 @@
 import { getDb, generateId, nowISO } from './db';
-import type { SQLiteBindValue } from 'expo-sqlite';
+type SQLiteBindValue = string | number | null | boolean;
 import { Activity, ActivityStatus, ActivityPriority, RecurrenceType } from '../../types';
 
 export interface CreateActivityInput {
