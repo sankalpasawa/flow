@@ -15,7 +15,9 @@ export function useNetworkSync() {
 
       if (connected && !syncedOnReconnect.current && user) {
         syncedOnReconnect.current = true;
-        syncAll(user.id).catch(() => {}).finally(() => {
+        syncAll(user.id).catch((err) => {
+          console.error('[DayFlow] Background sync failed:', err);
+        }).finally(() => {
           syncedOnReconnect.current = false;
         });
       }

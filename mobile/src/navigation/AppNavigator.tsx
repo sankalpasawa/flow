@@ -60,16 +60,26 @@ export function AppNavigator() {
 
   useEffect(() => {
     (async () => {
-      await initialize();
-      await seedSystemCategories();
-      setDbReady(true);
+      try {
+        await initialize();
+        await seedSystemCategories();
+      } catch (err) {
+        console.error('[DayFlow] App initialization failed:', err);
+      } finally {
+        setDbReady(true);
+      }
     })();
   }, []);
 
   useEffect(() => {
     if (user) {
-      hasCompletedOnboarding().then(setOnboarded);
-      requestNotificationPermission();
+      hasCompletedOnboarding().then(setOnboarded).catch((err) => {
+        console.error('[DayFlow] Failed to check onboarding status:', err);
+        setOnboarded(false);
+      });
+      requestNotificationPermission().catch((err) => {
+        console.warn('[DayFlow] Notification permission request failed:', err);
+      });
     }
   }, [user]);
 

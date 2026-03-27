@@ -52,8 +52,13 @@ export function ActivityDetailScreen({ route, navigation }: Props) {
         {
           text: 'Delete', style: 'destructive',
           onPress: async () => {
-            await removeActivity(activityId);
-            navigation.goBack();
+            try {
+              await removeActivity(activityId);
+              navigation.goBack();
+            } catch (err) {
+              console.error('[DayFlow] Failed to delete activity:', err);
+              Alert.alert('Error', 'Could not delete activity. Please try again.');
+            }
           },
         },
       ]
@@ -61,7 +66,12 @@ export function ActivityDetailScreen({ route, navigation }: Props) {
   }
 
   async function handleStatusChange(newStatus: Activity['status']) {
-    await setActivityStatus(activityId, newStatus);
+    try {
+      await setActivityStatus(activityId, newStatus);
+    } catch (err) {
+      console.error('[DayFlow] Failed to update status:', err);
+      Alert.alert('Error', 'Could not update status. Please try again.');
+    }
   }
 
   return (

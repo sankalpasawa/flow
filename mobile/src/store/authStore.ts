@@ -29,16 +29,21 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       } else {
         set({ user: null, loading: false });
       }
-    } catch {
+    } catch (err) {
+      console.error('[DayFlow] Auth initialization failed:', err);
       set({ user: null, loading: false, error: null });
     }
 
     supabase.auth.onAuthStateChange(async (event, session) => {
-      if (session?.user) {
-        const appUser = await fetchOrCreateUser(session.user.id, session.user.email ?? '');
-        set({ user: appUser });
-      } else {
-        set({ user: null });
+      try {
+        if (session?.user) {
+          const appUser = await fetchOrCreateUser(session.user.id, session.user.email ?? '');
+          set({ user: appUser });
+        } else {
+          set({ user: null });
+        }
+      } catch (err) {
+        console.error('[DayFlow] Auth state change error:', err);
       }
     });
   },
@@ -49,6 +54,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
     } catch (err: unknown) {
+      console.error('[DayFlow] Sign in failed:', err);
       const msg = err instanceof Error ? err.message : 'Sign in failed';
       set({ error: mapAuthError(msg), loading: false });
     } finally {
@@ -62,6 +68,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const { error } = await supabase.auth.signUp({ email, password });
       if (error) throw error;
     } catch (err: unknown) {
+      console.error('[DayFlow] Sign up failed:', err);
       const msg = err instanceof Error ? err.message : 'Sign up failed';
       set({ error: mapAuthError(msg), loading: false });
     } finally {
@@ -70,8 +77,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   signOut: async () => {
-    await supabase.auth.signOut();
-    set({ user: null });
+    try {
+      await supabase.auth.signOut();
+      set({ user: null });
+    } catch (err) {
+      console.error('[DayFlow] Sign out failed:', err);
+      set({ user: null });
+    }
   },
 }));
 

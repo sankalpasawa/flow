@@ -43,89 +43,122 @@ export const useActivitiesStore = create<ActivitiesState>((set, get) => ({
     try {
       const dateStr = format(date, 'yyyy-MM-dd');
       const acts = await getActivitiesForDay(userId, dateStr);
-      // Load logs for each activity
       const logsMap: Record<string, ExperienceLog> = {};
       await Promise.all(acts.map(async (a) => {
-        const log = await getLogForActivity(a.id);
-        if (log) logsMap[a.id] = log;
+        try {
+          const log = await getLogForActivity(a.id);
+          if (log) logsMap[a.id] = log;
+        } catch (err) {
+          console.error(`[DayFlow] Failed to load log for activity ${a.id}:`, err);
+        }
       }));
       set({ activities: acts, logs: logsMap, loading: false });
     } catch (err) {
-      set({ error: 'Failed to load activities.', loading: false });
+      console.error('[DayFlow] Failed to load activities:', err);
+      set({ error: 'Could not load your activities. Pull down to retry.', loading: false });
     }
   },
 
   addActivity: async (input) => {
-    const activity = await createActivity(input);
-    set((s) => ({ activities: [...s.activities, activity] }));
+    try {
+      const activity = await createActivity(input);
+      set((s) => ({ activities: [...s.activities, activity] }));
 
-    // Schedule nudge
-    await scheduleLogNudge(activity);
+      scheduleLogNudge(activity).catch((err) =>
+        console.warn('[DayFlow] Failed to schedule nudge:', err)
+      );
 
-    // Async AI: categorize then generate mindset prompt (never block)
-    (async () => {
-      try {
-        const category = SYSTEM_CATEGORIES.find((c) => c.id === input.category_id);
-        const prompt = await generateMindsetPrompt(
-          input.title,
-          category?.name ?? '',
-          input.user_id
-        );
-        if (prompt) {
-          await updateActivity(activity.id, { mindset_prompt: prompt });
-          set((s) => ({
-            activities: s.activities.map((a) =>
-              a.id === activity.id ? { ...a, mindset_prompt: prompt } : a
-            ),
-          }));
+      // Async AI: categorize then generate mindset prompt (never block)
+      (async () => {
+        try {
+          const category = SYSTEM_CATEGORIES.find((c) => c.id === input.category_id);
+          const prompt = await generateMindsetPrompt(
+            input.title,
+            category?.name ?? '',
+            input.user_id
+          );
+          if (prompt) {
+            await updateActivity(activity.id, { mindset_prompt: prompt });
+            set((s) => ({
+              activities: s.activities.map((a) =>
+                a.id === activity.id ? { ...a, mindset_prompt: prompt } : a
+              ),
+            }));
+          }
+        } catch (err) {
+          console.warn('[DayFlow] AI mindset prompt unavailable:', err);
         }
-      } catch {
-        // AI unavailable — proceed without prompt
-      }
-    })();
+      })();
 
-    return activity;
+      return activity;
+    } catch (err) {
+      console.error('[DayFlow] Failed to create activity:', err);
+      throw new Error('Could not create activity. Please try again.');
+    }
   },
 
   editActivity: async (id, updates) => {
-    await updateActivity(id, updates);
-    const updated = await import('../lib/db/activities').then(m => m.getActivity(id));
-    if (updated) {
-      set((s) => ({
-        activities: s.activities.map((a) => (a.id === id ? updated : a)),
-      }));
-      // Reschedule nudge if time changed
-      if (updates.start_time || updates.duration_minutes) {
-        await scheduleLogNudge(updated);
+    try {
+      await updateActivity(id, updates);
+      const updated = await import('../lib/db/activities').then(m => m.getActivity(id));
+      if (updated) {
+        set((s) => ({
+          activities: s.activities.map((a) => (a.id === id ? updated : a)),
+        }));
+        if (updates.start_time || updates.duration_minutes) {
+          scheduleLogNudge(updated).catch((err) =>
+            console.warn('[DayFlow] Failed to reschedule nudge:', err)
+          );
+        }
       }
+    } catch (err) {
+      console.error('[DayFlow] Failed to edit activity:', err);
+      throw new Error('Could not save changes. Please try again.');
     }
   },
 
   removeActivity: async (id) => {
-    await deleteActivity(id);
-    await cancelLogNudge(id);
-    set((s) => ({
-      activities: s.activities.filter((a) => a.id !== id),
-    }));
+    try {
+      await deleteActivity(id);
+      cancelLogNudge(id).catch((err) =>
+        console.warn('[DayFlow] Failed to cancel nudge:', err)
+      );
+      set((s) => ({
+        activities: s.activities.filter((a) => a.id !== id),
+      }));
+    } catch (err) {
+      console.error('[DayFlow] Failed to delete activity:', err);
+      throw new Error('Could not delete activity. Please try again.');
+    }
   },
 
   setActivityStatus: async (id, status) => {
-    const now = new Date().toISOString();
-    const updates: UpdateActivityInput = { status };
-    if (status === 'IN_PROGRESS') updates.actual_start = now;
-    if (status === 'COMPLETED' || status === 'SKIPPED') updates.actual_end = now;
-    await updateActivity(id, updates);
-    set((s) => ({
-      activities: s.activities.map((a) =>
-        a.id === id ? { ...a, status, ...updates } : a
-      ),
-    }));
+    try {
+      const now = new Date().toISOString();
+      const updates: UpdateActivityInput = { status };
+      if (status === 'IN_PROGRESS') updates.actual_start = now;
+      if (status === 'COMPLETED' || status === 'SKIPPED') updates.actual_end = now;
+      await updateActivity(id, updates);
+      set((s) => ({
+        activities: s.activities.map((a) =>
+          a.id === id ? { ...a, status, ...updates } : a
+        ),
+      }));
+    } catch (err) {
+      console.error('[DayFlow] Failed to update activity status:', err);
+      throw new Error('Could not update status. Please try again.');
+    }
   },
 
   submitLog: async (input) => {
-    const log = await createLog(input);
-    set((s) => ({ logs: { ...s.logs, [input.activity_id]: log } }));
-    return log;
+    try {
+      const log = await createLog(input);
+      set((s) => ({ logs: { ...s.logs, [input.activity_id]: log } }));
+      return log;
+    } catch (err) {
+      console.error('[DayFlow] Failed to submit log:', err);
+      throw new Error('Could not save your log. Please try again.');
+    }
   },
 
   getLogForActivity: (activityId) => get().logs[activityId],

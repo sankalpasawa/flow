@@ -44,7 +44,9 @@ export function ActivityFormScreen({ route, navigation }: Props) {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (user) getCategories(user.id).then(setCategories).catch(() => {});
+    if (user) getCategories(user.id).then(setCategories).catch((err) => {
+      console.error('[DayFlow] Failed to load categories:', err);
+    });
   }, [user]);
 
   async function handleSave() {
@@ -68,7 +70,8 @@ export function ActivityFormScreen({ route, navigation }: Props) {
         });
       }
       navigation.goBack();
-    } catch {
+    } catch (err) {
+      console.error('[DayFlow] Failed to save activity:', err);
       Alert.alert('Error', 'Failed to save activity. Please try again.');
     } finally {
       setSaving(false);

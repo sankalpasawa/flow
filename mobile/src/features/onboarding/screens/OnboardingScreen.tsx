@@ -44,9 +44,15 @@ export function OnboardingScreen({ onComplete }: Props) {
         start_time: nextHour.toISOString(),
         duration_minutes: 60,
         category_id: selectedCategory,
-      }).catch(() => {});
+      }).catch((err) => {
+        console.error('[DayFlow] Failed to create first activity:', err);
+      });
     }
-    await markOnboardingComplete();
+    try {
+      await markOnboardingComplete();
+    } catch (err) {
+      console.error('[DayFlow] Failed to save onboarding status:', err);
+    }
     onComplete();
   }
 

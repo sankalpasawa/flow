@@ -28,7 +28,8 @@ export async function getExpoPushToken(): Promise<string | null> {
   try {
     const token = await Notifications.getExpoPushTokenAsync();
     return token.data;
-  } catch {
+  } catch (err) {
+    console.warn('[DayFlow] Failed to get push token:', err);
     return null;
   }
 }

@@ -66,6 +66,8 @@ export function LogFormScreen({ route, navigation }: Props) {
       if (user.subscription_tier !== 'PRO' && count >= FREE_TIER_LOG_LIMIT) {
         setFreemiumBlocked(true);
       }
+    }).catch((err) => {
+      console.error('[DayFlow] Failed to check daily log count:', err);
     });
   }, [user, editMode]);
 
@@ -140,7 +142,8 @@ export function LogFormScreen({ route, navigation }: Props) {
         Animated.delay(1200),
         Animated.timing(fadeAnim, { toValue: 0, duration: 300, useNativeDriver: true }),
       ]).start(() => navigation.goBack());
-    } catch {
+    } catch (err) {
+      console.error('[DayFlow] Failed to save log:', err);
       Alert.alert('Error', 'Failed to save log. Please try again.');
     } finally {
       setSaving(false);

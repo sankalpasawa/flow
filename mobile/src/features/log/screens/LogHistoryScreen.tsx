@@ -24,7 +24,9 @@ export function LogHistoryScreen() {
     if (!user) return;
     getLogsForUser(user.id)
       .then(setLogs)
-      .catch(() => {})
+      .catch((err) => {
+        console.error('[DayFlow] Failed to load log history:', err);
+      })
       .finally(() => setLoading(false));
   }, [user]);
 
