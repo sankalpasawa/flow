@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useCallback, useState } from 'react';
+import React, { useEffect, useRef, useCallback } from 'react';
 import {
   View, Text, SectionList, TouchableOpacity, StyleSheet,
   SafeAreaView, ActivityIndicator, SectionListData, DefaultSectionT,
@@ -16,15 +16,21 @@ interface Props {
   navigation: { navigate: (screen: string, params?: Record<string, unknown>) => void };
 }
 
-function buildHourSlots(activities: Activity[], date: Date): { hour: string; items: Activity[] }[] {
-  const slots: { hour: string; items: Activity[] }[] = [];
+function formatHour12(h: number): string {
+  if (h === 0) return '12 AM';
+  if (h < 12) return `${h} AM`;
+  if (h === 12) return '12 PM';
+  return `${h - 12} PM`;
+}
+
+function buildHourSlots(activities: Activity[], date: Date): { hour: string; hourNum: number; items: Activity[] }[] {
+  const slots: { hour: string; hourNum: number; items: Activity[] }[] = [];
   for (let h = 0; h < 24; h++) {
-    const hourStr = `${h.toString().padStart(2, '0')}:00`;
     const items = activities.filter((a) => {
       const start = parseISO(a.start_time);
       return start.getHours() === h && isSameDay(start, date);
     });
-    slots.push({ hour: hourStr, items });
+    slots.push({ hour: formatHour12(h), hourNum: h, items });
   }
   return slots;
 }
@@ -32,7 +38,6 @@ function buildHourSlots(activities: Activity[], date: Date): { hour: string; ite
 export function CanvasScreen({ navigation }: Props) {
   const { user } = useAuthStore();
   const { activities, untimedTasks, logs, loading, selectedDate, setSelectedDate, loadDay, quickToggleComplete, addTask } = useActivitiesStore();
-  const [fabExpanded, setFabExpanded] = useState(false);
   const listRef = useRef<SectionList<any, DefaultSectionT>>(null);
 
   const load = useCallback(
@@ -64,6 +69,7 @@ export function CanvasScreen({ navigation }: Props) {
 
   const sections = buildHourSlots(activities, selectedDate).map((slot) => ({
     title: slot.hour,
+    hourNum: slot.hourNum,
     data: slot.items.length > 0 ? slot.items : ['empty' as const],
     hasItems: slot.items.length > 0,
   }));
@@ -71,11 +77,7 @@ export function CanvasScreen({ navigation }: Props) {
   const now = new Date();
   const isToday = isSameDay(selectedDate, now);
   const activityCount = activities.length;
-
-  function isNowSlot(hour: string): boolean {
-    if (!isToday) return false;
-    return parseInt(hour.split(':')[0]) === now.getHours();
-  }
+  const taskCount = untimedTasks.filter(t => t.status !== 'COMPLETED').length;
 
   type SectionItem = Activity | 'empty';
 
@@ -114,8 +116,8 @@ export function CanvasScreen({ navigation }: Props) {
     );
   }
 
-  function renderSectionHeader({ section }: { section: SectionListData<SectionItem, { title: string; hasItems: boolean }> }) {
-    const isCurrentHour = isNowSlot(section.title);
+  function renderSectionHeader({ section }: { section: SectionListData<SectionItem, { title: string; hourNum: number; hasItems: boolean }> }) {
+    const isCurrentHour = isToday && (section as any).hourNum === now.getHours();
     return (
       <View style={styles.hourRow}>
         <Text style={[styles.hourLabel, isCurrentHour && styles.hourLabelNow]}>
@@ -139,7 +141,7 @@ export function CanvasScreen({ navigation }: Props) {
             {isToday ? format(now, 'EEEE') : format(selectedDate, 'EEEE')}
           </Text>
           <Text style={styles.headerSubtitle}>
-            {format(selectedDate, 'MMMM d')} — {activityCount} activities planned
+            {format(selectedDate, 'MMMM d')}{activityCount > 0 ? ` — ${activityCount} blocks` : ''}{taskCount > 0 ? `, ${taskCount} tasks` : ''}
           </Text>
         </View>
         <View style={styles.headerActions}>
@@ -183,36 +185,14 @@ export function CanvasScreen({ navigation }: Props) {
         />
       )}
 
-      {/* Expanded FAB overlay */}
-      {fabExpanded && (
-        <TouchableOpacity style={styles.fabOverlay} onPress={() => setFabExpanded(false)} activeOpacity={1}>
-          <View style={styles.fabOptions}>
-            <TouchableOpacity
-              style={[styles.fabOption, shadows.card]}
-              onPress={() => { setFabExpanded(false); navigation.navigate('ActivityForm', { date: format(selectedDate, 'yyyy-MM-dd'), mode: 'task' }); }}
-            >
-              <Text style={styles.fabOptionIcon}>☐</Text>
-              <Text style={styles.fabOptionLabel}>Task</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.fabOption, shadows.card]}
-              onPress={() => { setFabExpanded(false); navigation.navigate('ActivityForm', { date: format(selectedDate, 'yyyy-MM-dd') }); }}
-            >
-              <Text style={styles.fabOptionIcon}>⏱</Text>
-              <Text style={styles.fabOptionLabel}>Time block</Text>
-            </TouchableOpacity>
-          </View>
-        </TouchableOpacity>
-      )}
-
       {/* FAB */}
       <TouchableOpacity
         style={[styles.fab, shadows.fab]}
-        onPress={() => setFabExpanded(!fabExpanded)}
+        onPress={() => navigation.navigate('ActivityForm', { date: format(selectedDate, 'yyyy-MM-dd') })}
         accessibilityLabel="Add activity"
         activeOpacity={0.85}
       >
-        <Text style={[styles.fabText, fabExpanded && { transform: [{ rotate: '45deg' }] }]}>+</Text>
+        <Text style={styles.fabText}>+</Text>
       </TouchableOpacity>
     </SafeAreaView>
   );
@@ -259,18 +239,4 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   fabText: { color: '#fff', fontSize: 26, lineHeight: 28 },
-  fabOverlay: {
-    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.2)',
-  },
-  fabOptions: {
-    position: 'absolute', bottom: 160, right: 24, gap: 8, alignItems: 'flex-end',
-  },
-  fabOption: {
-    flexDirection: 'row', alignItems: 'center', gap: 8,
-    backgroundColor: colors.surface, borderRadius: 16,
-    paddingVertical: 12, paddingHorizontal: 18,
-  },
-  fabOptionIcon: { fontSize: 18 },
-  fabOptionLabel: { color: colors.text, fontSize: 14, fontWeight: '600' },
 });
