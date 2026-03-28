@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useCallback } from 'react';
+import React, { useEffect, useRef, useCallback, useState } from 'react';
 import {
   View, Text, SectionList, TouchableOpacity, StyleSheet,
   SafeAreaView, ActivityIndicator, SectionListData, DefaultSectionT,
@@ -8,6 +8,7 @@ import { useAuthStore } from '../../../store/authStore';
 import { useActivitiesStore } from '../../../store/activitiesStore';
 import { DateStrip } from '../components/DateStrip';
 import { ActivityCard } from '../components/ActivityCard';
+import { TaskSection } from '../components/TaskSection';
 import { Activity } from '../../../types';
 import { colors, radii, shadows, spacing } from '../../../theme';
 
@@ -30,7 +31,8 @@ function buildHourSlots(activities: Activity[], date: Date): { hour: string; ite
 
 export function CanvasScreen({ navigation }: Props) {
   const { user } = useAuthStore();
-  const { activities, logs, loading, selectedDate, setSelectedDate, loadDay, quickToggleComplete } = useActivitiesStore();
+  const { activities, untimedTasks, logs, loading, selectedDate, setSelectedDate, loadDay, quickToggleComplete, addTask } = useActivitiesStore();
+  const [fabExpanded, setFabExpanded] = useState(false);
   const listRef = useRef<SectionList<any, DefaultSectionT>>(null);
 
   const load = useCallback(
@@ -167,17 +169,50 @@ export function CanvasScreen({ navigation }: Props) {
           stickySectionHeadersEnabled={false}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.listContent}
+          ListHeaderComponent={
+            <TaskSection
+              tasks={untimedTasks}
+              todayStr={format(new Date(), 'yyyy-MM-dd')}
+              onToggle={(id) => quickToggleComplete(id)}
+              onPress={(id) => navigation.navigate('ActivityDetail', { activityId: id })}
+              onQuickAdd={(title) => {
+                if (user) addTask({ user_id: user.id, title, assigned_date: format(selectedDate, 'yyyy-MM-dd') });
+              }}
+            />
+          }
         />
+      )}
+
+      {/* Expanded FAB overlay */}
+      {fabExpanded && (
+        <TouchableOpacity style={styles.fabOverlay} onPress={() => setFabExpanded(false)} activeOpacity={1}>
+          <View style={styles.fabOptions}>
+            <TouchableOpacity
+              style={[styles.fabOption, shadows.card]}
+              onPress={() => { setFabExpanded(false); navigation.navigate('ActivityForm', { date: format(selectedDate, 'yyyy-MM-dd'), mode: 'task' }); }}
+            >
+              <Text style={styles.fabOptionIcon}>☐</Text>
+              <Text style={styles.fabOptionLabel}>Task</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.fabOption, shadows.card]}
+              onPress={() => { setFabExpanded(false); navigation.navigate('ActivityForm', { date: format(selectedDate, 'yyyy-MM-dd') }); }}
+            >
+              <Text style={styles.fabOptionIcon}>⏱</Text>
+              <Text style={styles.fabOptionLabel}>Time block</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
       )}
 
       {/* FAB */}
       <TouchableOpacity
         style={[styles.fab, shadows.fab]}
-        onPress={() => navigation.navigate('ActivityForm', { date: format(selectedDate, 'yyyy-MM-dd') })}
+        onPress={() => setFabExpanded(!fabExpanded)}
         accessibilityLabel="Add activity"
         activeOpacity={0.85}
       >
-        <Text style={styles.fabText}>+</Text>
+        <Text style={[styles.fabText, fabExpanded && { transform: [{ rotate: '45deg' }] }]}>+</Text>
       </TouchableOpacity>
     </SafeAreaView>
   );
@@ -224,4 +259,18 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   fabText: { color: '#fff', fontSize: 26, lineHeight: 28 },
+  fabOverlay: {
+    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.2)',
+  },
+  fabOptions: {
+    position: 'absolute', bottom: 160, right: 24, gap: 8, alignItems: 'flex-end',
+  },
+  fabOption: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    backgroundColor: colors.surface, borderRadius: 16,
+    paddingVertical: 12, paddingHorizontal: 18,
+  },
+  fabOptionIcon: { fontSize: 18 },
+  fabOptionLabel: { color: colors.text, fontSize: 14, fontWeight: '600' },
 });

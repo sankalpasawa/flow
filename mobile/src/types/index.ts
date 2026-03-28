@@ -1,3 +1,4 @@
+export type ActivityType = 'TIME_BLOCK' | 'TASK';
 export type ActivityStatus = 'PLANNED' | 'IN_PROGRESS' | 'COMPLETED' | 'SKIPPED';
 export type ActivityPriority = 'HIGH' | 'MEDIUM' | 'LOW';
 export type RecurrenceType =
@@ -29,12 +30,14 @@ export interface Subtask {
 export interface Activity {
   id: string;
   user_id: string;
+  activity_type: ActivityType;
   title: string;
   description: string | null;
   start_time: string; // ISO UTC
   duration_minutes: number;
   category_id: string;
-  is_scheduled: boolean; // false = backlog/someday task
+  assigned_date: string | null; // YYYY-MM-DD for tasks pinned to a day, null = someday
+  is_scheduled: boolean; // derived: true for time blocks and timed tasks
   mindset_prompt: string | null;
   mindset_overridden: boolean;
   recurrence_type: RecurrenceType;

@@ -54,7 +54,6 @@ function TabNavigator() {
       })}
     >
       <Tab.Screen name="Today" component={CanvasScreen} />
-      <Tab.Screen name="Someday" component={BacklogScreen} />
       <Tab.Screen name="Plan" component={LogHistoryScreen} />
       <Tab.Screen name="Insights" component={CategoryListScreen} />
       <Tab.Screen name="Settings" component={SettingsScreen} />

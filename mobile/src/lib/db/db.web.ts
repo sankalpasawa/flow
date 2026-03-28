@@ -116,9 +116,32 @@ function matchesWhere(row: Row, sql: string, params: unknown[]): boolean {
 
     // col IS NULL
     const nullMatch = trimmed.match(/(\w+\.)?(\w+)\s+IS\s+NULL/i);
-    if (nullMatch) {
+    if (nullMatch && !trimmed.match(/IS\s+NOT\s+NULL/i)) {
       const col = nullMatch[2];
       if (row[col] !== null && row[col] !== undefined) return false;
+      continue;
+    }
+
+    // col IS NOT NULL
+    const notNullMatch = trimmed.match(/(\w+\.)?(\w+)\s+IS\s+NOT\s+NULL/i);
+    if (notNullMatch) {
+      const col = notNullMatch[2];
+      if (row[col] === null || row[col] === undefined) return false;
+      continue;
+    }
+
+    // col < ? or col > ? (string comparison for dates)
+    const cmpMatch = trimmed.match(/(\w+\.)?(\w+)\s*(<|>|<=|>=)\s*\?/);
+    if (cmpMatch) {
+      const col = cmpMatch[2];
+      const op = cmpMatch[3];
+      const val = params[paramIdx++];
+      const rowVal = String(row[col] ?? '');
+      const cmpVal = String(val);
+      if (op === '<' && rowVal >= cmpVal) return false;
+      if (op === '>' && rowVal <= cmpVal) return false;
+      if (op === '<=' && rowVal > cmpVal) return false;
+      if (op === '>=' && rowVal < cmpVal) return false;
       continue;
     }
   }

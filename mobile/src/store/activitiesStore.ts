@@ -3,8 +3,9 @@ import { format } from 'date-fns';
 import { Activity, ExperienceLog } from '../types';
 import {
   getActivitiesForDay, getOverdueActivities, getBacklogActivities,
-  createActivity, updateActivity, deleteActivity,
-  CreateActivityInput, UpdateActivityInput,
+  getUntimedTasksForDay, getOverdueTasks,
+  createActivity, createTask, updateActivity, deleteActivity,
+  CreateActivityInput, CreateTaskInput, UpdateActivityInput,
 } from '../lib/db/activities';
 import { getLogForActivity, createLog, CreateLogInput } from '../lib/db/logs';
 import { scheduleLogNudge, cancelLogNudge } from '../lib/notifications';
@@ -13,6 +14,7 @@ import { SYSTEM_CATEGORIES } from '../features/categories/systemCategories';
 
 interface ActivitiesState {
   activities: Activity[];
+  untimedTasks: Activity[];
   backlog: Activity[];
   logs: Record<string, ExperienceLog>; // activityId -> log
   selectedDate: Date;
@@ -22,6 +24,7 @@ interface ActivitiesState {
   loadBacklog: (userId: string) => Promise<void>;
   setSelectedDate: (date: Date) => void;
   addActivity: (input: CreateActivityInput) => Promise<Activity>;
+  addTask: (input: CreateTaskInput) => Promise<Activity>;
   editActivity: (id: string, updates: UpdateActivityInput) => Promise<void>;
   removeActivity: (id: string) => Promise<void>;
   setActivityStatus: (id: string, status: Activity['status']) => Promise<void>;
@@ -33,6 +36,7 @@ interface ActivitiesState {
 
 export const useActivitiesStore = create<ActivitiesState>((set, get) => ({
   activities: [],
+  untimedTasks: [],
   backlog: [],
   logs: {},
   selectedDate: new Date(),
@@ -52,18 +56,32 @@ export const useActivitiesStore = create<ActivitiesState>((set, get) => ({
     }
   },
 
+  addTask: async (input) => {
+    try {
+      const task = await createTask(input);
+      set((s) => ({ untimedTasks: [...s.untimedTasks, task] }));
+      return task;
+    } catch (err) {
+      console.error('[DayFlow] Failed to create task:', err);
+      throw new Error('Could not create task. Please try again.');
+    }
+  },
+
   loadDay: async (userId, date) => {
     set({ loading: true, error: null });
     try {
       const dateStr = format(date, 'yyyy-MM-dd');
       const todayStr = format(new Date(), 'yyyy-MM-dd');
-      const [dayActs, overdueActs] = await Promise.all([
+      const isToday = dateStr === todayStr;
+      const [dayActs, overdueActs, dayTasks, overdueTsks] = await Promise.all([
         getActivitiesForDay(userId, dateStr),
-        // Only show overdue carry-over tasks on today's view
-        dateStr === todayStr ? getOverdueActivities(userId, dateStr) : Promise.resolve([]),
+        isToday ? getOverdueActivities(userId, dateStr) : Promise.resolve([]),
+        getUntimedTasksForDay(userId, dateStr),
+        isToday ? getOverdueTasks(userId, dateStr) : Promise.resolve([]),
       ]);
       // Merge: overdue first, then today's activities
       const acts = [...overdueActs, ...dayActs];
+      const allTasks = [...overdueTsks, ...dayTasks];
       const logsMap: Record<string, ExperienceLog> = {};
       await Promise.all(acts.map(async (a) => {
         try {
@@ -73,7 +91,7 @@ export const useActivitiesStore = create<ActivitiesState>((set, get) => ({
           console.error(`[DayFlow] Failed to load log for activity ${a.id}:`, err);
         }
       }));
-      set({ activities: acts, logs: logsMap, loading: false });
+      set({ activities: acts, untimedTasks: allTasks, logs: logsMap, loading: false });
     } catch (err) {
       console.error('[DayFlow] Failed to load activities:', err);
       set({ error: 'Could not load your activities. Pull down to retry.', loading: false });
@@ -173,7 +191,9 @@ export const useActivitiesStore = create<ActivitiesState>((set, get) => ({
 
   quickToggleComplete: async (id) => {
     try {
-      const activity = get().activities.find(a => a.id === id) || get().backlog.find(a => a.id === id);
+      const activity = get().activities.find(a => a.id === id)
+        || get().untimedTasks.find(a => a.id === id)
+        || get().backlog.find(a => a.id === id);
       if (!activity) return;
       const newStatus = activity.status === 'COMPLETED' ? 'PLANNED' : 'COMPLETED';
       const now = new Date().toISOString();
@@ -182,7 +202,11 @@ export const useActivitiesStore = create<ActivitiesState>((set, get) => ({
       await updateActivity(id, updates);
       const updateList = (list: Activity[]) =>
         list.map(a => a.id === id ? { ...a, status: newStatus, ...updates } as Activity : a);
-      set(s => ({ activities: updateList(s.activities), backlog: updateList(s.backlog) }));
+      set(s => ({
+        activities: updateList(s.activities),
+        untimedTasks: updateList(s.untimedTasks),
+        backlog: updateList(s.backlog),
+      }));
     } catch (err) {
       console.error('[DayFlow] Quick toggle failed:', err);
     }
