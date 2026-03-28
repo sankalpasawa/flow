@@ -32,16 +32,16 @@ const STATUS_LABELS: Record<Activity['status'], string> = {
 
 export function ActivityDetailScreen({ route, navigation }: Props) {
   const activityId = route.params?.activityId ?? '';
-  const { activities, logs, removeActivity, setActivityStatus } = useActivitiesStore();
-  const activity = activities.find((a) => a.id === activityId);
+  const { activities, untimedTasks, logs, removeActivity, setActivityStatus } = useActivitiesStore();
+  const activity = activities.find((a) => a.id === activityId) || untimedTasks.find((a) => a.id === activityId);
   const log = logs[activityId];
 
   if (!activity) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 }}>
-          <Text style={{ color: '#F1F5F9', fontSize: 18, fontWeight: '700', marginBottom: 8 }}>Activity not found</Text>
-          <Text style={{ color: '#64748B', fontSize: 14, marginBottom: 20 }}>This activity may have been deleted.</Text>
+          <Text style={{ color: '#1A1A1A', fontSize: 18, fontWeight: '700', marginBottom: 8 }}>Activity not found</Text>
+          <Text style={{ color: '#9A9490', fontSize: 14, marginBottom: 20 }}>This activity may have been deleted.</Text>
           <TouchableOpacity style={styles.primaryAction} onPress={() => navigation.goBack()}>
             <Text style={styles.primaryActionText}>Go Back</Text>
           </TouchableOpacity>
@@ -210,52 +210,52 @@ function statusColor(s: Activity['status']) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0F172A' },
+  container: { flex: 1, backgroundColor: '#FAF7F2' },
   content: { padding: 20, paddingBottom: 48 },
   catBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12 },
   catIcon: { fontSize: 18 },
   catName: { fontSize: 14, fontWeight: '600' },
-  title: { color: '#F1F5F9', fontSize: 24, fontWeight: '800', marginBottom: 12, lineHeight: 30 },
+  title: { color: '#1A1A1A', fontSize: 24, fontWeight: '700', marginBottom: 12, lineHeight: 30 },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 20 },
-  meta: { color: '#64748B', fontSize: 14 },
-  metaSep: { color: '#334155' },
+  meta: { color: '#5A5550', fontSize: 14 },
+  metaSep: { color: '#EDE8E1' },
   statusBadge: { fontSize: 12, fontWeight: '700' },
-  mindsetBox: { backgroundColor: '#1E293B', borderRadius: 10, padding: 14, marginBottom: 20 },
-  mindsetLabel: { color: '#6366F1', fontSize: 12, fontWeight: '600', marginBottom: 6 },
-  mindsetText: { color: '#A5B4FC', fontSize: 14, lineHeight: 20, fontStyle: 'italic' },
+  mindsetBox: { backgroundColor: '#EBF2EE', borderRadius: 14, padding: 14, marginBottom: 20 },
+  mindsetLabel: { color: '#2D4A3E', fontSize: 12, fontWeight: '600', marginBottom: 6 },
+  mindsetText: { color: '#3D6454', fontSize: 14, lineHeight: 20, fontStyle: 'italic' },
   primaryAction: {
-    backgroundColor: '#6366F1', borderRadius: 12,
+    backgroundColor: '#2D4A3E', borderRadius: 16,
     paddingVertical: 14, alignItems: 'center', marginBottom: 12, minHeight: 44,
   },
-  primaryActionText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  primaryActionText: { color: '#fff', fontSize: 16, fontWeight: '600' },
   logButton: {
-    backgroundColor: '#1E293B', borderRadius: 12, borderWidth: 1, borderColor: '#6366F1',
+    backgroundColor: '#fff', borderRadius: 14, borderWidth: 1.5, borderColor: '#2D4A3E',
     paddingVertical: 14, alignItems: 'center', marginBottom: 20, minHeight: 44,
   },
-  logButtonText: { color: '#6366F1', fontSize: 16, fontWeight: '600' },
-  logCard: { backgroundColor: '#1E293B', borderRadius: 12, padding: 16, marginBottom: 20 },
-  logTitle: { color: '#94A3B8', fontSize: 12, fontWeight: '700', marginBottom: 12 },
+  logButtonText: { color: '#2D4A3E', fontSize: 16, fontWeight: '600' },
+  logCard: { backgroundColor: '#fff', borderRadius: 16, padding: 16, marginBottom: 20, borderWidth: 1, borderColor: '#EDE8E1' },
+  logTitle: { color: '#9A9490', fontSize: 12, fontWeight: '700', marginBottom: 12, textTransform: 'uppercase', letterSpacing: 0.5 },
   logScales: { flexDirection: 'row', gap: 16, marginBottom: 12 },
   scaleItem: { alignItems: 'center' },
-  scaleLabel: { color: '#475569', fontSize: 11, marginBottom: 4 },
+  scaleLabel: { color: '#9A9490', fontSize: 11, marginBottom: 4 },
   scaleEmoji: { fontSize: 20, marginBottom: 2 },
-  scaleValue: { color: '#94A3B8', fontSize: 13, fontWeight: '600' },
-  reflection: { color: '#64748B', fontSize: 14, fontStyle: 'italic', marginBottom: 8, lineHeight: 20 },
-  wouldRepeat: { color: '#475569', fontSize: 13 },
-  wouldRepeatVal: { color: '#94A3B8', fontWeight: '600' },
+  scaleValue: { color: '#5A5550', fontSize: 13, fontWeight: '600' },
+  reflection: { color: '#5A5550', fontSize: 14, fontStyle: 'italic', marginBottom: 8, lineHeight: 20 },
+  wouldRepeat: { color: '#9A9490', fontSize: 13 },
+  wouldRepeatVal: { color: '#1A1A1A', fontWeight: '600' },
   editLogButton: {
     marginTop: 12, paddingVertical: 8, alignItems: 'center', minHeight: 44, justifyContent: 'center',
   },
-  editLogText: { color: '#6366F1', fontSize: 14, fontWeight: '600' },
+  editLogText: { color: '#2D4A3E', fontSize: 14, fontWeight: '600' },
   actionRow: { flexDirection: 'row', gap: 12 },
   editButton: {
-    flex: 1, backgroundColor: '#1E293B', borderRadius: 10,
+    flex: 1, backgroundColor: '#fff', borderRadius: 14, borderWidth: 1.5, borderColor: '#EDE8E1',
     paddingVertical: 12, alignItems: 'center', minHeight: 44,
   },
-  editButtonText: { color: '#94A3B8', fontSize: 15, fontWeight: '600' },
+  editButtonText: { color: '#5A5550', fontSize: 15, fontWeight: '600' },
   deleteButton: {
-    flex: 1, backgroundColor: '#450A0A', borderRadius: 10,
+    flex: 1, backgroundColor: '#FFE4E1', borderRadius: 14,
     paddingVertical: 12, alignItems: 'center', minHeight: 44,
   },
-  deleteButtonText: { color: '#FCA5A5', fontSize: 15, fontWeight: '600' },
+  deleteButtonText: { color: '#E53E3E', fontSize: 15, fontWeight: '600' },
 });
