@@ -1,24 +1,33 @@
 import { getDb, generateId, nowISO } from './db';
 type SQLiteBindValue = string | number | null | boolean;
-import { Activity, ActivityStatus, ActivityPriority, RecurrenceType } from '../../types';
+import { Activity, ActivityStatus, ActivityPriority, RecurrenceType, Subtask, Weekday } from '../../types';
 
 export interface CreateActivityInput {
   user_id: string;
   title: string;
+  description?: string;
   start_time: string;
   duration_minutes: number;
   category_id: string;
+  is_scheduled?: boolean;
   priority?: ActivityPriority;
   recurrence_type?: RecurrenceType;
+  recurrence_days?: Weekday[];
+  subtasks?: Subtask[];
 }
 
 export interface UpdateActivityInput {
   title?: string;
+  description?: string | null;
   start_time?: string;
   duration_minutes?: number;
   category_id?: string;
+  is_scheduled?: boolean;
   mindset_prompt?: string;
   mindset_overridden?: boolean;
+  recurrence_type?: RecurrenceType;
+  recurrence_days?: Weekday[];
+  subtasks?: Subtask[];
   status?: ActivityStatus;
   priority?: ActivityPriority;
   actual_start?: string | null;
@@ -27,14 +36,55 @@ export interface UpdateActivityInput {
 
 export async function getActivitiesForDay(userId: string, dateStr: string): Promise<Activity[]> {
   const db = await getDb();
-  // dateStr: YYYY-MM-DD — match start_time by date prefix in UTC
   const rows = await db.getAllAsync<Record<string, unknown>>(
     `SELECT a.*, c.name as cat_name, c.color as cat_color, c.icon as cat_icon
      FROM activities a
      LEFT JOIN categories c ON a.category_id = c.id
-     WHERE a.user_id = ? AND date(a.start_time) = ? AND a.deleted = 0
+     WHERE a.user_id = ? AND date(a.start_time) = ? AND a.is_scheduled = ? AND a.deleted = 0
      ORDER BY a.start_time ASC`,
-    [userId, dateStr]
+    [userId, dateStr, 1]
+  );
+  return rows.map(mapRow);
+}
+
+// Get overdue PLANNED tasks from before the given date (carry-over)
+export async function getOverdueActivities(userId: string, beforeDateStr: string): Promise<Activity[]> {
+  const db = await getDb();
+  const rows = await db.getAllAsync<Record<string, unknown>>(
+    `SELECT a.*, c.name as cat_name, c.color as cat_color, c.icon as cat_icon
+     FROM activities a
+     LEFT JOIN categories c ON a.category_id = c.id
+     WHERE a.user_id = ? AND date(a.start_time) < ? AND a.status = ? AND a.is_scheduled = ? AND a.deleted = 0
+     ORDER BY a.start_time ASC`,
+    [userId, beforeDateStr, 'PLANNED', 1]
+  );
+  return rows.map(mapRow);
+}
+
+// Get unscheduled backlog tasks
+export async function getBacklogActivities(userId: string): Promise<Activity[]> {
+  const db = await getDb();
+  const rows = await db.getAllAsync<Record<string, unknown>>(
+    `SELECT a.*, c.name as cat_name, c.color as cat_color, c.icon as cat_icon
+     FROM activities a
+     LEFT JOIN categories c ON a.category_id = c.id
+     WHERE a.user_id = ? AND a.is_scheduled = ? AND a.deleted = 0
+     ORDER BY a.created_at DESC`,
+    [userId, 0]
+  );
+  return rows.map(mapRow);
+}
+
+// Get all activities for a specific category
+export async function getActivitiesByCategory(userId: string, categoryId: string): Promise<Activity[]> {
+  const db = await getDb();
+  const rows = await db.getAllAsync<Record<string, unknown>>(
+    `SELECT a.*, c.name as cat_name, c.color as cat_color, c.icon as cat_icon
+     FROM activities a
+     LEFT JOIN categories c ON a.category_id = c.id
+     WHERE a.user_id = ? AND a.category_id = ? AND a.deleted = 0
+     ORDER BY a.start_time DESC`,
+    [userId, categoryId]
   );
   return rows.map(mapRow);
 }
@@ -43,15 +93,20 @@ export async function createActivity(input: CreateActivityInput): Promise<Activi
   const db = await getDb();
   const id = generateId();
   const now = nowISO();
+  const isScheduled = input.is_scheduled !== undefined ? (input.is_scheduled ? 1 : 0) : 1;
+  const recurrenceDays = input.recurrence_days?.length ? JSON.stringify(input.recurrence_days) : null;
+  const subtasks = input.subtasks?.length ? JSON.stringify(input.subtasks) : null;
+
   await db.runAsync(
     `INSERT INTO activities
-      (id, user_id, title, start_time, duration_minutes, category_id,
-       mindset_prompt, mindset_overridden, recurrence_type, status, priority,
-       actual_start, actual_end, created_at, updated_at, synced, deleted)
-     VALUES (?, ?, ?, ?, ?, ?, NULL, 0, ?, 'PLANNED', ?, NULL, NULL, ?, ?, 0, 0)`,
+      (id, user_id, title, description, start_time, duration_minutes, category_id,
+       is_scheduled, mindset_prompt, mindset_overridden, recurrence_type, recurrence_days,
+       subtasks, status, priority, actual_start, actual_end, created_at, updated_at, synced, deleted)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL, 0, ?, ?, ?, 'PLANNED', ?, NULL, NULL, ?, ?, 0, 0)`,
     [
-      id, input.user_id, input.title, input.start_time, input.duration_minutes,
-      input.category_id, input.recurrence_type ?? 'NONE',
+      id, input.user_id, input.title, input.description ?? null,
+      input.start_time, input.duration_minutes, input.category_id,
+      isScheduled, input.recurrence_type ?? 'NONE', recurrenceDays, subtasks,
       input.priority ?? 'MEDIUM', now, now,
     ]
   );
@@ -65,11 +120,16 @@ export async function updateActivity(id: string, updates: UpdateActivityInput): 
   const values: unknown[] = [now];
 
   if (updates.title !== undefined) { fields.push('title = ?'); values.push(updates.title); }
+  if (updates.description !== undefined) { fields.push('description = ?'); values.push(updates.description); }
   if (updates.start_time !== undefined) { fields.push('start_time = ?'); values.push(updates.start_time); }
   if (updates.duration_minutes !== undefined) { fields.push('duration_minutes = ?'); values.push(updates.duration_minutes); }
   if (updates.category_id !== undefined) { fields.push('category_id = ?'); values.push(updates.category_id); }
+  if (updates.is_scheduled !== undefined) { fields.push('is_scheduled = ?'); values.push(updates.is_scheduled ? 1 : 0); }
   if (updates.mindset_prompt !== undefined) { fields.push('mindset_prompt = ?'); values.push(updates.mindset_prompt); }
   if (updates.mindset_overridden !== undefined) { fields.push('mindset_overridden = ?'); values.push(updates.mindset_overridden ? 1 : 0); }
+  if (updates.recurrence_type !== undefined) { fields.push('recurrence_type = ?'); values.push(updates.recurrence_type); }
+  if (updates.recurrence_days !== undefined) { fields.push('recurrence_days = ?'); values.push(JSON.stringify(updates.recurrence_days)); }
+  if (updates.subtasks !== undefined) { fields.push('subtasks = ?'); values.push(JSON.stringify(updates.subtasks)); }
   if (updates.status !== undefined) { fields.push('status = ?'); values.push(updates.status); }
   if (updates.priority !== undefined) { fields.push('priority = ?'); values.push(updates.priority); }
   if (updates.actual_start !== undefined) { fields.push('actual_start = ?'); values.push(updates.actual_start); }
@@ -102,8 +162,40 @@ export async function getActivity(id: string): Promise<Activity | null> {
   return row ? mapRow(row) : null;
 }
 
+export async function searchActivities(userId: string, query: string): Promise<Activity[]> {
+  const db = await getDb();
+  const rows = await db.getAllAsync<Record<string, unknown>>(
+    `SELECT a.*, c.name as cat_name, c.color as cat_color, c.icon as cat_icon
+     FROM activities a
+     LEFT JOIN categories c ON a.category_id = c.id
+     WHERE a.user_id = ? AND a.deleted = 0
+     ORDER BY a.start_time DESC`,
+    [userId]
+  );
+  const all = rows.map(mapRow);
+  if (!query.trim()) return all;
+
+  const q = query.toLowerCase();
+  return all.filter(a => {
+    const fields = [
+      a.title, a.description, a.category?.name, a.status,
+      a.recurrence_type, a.priority, a.mindset_prompt, a.start_time,
+    ].filter(Boolean).join(' ').toLowerCase();
+    return fields.includes(q);
+  });
+}
+
 export async function setMindsetPrompt(id: string, prompt: string): Promise<void> {
   await updateActivity(id, { mindset_prompt: prompt });
+}
+
+function parseJsonArray<T>(val: unknown): T[] {
+  if (!val) return [];
+  if (typeof val === 'string') {
+    try { return JSON.parse(val); } catch { return []; }
+  }
+  if (Array.isArray(val)) return val as T[];
+  return [];
 }
 
 function mapRow(row: Record<string, unknown>): Activity {
@@ -111,12 +203,16 @@ function mapRow(row: Record<string, unknown>): Activity {
     id: row.id as string,
     user_id: row.user_id as string,
     title: row.title as string,
+    description: (row.description as string) ?? null,
     start_time: row.start_time as string,
     duration_minutes: row.duration_minutes as number,
     category_id: row.category_id as string,
+    is_scheduled: row.is_scheduled === undefined ? true : Boolean(Number(row.is_scheduled)),
     mindset_prompt: (row.mindset_prompt as string) ?? null,
     mindset_overridden: Boolean(row.mindset_overridden),
     recurrence_type: (row.recurrence_type as RecurrenceType) ?? 'NONE',
+    recurrence_days: parseJsonArray<Weekday>(row.recurrence_days),
+    subtasks: parseJsonArray<Subtask>(row.subtasks),
     status: (row.status as ActivityStatus) ?? 'PLANNED',
     priority: (row.priority as ActivityPriority) ?? 'MEDIUM',
     actual_start: (row.actual_start as string) ?? null,

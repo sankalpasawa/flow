@@ -5,9 +5,10 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Text, View, ActivityIndicator } from 'react-native';
 import { useAuthStore } from '../store/authStore';
 import { seedSystemCategories } from '../lib/db/categories';
+import { seedDummyData } from '../lib/db/seed';
 import { requestNotificationPermission, addNotificationResponseListener } from '../lib/notifications';
 import {
-  hasCompletedOnboarding, OnboardingScreen,
+  hasCompletedOnboarding, markOnboardingComplete, OnboardingScreen,
 } from '../features/onboarding/screens/OnboardingScreen';
 
 // Screens
@@ -19,12 +20,17 @@ import { ActivityDetailScreen } from '../features/canvas/screens/ActivityDetailS
 import { LogFormScreen } from '../features/log/screens/LogFormScreen';
 import { LogHistoryScreen } from '../features/log/screens/LogHistoryScreen';
 import { SettingsScreen } from '../features/canvas/screens/SettingsScreen';
+import { SearchScreen } from '../features/search/screens/SearchScreen';
+import { BacklogScreen } from '../features/backlog/screens/BacklogScreen';
+import { CategoryListScreen } from '../features/categories/screens/CategoryListScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
 function TabIcon({ name, focused }: { name: string; focused: boolean }) {
-  const icons: Record<string, string> = { Canvas: '📅', Logs: '📓', Settings: '⚙️' };
+  const icons: Record<string, string> = {
+    Canvas: '📅', Someday: '📋', Categories: '🏷️', Logs: '📓', Settings: '⚙️',
+  };
   return <Text style={{ fontSize: 20, opacity: focused ? 1 : 0.5 }}>{icons[name] ?? '•'}</Text>;
 }
 
@@ -42,27 +48,45 @@ function TabNavigator() {
         },
         tabBarActiveTintColor: '#6366F1',
         tabBarInactiveTintColor: '#475569',
-        tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
+        tabBarLabelStyle: { fontSize: 10, fontWeight: '600' },
         tabBarIcon: ({ focused }) => <TabIcon name={route.name} focused={focused} />,
       })}
     >
       <Tab.Screen name="Canvas" component={CanvasScreen} />
+      <Tab.Screen name="Someday" component={BacklogScreen} />
+      <Tab.Screen name="Categories" component={CategoryListScreen} />
       <Tab.Screen name="Logs" component={LogHistoryScreen} />
       <Tab.Screen name="Settings" component={SettingsScreen} />
     </Tab.Navigator>
   );
 }
 
+// Check onboarding synchronously from localStorage on web (avoids AsyncStorage race)
+function checkOnboardedSync(): boolean | null {
+  try {
+    if (typeof localStorage !== 'undefined' && localStorage.getItem('dayflow_onboarded') === 'true') {
+      return true;
+    }
+  } catch {}
+  return null;
+}
+
 export function AppNavigator() {
   const { user, loading, initialize } = useAuthStore();
-  const [onboarded, setOnboarded] = useState<boolean | null>(null);
+  const [onboarded, setOnboarded] = useState<boolean | null>(checkOnboardedSync);
   const [dbReady, setDbReady] = useState(false);
 
   useEffect(() => {
     (async () => {
       try {
+        // Seed BEFORE initializing DB/auth so localStorage is populated
+        // before the web DB singleton reads it
+        await seedDummyData();
         await initialize();
         await seedSystemCategories();
+        await markOnboardingComplete();
+        // Set onboarded state directly here to avoid race with user-dependent effect
+        setOnboarded(true);
       } catch (err) {
         console.error('[DayFlow] App initialization failed:', err);
       } finally {
@@ -135,6 +159,11 @@ export function AppNavigator() {
               name="LogForm"
               component={LogFormScreen}
               options={{ title: 'Log Experience' }}
+            />
+            <Stack.Screen
+              name="Search"
+              component={SearchScreen}
+              options={{ headerShown: false }}
             />
           </>
         )}

@@ -1,6 +1,9 @@
 export type ActivityStatus = 'PLANNED' | 'IN_PROGRESS' | 'COMPLETED' | 'SKIPPED';
 export type ActivityPriority = 'HIGH' | 'MEDIUM' | 'LOW';
-export type RecurrenceType = 'NONE' | 'DAILY' | 'WEEKDAYS' | 'WEEKLY';
+export type RecurrenceType =
+  | 'NONE' | 'DAILY' | 'WEEKDAYS' | 'WEEKLY'
+  | 'BIWEEKLY' | 'TRIWEEKLY' | 'MONTHLY'
+  | 'BIMONTHLY' | 'QUARTERLY' | 'BIANNUAL' | 'YEARLY';
 export type WouldRepeat = 'YES' | 'NO' | 'MAYBE';
 export type LogPhase = 'BEFORE' | 'DURING' | 'AFTER';
 export type SubscriptionTier = 'FREE' | 'PRO';
@@ -15,16 +18,28 @@ export interface Category {
   sort_order: number;
 }
 
+export type Weekday = 'Mon' | 'Tue' | 'Wed' | 'Thu' | 'Fri' | 'Sat' | 'Sun';
+
+export interface Subtask {
+  id: string;
+  title: string;
+  done: boolean;
+}
+
 export interface Activity {
   id: string;
   user_id: string;
   title: string;
+  description: string | null;
   start_time: string; // ISO UTC
   duration_minutes: number;
   category_id: string;
+  is_scheduled: boolean; // false = backlog/someday task
   mindset_prompt: string | null;
   mindset_overridden: boolean;
   recurrence_type: RecurrenceType;
+  recurrence_days: Weekday[]; // e.g. ['Mon','Wed','Fri'] for day-specific recurrence
+  subtasks: Subtask[];
   status: ActivityStatus;
   priority: ActivityPriority;
   actual_start: string | null;

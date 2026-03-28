@@ -2,7 +2,8 @@ import { create } from 'zustand';
 import { format } from 'date-fns';
 import { Activity, ExperienceLog } from '../types';
 import {
-  getActivitiesForDay, createActivity, updateActivity, deleteActivity,
+  getActivitiesForDay, getOverdueActivities, getBacklogActivities,
+  createActivity, updateActivity, deleteActivity,
   CreateActivityInput, UpdateActivityInput,
 } from '../lib/db/activities';
 import { getLogForActivity, createLog, CreateLogInput } from '../lib/db/logs';
@@ -12,16 +13,19 @@ import { SYSTEM_CATEGORIES } from '../features/categories/systemCategories';
 
 interface ActivitiesState {
   activities: Activity[];
+  backlog: Activity[];
   logs: Record<string, ExperienceLog>; // activityId -> log
   selectedDate: Date;
   loading: boolean;
   error: string | null;
   loadDay: (userId: string, date: Date) => Promise<void>;
+  loadBacklog: (userId: string) => Promise<void>;
   setSelectedDate: (date: Date) => void;
   addActivity: (input: CreateActivityInput) => Promise<Activity>;
   editActivity: (id: string, updates: UpdateActivityInput) => Promise<void>;
   removeActivity: (id: string) => Promise<void>;
   setActivityStatus: (id: string, status: Activity['status']) => Promise<void>;
+  quickToggleComplete: (id: string) => Promise<void>;
   submitLog: (input: CreateLogInput) => Promise<ExperienceLog>;
   getLogForActivity: (activityId: string) => ExperienceLog | undefined;
   clearError: () => void;
@@ -29,6 +33,7 @@ interface ActivitiesState {
 
 export const useActivitiesStore = create<ActivitiesState>((set, get) => ({
   activities: [],
+  backlog: [],
   logs: {},
   selectedDate: new Date(),
   loading: false,
@@ -38,11 +43,27 @@ export const useActivitiesStore = create<ActivitiesState>((set, get) => ({
 
   setSelectedDate: (date) => set({ selectedDate: date }),
 
+  loadBacklog: async (userId) => {
+    try {
+      const items = await getBacklogActivities(userId);
+      set({ backlog: items });
+    } catch (err) {
+      console.error('[DayFlow] Failed to load backlog:', err);
+    }
+  },
+
   loadDay: async (userId, date) => {
     set({ loading: true, error: null });
     try {
       const dateStr = format(date, 'yyyy-MM-dd');
-      const acts = await getActivitiesForDay(userId, dateStr);
+      const todayStr = format(new Date(), 'yyyy-MM-dd');
+      const [dayActs, overdueActs] = await Promise.all([
+        getActivitiesForDay(userId, dateStr),
+        // Only show overdue carry-over tasks on today's view
+        dateStr === todayStr ? getOverdueActivities(userId, dateStr) : Promise.resolve([]),
+      ]);
+      // Merge: overdue first, then today's activities
+      const acts = [...overdueActs, ...dayActs];
       const logsMap: Record<string, ExperienceLog> = {};
       await Promise.all(acts.map(async (a) => {
         try {
@@ -147,6 +168,23 @@ export const useActivitiesStore = create<ActivitiesState>((set, get) => ({
     } catch (err) {
       console.error('[DayFlow] Failed to update activity status:', err);
       throw new Error('Could not update status. Please try again.');
+    }
+  },
+
+  quickToggleComplete: async (id) => {
+    try {
+      const activity = get().activities.find(a => a.id === id) || get().backlog.find(a => a.id === id);
+      if (!activity) return;
+      const newStatus = activity.status === 'COMPLETED' ? 'PLANNED' : 'COMPLETED';
+      const now = new Date().toISOString();
+      const updates: UpdateActivityInput = { status: newStatus };
+      if (newStatus === 'COMPLETED') updates.actual_end = now;
+      await updateActivity(id, updates);
+      const updateList = (list: Activity[]) =>
+        list.map(a => a.id === id ? { ...a, status: newStatus, ...updates } as Activity : a);
+      set(s => ({ activities: updateList(s.activities), backlog: updateList(s.backlog) }));
+    } catch (err) {
+      console.error('[DayFlow] Quick toggle failed:', err);
     }
   },
 

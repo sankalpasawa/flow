@@ -1,6 +1,18 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
 import { User, DEFAULT_SETTINGS } from '../types';
+import { DEV_USER_ID } from '../lib/db/seed';
+
+// Dev mode: bypass Supabase auth when using placeholder credentials
+const IS_DEV = !process.env.EXPO_PUBLIC_SUPABASE_URL ||
+  process.env.EXPO_PUBLIC_SUPABASE_URL.includes('placeholder');
+
+const DEV_USER: User = {
+  id: DEV_USER_ID,
+  email: 'sankalp@dayflow.app',
+  subscription_tier: 'PRO',
+  settings: DEFAULT_SETTINGS,
+};
 
 interface AuthState {
   user: User | null;
@@ -21,6 +33,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   clearError: () => set({ error: null }),
 
   initialize: async () => {
+    // In dev mode, skip Supabase auth entirely
+    if (IS_DEV) {
+      console.log('[DayFlow] Dev mode — auto-login as', DEV_USER.email);
+      set({ user: DEV_USER, loading: false });
+      return;
+    }
+
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {

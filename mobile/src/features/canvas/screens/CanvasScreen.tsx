@@ -31,7 +31,7 @@ function buildHourSlots(activities: Activity[], date: Date): { hour: string; ite
 
 export function CanvasScreen({ navigation }: Props) {
   const { user } = useAuthStore();
-  const { activities, logs, loading, selectedDate, setSelectedDate, loadDay } = useActivitiesStore();
+  const { activities, logs, loading, selectedDate, setSelectedDate, loadDay, quickToggleComplete } = useActivitiesStore();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const listRef = useRef<SectionList<any, DefaultSectionT>>(null);
 
@@ -44,13 +44,32 @@ export function CanvasScreen({ navigation }: Props) {
 
   useEffect(() => {
     // Scroll to current hour on mount
+    if (!isSameDay(selectedDate, new Date()) || activities.length === 0) return;
     const currentHour = new Date().getHours();
-    if (listRef.current && isSameDay(selectedDate, new Date())) {
-      const timer = setTimeout(() => {
+    const timer = setTimeout(() => {
+      try {
+        // Try SectionList scrollToLocation (works on native)
         listRef.current?.scrollToLocation({ sectionIndex: currentHour, itemIndex: 0, animated: true, viewOffset: 80 });
-      }, 300);
-      return () => clearTimeout(timer);
-    }
+      } catch {}
+      // Fallback for web: find scrollable container and scroll by pixel offset
+      // Each hour section is ~80px, so scroll to currentHour * 80
+      try {
+        const scrollNode = (listRef.current as any)?._wrapperListRef?._listRef?._scrollRef;
+        if (scrollNode?.scrollTo) {
+          scrollNode.scrollTo({ y: currentHour * 80, animated: true });
+        } else if (typeof document !== 'undefined') {
+          // Direct DOM fallback for react-native-web
+          const scrollables = Array.from(document.querySelectorAll('div')).filter((el: HTMLElement) => {
+            const s = window.getComputedStyle(el);
+            return (s.overflowY === 'auto' || s.overflowY === 'scroll') && el.scrollHeight > el.clientHeight;
+          });
+          if (scrollables.length > 0) {
+            scrollables[0].scrollTop = currentHour * 80;
+          }
+        }
+      } catch {}
+    }, 500);
+    return () => clearTimeout(timer);
   }, [activities]);
 
   const sections = buildHourSlots(activities, selectedDate).map((slot) => ({
@@ -90,12 +109,17 @@ export function CanvasScreen({ navigation }: Props) {
     const actEnd = new Date(actStart.getTime() + activity.duration_minutes * 60000);
     const isCurrentlyActive = isWithinInterval(now, { start: actStart, end: actEnd }) && isSameDay(selectedDate, now);
 
+    const actDate = parseISO(activity.start_time);
+    const isOverdue = activity.status === 'PLANNED' && actDate < now && !isSameDay(actDate, now);
+
     return (
       <ActivityCard
         activity={activity}
         log={log}
         isNow={isCurrentlyActive}
+        isOverdue={isOverdue}
         onPress={() => navigation.navigate('ActivityDetail', { activityId: activity.id })}
+        onQuickComplete={() => quickToggleComplete(activity.id)}
       />
     );
   }
@@ -122,14 +146,24 @@ export function CanvasScreen({ navigation }: Props) {
         <Text style={styles.headerTitle}>
           {isToday ? 'Today' : format(selectedDate, 'EEE, MMM d')}
         </Text>
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={() => navigation.navigate('ActivityForm', { date: format(selectedDate, 'yyyy-MM-dd') })}
-          accessibilityLabel="Add activity"
-          accessibilityRole="button"
-        >
-          <Text style={styles.addButtonText}>+</Text>
-        </TouchableOpacity>
+        <View style={styles.headerActions}>
+          <TouchableOpacity
+            style={styles.searchButton}
+            onPress={() => navigation.navigate('Search')}
+            accessibilityLabel="Search tasks"
+            accessibilityRole="button"
+          >
+            <Text style={styles.searchButtonText}>🔍</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.addButton}
+            onPress={() => navigation.navigate('ActivityForm', { date: format(selectedDate, 'yyyy-MM-dd') })}
+            accessibilityLabel="Add activity"
+            accessibilityRole="button"
+          >
+            <Text style={styles.addButtonText}>+</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <DateStrip selectedDate={selectedDate} onSelectDate={setSelectedDate} />
@@ -177,6 +211,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16, paddingVertical: 12,
   },
   headerTitle: { color: '#F1F5F9', fontSize: 22, fontWeight: '800' },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  searchButton: {
+    backgroundColor: '#1E293B', width: 36, height: 36, borderRadius: 18,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  searchButtonText: { fontSize: 16 },
   addButton: {
     backgroundColor: '#6366F1', width: 36, height: 36, borderRadius: 18,
     alignItems: 'center', justifyContent: 'center',

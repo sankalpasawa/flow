@@ -89,13 +89,19 @@ function matchesWhere(row: Row, sql: string, params: unknown[]): boolean {
   for (const cond of conditions) {
     const trimmed = cond.trim();
 
-    // date(col) = ?
-    const dateMatch = trimmed.match(/date\((\w+\.)?(\w+)\)\s*=\s*\?/);
+    // date(col) = ? or date(col) < ?
+    const dateMatch = trimmed.match(/date\((\w+\.)?(\w+)\)\s*(=|<|>|<=|>=)\s*\?/);
     if (dateMatch) {
       const col = dateMatch[2];
+      const op = dateMatch[3];
       const val = params[paramIdx++] as string;
       const rowVal = (row[col] as string) ?? '';
-      if (!rowVal.startsWith(val)) return false;
+      const rowDate = rowVal.substring(0, 10); // YYYY-MM-DD from ISO
+      if (op === '=' && rowDate !== val) return false;
+      if (op === '<' && rowDate >= val) return false;
+      if (op === '>' && rowDate <= val) return false;
+      if (op === '<=' && rowDate > val) return false;
+      if (op === '>=' && rowDate < val) return false;
       continue;
     }
 
@@ -146,7 +152,7 @@ function parseSelect(sql: string, params: unknown[]): Row[] {
       const joinRow = tables[joinTable!].find(jr =>
         jr[rightCol] === r[leftCol] || r[rightCol] === jr[leftCol]
       );
-      return { ...r, ...(joinRow ? prefixRow(joinRow, joinAlias!) : {}) };
+      return { ...r, ...(joinRow ? prefixRow(joinRow, joinAlias!, r) : {}) };
     });
   }
 
@@ -225,11 +231,14 @@ function parseSelect(sql: string, params: unknown[]): Row[] {
   return rows;
 }
 
-function prefixRow(row: Row, alias: string): Row {
+function prefixRow(row: Row, alias: string, baseRow: Row): Row {
   const result: Row = {};
   for (const [k, v] of Object.entries(row)) {
     result[`${alias}_${k}`] = v;
-    result[k] = v; // also keep original for simple access
+    // Only add unprefixed key if it doesn't collide with base table columns
+    if (!(k in baseRow)) {
+      result[k] = v;
+    }
   }
   return result;
 }

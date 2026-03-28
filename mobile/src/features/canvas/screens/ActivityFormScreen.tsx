@@ -7,13 +7,15 @@ import { format, parseISO, addMinutes } from 'date-fns';
 import { useAuthStore } from '../../../store/authStore';
 import { useActivitiesStore } from '../../../store/activitiesStore';
 import { getCategories } from '../../../lib/db/categories';
-import { Category, ActivityPriority } from '../../../types';
+import { Category, RecurrenceType, Weekday, Subtask } from '../../../types';
 import { SYSTEM_CATEGORIES } from '../../categories/systemCategories';
+import { generateId } from '../../../lib/db/db';
 
 interface RouteParams {
   activityId?: string;
-  startHour?: string; // "HH:00"
-  date?: string; // "yyyy-MM-dd"
+  startHour?: string;
+  date?: string;
+  backlog?: boolean; // true = creating unscheduled task
 }
 
 interface Props {
@@ -23,14 +25,34 @@ interface Props {
 
 const DURATION_OPTIONS = [15, 30, 45, 60, 90, 120, 180, 240];
 
+const RECURRENCE_OPTIONS: { value: RecurrenceType; label: string; icon: string }[] = [
+  { value: 'NONE', label: 'Once', icon: '1️⃣' },
+  { value: 'DAILY', label: 'Daily', icon: '📅' },
+  { value: 'WEEKDAYS', label: 'Weekdays', icon: '💼' },
+  { value: 'WEEKLY', label: 'Weekly', icon: '🔄' },
+  { value: 'BIWEEKLY', label: 'Every 2 weeks', icon: '🔄' },
+  { value: 'TRIWEEKLY', label: 'Every 3 weeks', icon: '🔄' },
+  { value: 'MONTHLY', label: 'Monthly', icon: '📆' },
+  { value: 'BIMONTHLY', label: 'Every 2 months', icon: '📆' },
+  { value: 'QUARTERLY', label: 'Every 3 months', icon: '📆' },
+  { value: 'BIANNUAL', label: 'Every 6 months', icon: '📆' },
+  { value: 'YEARLY', label: 'Yearly', icon: '🗓️' },
+];
+
+const ALL_WEEKDAYS: Weekday[] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
 export function ActivityFormScreen({ route, navigation }: Props) {
-  const { activityId, startHour, date } = route.params ?? {};
+  const { activityId, startHour, date, backlog } = route.params ?? {};
   const { user } = useAuthStore();
   const { activities, addActivity, editActivity } = useActivitiesStore();
   const existingActivity = activityId ? activities.find((a) => a.id === activityId) : null;
 
   const [title, setTitle] = useState(existingActivity?.title ?? '');
-  const [duration, setDuration] = useState(existingActivity?.duration_minutes ?? 60);
+  const [description, setDescription] = useState(existingActivity?.description ?? '');
+  const [duration, setDuration] = useState(existingActivity?.duration_minutes ?? 15);
+  const [isScheduled, setIsScheduled] = useState(
+    existingActivity ? existingActivity.is_scheduled : !backlog
+  );
   const [startTime, setStartTime] = useState(() => {
     if (existingActivity) return existingActivity.start_time;
     const d = date ?? format(new Date(), 'yyyy-MM-dd');
@@ -39,7 +61,10 @@ export function ActivityFormScreen({ route, navigation }: Props) {
     return dt.toISOString();
   });
   const [categoryId, setCategoryId] = useState(existingActivity?.category_id ?? SYSTEM_CATEGORIES[0].id);
-  const [priority, setPriority] = useState<ActivityPriority>(existingActivity?.priority ?? 'MEDIUM');
+  const [recurrence, setRecurrence] = useState<RecurrenceType>(existingActivity?.recurrence_type ?? 'NONE');
+  const [recurrenceDays, setRecurrenceDays] = useState<Weekday[]>(existingActivity?.recurrence_days ?? []);
+  const [subtasks, setSubtasks] = useState<Subtask[]>(existingActivity?.subtasks ?? []);
+  const [newSubtask, setNewSubtask] = useState('');
   const [categories, setCategories] = useState<Category[]>(SYSTEM_CATEGORIES);
   const [saving, setSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -49,6 +74,28 @@ export function ActivityFormScreen({ route, navigation }: Props) {
       console.error('[DayFlow] Failed to load categories:', err);
     });
   }, [user]);
+
+  const showDayPicker = recurrence === 'WEEKLY' || recurrence === 'BIWEEKLY' || recurrence === 'TRIWEEKLY';
+
+  function toggleDay(day: Weekday) {
+    setRecurrenceDays(prev =>
+      prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day]
+    );
+  }
+
+  function addSubtask() {
+    if (!newSubtask.trim()) return;
+    setSubtasks(prev => [...prev, { id: generateId(), title: newSubtask.trim(), done: false }]);
+    setNewSubtask('');
+  }
+
+  function removeSubtask(id: string) {
+    setSubtasks(prev => prev.filter(s => s.id !== id));
+  }
+
+  function toggleSubtask(id: string) {
+    setSubtasks(prev => prev.map(s => s.id === id ? { ...s, done: !s.done } : s));
+  }
 
   async function handleSave() {
     if (!title.trim()) {
@@ -61,14 +108,20 @@ export function ActivityFormScreen({ route, navigation }: Props) {
     try {
       if (existingActivity) {
         await editActivity(existingActivity.id, {
-          title: title.trim(), start_time: startTime,
-          duration_minutes: duration, category_id: categoryId, priority,
+          title: title.trim(), description: description.trim() || null,
+          start_time: startTime, duration_minutes: duration,
+          category_id: categoryId, is_scheduled: isScheduled,
+          recurrence_type: recurrence, recurrence_days: recurrenceDays,
+          subtasks,
         });
       } else {
         await addActivity({
           user_id: user.id, title: title.trim(),
+          description: description.trim() || undefined,
           start_time: startTime, duration_minutes: duration,
-          category_id: categoryId, priority,
+          category_id: categoryId, is_scheduled: isScheduled,
+          recurrence_type: recurrence, recurrence_days: recurrenceDays,
+          subtasks: subtasks.length > 0 ? subtasks : undefined,
         });
       }
       navigation.goBack();
@@ -83,12 +136,6 @@ export function ActivityFormScreen({ route, navigation }: Props) {
   function adjustHour(delta: number) {
     const d = parseISO(startTime);
     d.setHours(d.getHours() + delta);
-    setStartTime(d.toISOString());
-  }
-
-  function adjustMinute(delta: number) {
-    const d = parseISO(startTime);
-    d.setMinutes(Math.round(d.getMinutes() / 15) * 15 + delta);
     setStartTime(d.toISOString());
   }
 
@@ -114,20 +161,53 @@ export function ActivityFormScreen({ route, navigation }: Props) {
         />
         <Text style={styles.charCount}>{title.length}/80</Text>
 
-        <Text style={styles.sectionLabel}>TIME</Text>
-        <View style={styles.timeRow}>
-          <View style={styles.timePicker}>
-            <TouchableOpacity onPress={() => adjustHour(-1)} style={styles.timeBtn} accessibilityLabel="Decrease hour">
-              <Text style={styles.timeBtnText}>−</Text>
-            </TouchableOpacity>
-            <Text style={styles.timeValue}>{format(startDt, 'HH:mm')}</Text>
-            <TouchableOpacity onPress={() => adjustHour(1)} style={styles.timeBtn} accessibilityLabel="Increase hour">
-              <Text style={styles.timeBtnText}>+</Text>
-            </TouchableOpacity>
-          </View>
-          <Text style={styles.timeSep}>→</Text>
-          <Text style={styles.endTime}>{format(endDt, 'HH:mm')}</Text>
+        <Text style={styles.sectionLabel}>NOTES</Text>
+        <TextInput
+          style={[styles.titleInput, styles.descriptionInput]}
+          placeholder="Add details or notes..."
+          placeholderTextColor="#475569"
+          value={description}
+          onChangeText={setDescription}
+          multiline
+          maxLength={500}
+          accessibilityLabel="Activity notes"
+        />
+
+        {/* Scheduled toggle */}
+        <Text style={styles.sectionLabel}>SCHEDULING</Text>
+        <View style={styles.toggleRow}>
+          <TouchableOpacity
+            style={[styles.toggleChip, isScheduled && styles.toggleChipSelected]}
+            onPress={() => setIsScheduled(true)}
+          >
+            <Text style={[styles.toggleText, isScheduled && styles.toggleTextSelected]}>📅 Scheduled</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.toggleChip, !isScheduled && styles.toggleChipSelected]}
+            onPress={() => setIsScheduled(false)}
+          >
+            <Text style={[styles.toggleText, !isScheduled && styles.toggleTextSelected]}>📋 Someday</Text>
+          </TouchableOpacity>
         </View>
+
+        {isScheduled && (
+          <>
+            <Text style={styles.sectionLabel}>TIME</Text>
+            <View style={styles.timeRow}>
+              <View style={styles.timePicker}>
+                <TouchableOpacity onPress={() => adjustHour(-1)} style={styles.timeBtn} accessibilityLabel="Decrease hour">
+                  <Text style={styles.timeBtnText}>−</Text>
+                </TouchableOpacity>
+                <Text style={styles.timeValue}>{format(startDt, 'HH:mm')}</Text>
+                <TouchableOpacity onPress={() => adjustHour(1)} style={styles.timeBtn} accessibilityLabel="Increase hour">
+                  <Text style={styles.timeBtnText}>+</Text>
+                </TouchableOpacity>
+              </View>
+              <Text style={styles.timeSep}>→</Text>
+              <Text style={styles.endTime}>{format(endDt, 'HH:mm')}</Text>
+            </View>
+          </>
+        )}
 
         <Text style={styles.sectionLabel}>DURATION</Text>
         <View style={styles.durationGrid}>
@@ -147,8 +227,8 @@ export function ActivityFormScreen({ route, navigation }: Props) {
         </View>
 
         <Text style={styles.sectionLabel}>CATEGORY</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.catScroll}>
-          <View style={styles.catRow}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.hScroll}>
+          <View style={styles.hRow}>
             {categories.map((cat) => (
               <TouchableOpacity
                 key={cat.id}
@@ -164,19 +244,80 @@ export function ActivityFormScreen({ route, navigation }: Props) {
           </View>
         </ScrollView>
 
-        <Text style={styles.sectionLabel}>PRIORITY</Text>
-        <View style={styles.priorityRow}>
-          {(['HIGH', 'MEDIUM', 'LOW'] as ActivityPriority[]).map((p) => (
+        <Text style={styles.sectionLabel}>FREQUENCY</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.hScroll}>
+          <View style={styles.hRow}>
+            {RECURRENCE_OPTIONS.map((opt) => (
+              <TouchableOpacity
+                key={opt.value}
+                style={[styles.recurrenceChip, recurrence === opt.value && styles.recurrenceChipSelected]}
+                onPress={() => setRecurrence(opt.value)}
+                accessibilityLabel={`${opt.label} frequency`}
+                accessibilityState={{ selected: recurrence === opt.value }}
+              >
+                <Text style={styles.recurrenceIcon}>{opt.icon}</Text>
+                <Text style={[styles.recurrenceText, recurrence === opt.value && styles.recurrenceTextSelected]}>
+                  {opt.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </ScrollView>
+
+        {/* Day picker for weekly recurrences */}
+        {showDayPicker && (
+          <>
+            <Text style={styles.sectionLabel}>REPEAT ON</Text>
+            <View style={styles.dayPickerRow}>
+              {ALL_WEEKDAYS.map((day) => (
+                <TouchableOpacity
+                  key={day}
+                  style={[styles.dayChip, recurrenceDays.includes(day) && styles.dayChipSelected]}
+                  onPress={() => toggleDay(day)}
+                  accessibilityLabel={day}
+                  accessibilityState={{ selected: recurrenceDays.includes(day) }}
+                >
+                  <Text style={[styles.dayText, recurrenceDays.includes(day) && styles.dayTextSelected]}>
+                    {day}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </>
+        )}
+
+        {/* Subtasks */}
+        <Text style={styles.sectionLabel}>SUBTASKS</Text>
+        {subtasks.map((st) => (
+          <View key={st.id} style={styles.subtaskItem}>
             <TouchableOpacity
-              key={p}
-              style={[styles.priorityChip, priority === p && styles.priorityChipSelected]}
-              onPress={() => setPriority(p)}
-              accessibilityLabel={`${p} priority`}
-              accessibilityState={{ selected: priority === p }}
+              style={[styles.subtaskCheckbox, st.done && styles.subtaskCheckboxDone]}
+              onPress={() => toggleSubtask(st.id)}
             >
-              <Text style={[styles.priorityText, priority === p && styles.priorityTextSelected]}>{p}</Text>
+              {st.done && <Text style={styles.subtaskCheckmark}>✓</Text>}
             </TouchableOpacity>
-          ))}
+            <Text style={[styles.subtaskTitle, st.done && styles.subtaskTitleDone]}>{st.title}</Text>
+            <TouchableOpacity onPress={() => removeSubtask(st.id)} style={styles.subtaskRemove}>
+              <Text style={styles.subtaskRemoveText}>✕</Text>
+            </TouchableOpacity>
+          </View>
+        ))}
+        <View style={styles.subtaskAddRow}>
+          <TextInput
+            style={styles.subtaskInput}
+            placeholder="Add a subtask..."
+            placeholderTextColor="#475569"
+            value={newSubtask}
+            onChangeText={setNewSubtask}
+            onSubmitEditing={addSubtask}
+            returnKeyType="done"
+            maxLength={80}
+          />
+          {newSubtask.trim() ? (
+            <TouchableOpacity style={styles.subtaskAddBtn} onPress={addSubtask}>
+              <Text style={styles.subtaskAddBtnText}>+</Text>
+            </TouchableOpacity>
+          ) : null}
         </View>
 
         {errorMessage && (
@@ -209,7 +350,17 @@ const styles = StyleSheet.create({
     backgroundColor: '#1E293B', borderRadius: 10, paddingHorizontal: 16,
     paddingVertical: 14, color: '#F1F5F9', fontSize: 17, minHeight: 44,
   },
+  descriptionInput: { fontSize: 14, minHeight: 60, textAlignVertical: 'top' },
   charCount: { color: '#334155', fontSize: 11, textAlign: 'right', marginTop: 4 },
+  toggleRow: { flexDirection: 'row', gap: 8 },
+  toggleChip: {
+    flex: 1, backgroundColor: '#1E293B', borderRadius: 10,
+    paddingVertical: 12, alignItems: 'center', minHeight: 44,
+    borderWidth: 1, borderColor: '#1E293B',
+  },
+  toggleChipSelected: { backgroundColor: '#312E81', borderColor: '#6366F1' },
+  toggleText: { color: '#64748B', fontSize: 14, fontWeight: '600' },
+  toggleTextSelected: { color: '#A5B4FC' },
   timeRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   timePicker: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
@@ -228,8 +379,8 @@ const styles = StyleSheet.create({
   durationChipSelected: { backgroundColor: '#312E81' },
   durationText: { color: '#64748B', fontSize: 14, fontWeight: '600' },
   durationTextSelected: { color: '#A5B4FC' },
-  catScroll: { marginHorizontal: -20 },
-  catRow: { flexDirection: 'row', gap: 8, paddingHorizontal: 20 },
+  hScroll: { marginHorizontal: -20 },
+  hRow: { flexDirection: 'row', gap: 8, paddingHorizontal: 20 },
   catChip: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
     backgroundColor: '#1E293B', borderRadius: 20, borderWidth: 1, borderColor: '#1E293B',
@@ -237,14 +388,49 @@ const styles = StyleSheet.create({
   },
   catIcon: { fontSize: 16 },
   catName: { color: '#64748B', fontSize: 13, fontWeight: '500' },
-  priorityRow: { flexDirection: 'row', gap: 8 },
-  priorityChip: {
-    flex: 1, backgroundColor: '#1E293B', borderRadius: 8,
-    paddingVertical: 12, alignItems: 'center', minHeight: 44,
+  recurrenceChip: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    backgroundColor: '#1E293B', borderRadius: 20, borderWidth: 1, borderColor: '#1E293B',
+    paddingVertical: 8, paddingHorizontal: 14, minHeight: 44,
   },
-  priorityChipSelected: { backgroundColor: '#312E81' },
-  priorityText: { color: '#64748B', fontSize: 14, fontWeight: '600' },
-  priorityTextSelected: { color: '#A5B4FC' },
+  recurrenceChipSelected: { backgroundColor: '#312E81', borderColor: '#6366F1' },
+  recurrenceIcon: { fontSize: 14 },
+  recurrenceText: { color: '#64748B', fontSize: 13, fontWeight: '600' },
+  recurrenceTextSelected: { color: '#A5B4FC' },
+  dayPickerRow: { flexDirection: 'row', gap: 6, justifyContent: 'space-between' },
+  dayChip: {
+    flex: 1, backgroundColor: '#1E293B', borderRadius: 8,
+    paddingVertical: 10, alignItems: 'center', minHeight: 40,
+    borderWidth: 1, borderColor: '#1E293B',
+  },
+  dayChipSelected: { backgroundColor: '#312E81', borderColor: '#6366F1' },
+  dayText: { color: '#64748B', fontSize: 12, fontWeight: '600' },
+  dayTextSelected: { color: '#A5B4FC' },
+  subtaskItem: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    backgroundColor: '#1E293B', borderRadius: 8, padding: 10, marginBottom: 4,
+  },
+  subtaskCheckbox: {
+    width: 20, height: 20, borderRadius: 10,
+    borderWidth: 2, borderColor: '#475569',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  subtaskCheckboxDone: { backgroundColor: '#10B981', borderColor: '#10B981' },
+  subtaskCheckmark: { color: '#fff', fontSize: 10, fontWeight: '800' },
+  subtaskTitle: { flex: 1, color: '#F1F5F9', fontSize: 14 },
+  subtaskTitleDone: { textDecorationLine: 'line-through', color: '#64748B' },
+  subtaskRemove: { width: 24, height: 24, alignItems: 'center', justifyContent: 'center' },
+  subtaskRemoveText: { color: '#475569', fontSize: 14 },
+  subtaskAddRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  subtaskInput: {
+    flex: 1, backgroundColor: '#1E293B', borderRadius: 8,
+    paddingHorizontal: 12, paddingVertical: 10, color: '#F1F5F9', fontSize: 14, minHeight: 40,
+  },
+  subtaskAddBtn: {
+    width: 32, height: 32, borderRadius: 16,
+    backgroundColor: '#6366F1', alignItems: 'center', justifyContent: 'center',
+  },
+  subtaskAddBtnText: { color: '#fff', fontSize: 18 },
   saveButton: {
     backgroundColor: '#6366F1', borderRadius: 12,
     paddingVertical: 16, alignItems: 'center', marginTop: 32, minHeight: 44,
