@@ -8,14 +8,13 @@ import { useAuthStore } from '../../../store/authStore';
 import { useActivitiesStore } from '../../../store/activitiesStore';
 import { DateStrip } from '../components/DateStrip';
 import { ActivityCard } from '../components/ActivityCard';
-import { NetworkBanner } from '../../../components/common/NetworkBanner';
 import { Activity } from '../../../types';
+import { colors, radii, shadows, spacing } from '../../../theme';
 
 interface Props {
   navigation: { navigate: (screen: string, params?: Record<string, unknown>) => void };
 }
 
-// Build hour labels 00:00-23:00
 function buildHourSlots(activities: Activity[], date: Date): { hour: string; items: Activity[] }[] {
   const slots: { hour: string; items: Activity[] }[] = [];
   for (let h = 0; h < 24; h++) {
@@ -32,7 +31,6 @@ function buildHourSlots(activities: Activity[], date: Date): { hour: string; ite
 export function CanvasScreen({ navigation }: Props) {
   const { user } = useAuthStore();
   const { activities, logs, loading, selectedDate, setSelectedDate, loadDay, quickToggleComplete } = useActivitiesStore();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const listRef = useRef<SectionList<any, DefaultSectionT>>(null);
 
   const load = useCallback(
@@ -43,29 +41,19 @@ export function CanvasScreen({ navigation }: Props) {
   useEffect(() => { load(selectedDate); }, [selectedDate]);
 
   useEffect(() => {
-    // Scroll to current hour on mount
     if (!isSameDay(selectedDate, new Date()) || activities.length === 0) return;
     const currentHour = new Date().getHours();
     const timer = setTimeout(() => {
       try {
-        // Try SectionList scrollToLocation (works on native)
         listRef.current?.scrollToLocation({ sectionIndex: currentHour, itemIndex: 0, animated: true, viewOffset: 80 });
       } catch {}
-      // Fallback for web: find scrollable container and scroll by pixel offset
-      // Each hour section is ~80px, so scroll to currentHour * 80
       try {
-        const scrollNode = (listRef.current as any)?._wrapperListRef?._listRef?._scrollRef;
-        if (scrollNode?.scrollTo) {
-          scrollNode.scrollTo({ y: currentHour * 80, animated: true });
-        } else if (typeof document !== 'undefined') {
-          // Direct DOM fallback for react-native-web
+        if (typeof document !== 'undefined') {
           const scrollables = Array.from(document.querySelectorAll('div')).filter((el: HTMLElement) => {
             const s = window.getComputedStyle(el);
             return (s.overflowY === 'auto' || s.overflowY === 'scroll') && el.scrollHeight > el.clientHeight;
           });
-          if (scrollables.length > 0) {
-            scrollables[0].scrollTop = currentHour * 80;
-          }
+          if (scrollables.length > 0) scrollables[0].scrollTop = currentHour * 80;
         }
       } catch {}
     }, 500);
@@ -79,11 +67,12 @@ export function CanvasScreen({ navigation }: Props) {
   }));
 
   const now = new Date();
+  const isToday = isSameDay(selectedDate, now);
+  const activityCount = activities.length;
 
   function isNowSlot(hour: string): boolean {
-    if (!isSameDay(selectedDate, now)) return false;
-    const h = parseInt(hour.split(':')[0]);
-    return h === now.getHours();
+    if (!isToday) return false;
+    return parseInt(hour.split(':')[0]) === now.getHours();
   }
 
   type SectionItem = Activity | 'empty';
@@ -95,9 +84,9 @@ export function CanvasScreen({ navigation }: Props) {
           <TouchableOpacity
             style={styles.emptySlot}
             onPress={() => navigation.navigate('ActivityForm', { startHour: section.title, date: format(selectedDate, 'yyyy-MM-dd') })}
-            accessibilityLabel={`Empty slot at ${section.title}, tap to create activity`}
+            accessibilityLabel={`Empty slot at ${section.title}`}
           >
-            <Text style={styles.emptySlotText}>+ Add activity</Text>
+            <Text style={styles.emptySlotText}>+</Text>
           </TouchableOpacity>
         );
       }
@@ -107,8 +96,7 @@ export function CanvasScreen({ navigation }: Props) {
     const log = logs[activity.id];
     const actStart = parseISO(activity.start_time);
     const actEnd = new Date(actStart.getTime() + activity.duration_minutes * 60000);
-    const isCurrentlyActive = isWithinInterval(now, { start: actStart, end: actEnd }) && isSameDay(selectedDate, now);
-
+    const isCurrentlyActive = isWithinInterval(now, { start: actStart, end: actEnd }) && isToday;
     const actDate = parseISO(activity.start_time);
     const isOverdue = activity.status === 'PLANNED' && actDate < now && !isSameDay(actDate, now);
 
@@ -127,41 +115,38 @@ export function CanvasScreen({ navigation }: Props) {
   function renderSectionHeader({ section }: { section: SectionListData<SectionItem, { title: string; hasItems: boolean }> }) {
     const isCurrentHour = isNowSlot(section.title);
     return (
-      <View style={[styles.hourRow, isCurrentHour && styles.hourRowNow]}>
+      <View style={styles.hourRow}>
         <Text style={[styles.hourLabel, isCurrentHour && styles.hourLabelNow]}>
           {section.title}
         </Text>
-        {isCurrentHour && <View style={styles.nowLine} />}
+        {isCurrentHour && (
+          <>
+            <View style={styles.nowDot} />
+            <View style={styles.nowLine} />
+          </>
+        )}
       </View>
     );
   }
 
-  const isToday = isSameDay(selectedDate, now);
-  const hasActivities = activities.length > 0;
-
   return (
     <SafeAreaView style={styles.container}>
-      <NetworkBanner />
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>
-          {isToday ? 'Today' : format(selectedDate, 'EEE, MMM d')}
-        </Text>
+        <View>
+          <Text style={styles.headerTitle}>
+            {isToday ? format(now, 'EEEE') : format(selectedDate, 'EEEE')}
+          </Text>
+          <Text style={styles.headerSubtitle}>
+            {format(selectedDate, 'MMMM d')} — {activityCount} activities planned
+          </Text>
+        </View>
         <View style={styles.headerActions}>
           <TouchableOpacity
-            style={styles.searchButton}
+            style={styles.iconButton}
             onPress={() => navigation.navigate('Search')}
-            accessibilityLabel="Search tasks"
-            accessibilityRole="button"
+            accessibilityLabel="Search"
           >
-            <Text style={styles.searchButtonText}>🔍</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.addButton}
-            onPress={() => navigation.navigate('ActivityForm', { date: format(selectedDate, 'yyyy-MM-dd') })}
-            accessibilityLabel="Add activity"
-            accessibilityRole="button"
-          >
-            <Text style={styles.addButtonText}>+</Text>
+            <Text style={styles.iconButtonText}>🔍</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -170,27 +155,11 @@ export function CanvasScreen({ navigation }: Props) {
 
       {loading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator color="#6366F1" size="large" />
-        </View>
-      ) : !hasActivities ? (
-        <View style={styles.emptyStateContainer}>
-          <Text style={styles.emptyStateEmoji}>📅</Text>
-          <Text style={styles.emptyStateTitle}>Plan your first block</Text>
-          <Text style={styles.emptyStateBody}>
-            Tap the + button or any empty time slot to get started.
-          </Text>
-          <TouchableOpacity
-            style={styles.emptyStateCTA}
-            onPress={() => navigation.navigate('ActivityForm', { date: format(selectedDate, 'yyyy-MM-dd') })}
-            accessibilityLabel="Plan your first block"
-          >
-            <Text style={styles.emptyStateCTAText}>Plan a Block</Text>
-          </TouchableOpacity>
+          <ActivityIndicator color={colors.primary} size="large" />
         </View>
       ) : (
         <SectionList
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          ref={listRef as unknown as React.RefObject<SectionList<SectionItem, { title: string; hasItems: boolean }>>}
+          ref={listRef as any}
           sections={sections}
           keyExtractor={(item, index) => (typeof item === 'string' ? `empty-${index}` : item.id)}
           renderItem={renderItem}
@@ -200,51 +169,59 @@ export function CanvasScreen({ navigation }: Props) {
           contentContainerStyle={styles.listContent}
         />
       )}
+
+      {/* FAB */}
+      <TouchableOpacity
+        style={[styles.fab, shadows.fab]}
+        onPress={() => navigation.navigate('ActivityForm', { date: format(selectedDate, 'yyyy-MM-dd') })}
+        accessibilityLabel="Add activity"
+        activeOpacity={0.85}
+      >
+        <Text style={styles.fabText}>+</Text>
+      </TouchableOpacity>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0F172A' },
+  container: { flex: 1, backgroundColor: colors.bg },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 16, paddingVertical: 12,
+    paddingHorizontal: spacing.screen, paddingTop: 20, paddingBottom: 12,
   },
-  headerTitle: { color: '#F1F5F9', fontSize: 22, fontWeight: '800' },
-  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  searchButton: {
-    backgroundColor: '#1E293B', width: 36, height: 36, borderRadius: 18,
-    alignItems: 'center', justifyContent: 'center',
+  headerTitle: { color: colors.text, fontSize: 28, fontWeight: '600' },
+  headerSubtitle: { color: colors.muted, fontSize: 13, marginTop: 2 },
+  headerActions: { flexDirection: 'row', gap: 8 },
+  iconButton: {
+    width: 40, height: 40, borderRadius: 12,
+    backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center',
+    borderWidth: 1, borderColor: colors.border,
   },
-  searchButtonText: { fontSize: 16 },
-  addButton: {
-    backgroundColor: '#6366F1', width: 36, height: 36, borderRadius: 18,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  addButtonText: { color: '#fff', fontSize: 22, lineHeight: 26, fontWeight: '400' },
+  iconButtonText: { fontSize: 18 },
   loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  emptyStateContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 },
-  emptyStateEmoji: { fontSize: 56, marginBottom: 16 },
-  emptyStateTitle: { color: '#F1F5F9', fontSize: 20, fontWeight: '700', marginBottom: 8 },
-  emptyStateBody: { color: '#64748B', fontSize: 15, textAlign: 'center', lineHeight: 22, marginBottom: 24 },
-  emptyStateCTA: {
-    backgroundColor: '#6366F1', borderRadius: 10,
-    paddingVertical: 14, paddingHorizontal: 32, minHeight: 44,
-  },
-  emptyStateCTAText: { color: '#fff', fontSize: 16, fontWeight: '700' },
-  listContent: { paddingBottom: 32 },
+  listContent: { paddingBottom: 100 },
   hourRow: {
     flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: 16, paddingTop: 12, paddingBottom: 4,
+    paddingHorizontal: spacing.screen, paddingTop: 12, paddingBottom: 4,
   },
-  hourRowNow: {},
-  hourLabel: { color: '#334155', fontSize: 12, fontWeight: '600', width: 42 },
-  hourLabelNow: { color: '#EF4444' },
-  nowLine: { flex: 1, height: 1, backgroundColor: '#EF4444', opacity: 0.5, marginLeft: 8 },
+  hourLabel: { color: colors.muted, fontSize: 12, fontWeight: '600', width: 42 },
+  hourLabelNow: { color: colors.terra, fontWeight: '700' },
+  nowDot: {
+    width: 10, height: 10, borderRadius: 5, backgroundColor: colors.terra, marginRight: 4,
+  },
+  nowLine: { flex: 1, height: 1.5, backgroundColor: colors.terra, opacity: 0.5 },
   emptySlot: {
-    marginHorizontal: 12, paddingVertical: 8,
-    borderRadius: 6, borderWidth: 1, borderColor: '#1E293B',
-    borderStyle: 'dashed', alignItems: 'center', minHeight: 44, justifyContent: 'center',
+    marginHorizontal: 12, paddingVertical: 12,
+    borderRadius: 12, borderWidth: 1.5, borderColor: colors.border,
+    borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center',
+    minHeight: 48,
   },
-  emptySlotText: { color: '#334155', fontSize: 13 },
+  emptySlotText: { color: colors.muted, fontSize: 18 },
+  fab: {
+    position: 'absolute', bottom: 96, right: 24,
+    width: 56, height: 56, borderRadius: 20,
+    backgroundColor: colors.primary,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  fabText: { color: '#fff', fontSize: 26, lineHeight: 28 },
 });

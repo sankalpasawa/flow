@@ -1,87 +1,64 @@
-import React, { useRef, useEffect } from 'react';
-import {
-  View, Text, TouchableOpacity, StyleSheet, ScrollView,
-} from 'react-native';
-import { format, addDays, subDays, isToday, isSameDay } from 'date-fns';
+import React from 'react';
+import { Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
+import { format, addDays, isSameDay, startOfWeek } from 'date-fns';
+import { colors, radii } from '../../../theme';
 
 interface Props {
   selectedDate: Date;
   onSelectDate: (date: Date) => void;
 }
 
-const VISIBLE_DAYS = 14; // 7 before + today + 6 after
-
 export function DateStrip({ selectedDate, onSelectDate }: Props) {
-  const scrollRef = useRef<ScrollView>(null);
-
-  const today = new Date();
-  const days: Date[] = [];
-  for (let i = -7; i <= 7; i++) {
-    days.push(addDays(today, i));
-  }
-
-  useEffect(() => {
-    // Scroll to today's position
-    setTimeout(() => {
-      scrollRef.current?.scrollTo({ x: 7 * 64, animated: false });
-    }, 100);
-  }, []);
+  const startDate = addDays(startOfWeek(new Date(), { weekStartsOn: 1 }), -7);
+  const dates = Array.from({ length: 21 }, (_, i) => addDays(startDate, i));
 
   return (
-    <View style={styles.container}>
-      <ScrollView
-        ref={scrollRef}
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
-        {days.map((day) => {
-          const selected = isSameDay(day, selectedDate);
-          const todayDay = isToday(day);
-          return (
-            <TouchableOpacity
-              key={day.toISOString()}
-              style={[
-                styles.dayPill,
-                selected && styles.dayPillSelected,
-                todayDay && !selected && styles.dayPillToday,
-              ]}
-              onPress={() => onSelectDate(day)}
-              accessibilityLabel={format(day, 'EEEE, MMMM d')}
-              accessibilityState={{ selected }}
-            >
-              <Text style={[styles.dayLabel, selected && styles.dayLabelSelected]}>
-                {format(day, 'EEE')}
-              </Text>
-              <Text style={[styles.dayNum, selected && styles.dayNumSelected]}>
-                {format(day, 'd')}
-              </Text>
-              {todayDay && <View style={[styles.todayDot, selected && styles.todayDotSelected]} />}
-            </TouchableOpacity>
-          );
-        })}
-      </ScrollView>
-    </View>
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={styles.container}
+    >
+      {dates.map((date) => {
+        const isSelected = isSameDay(date, selectedDate);
+        const isToday = isSameDay(date, new Date());
+        return (
+          <TouchableOpacity
+            key={date.toISOString()}
+            style={[
+              styles.chip,
+              isSelected && styles.chipSelected,
+              isToday && !isSelected && styles.chipToday,
+            ]}
+            onPress={() => onSelectDate(date)}
+            accessibilityLabel={format(date, 'EEEE, MMMM d')}
+            accessibilityState={{ selected: isSelected }}
+          >
+            <Text style={[styles.dayName, isSelected && styles.textSelected]}>
+              {format(date, 'EEE').toUpperCase()}
+            </Text>
+            <Text style={[styles.dayNum, isSelected && styles.textSelected]}>
+              {format(date, 'd')}
+            </Text>
+          </TouchableOpacity>
+        );
+      })}
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    backgroundColor: '#0F172A',
-    borderBottomWidth: 1,
-    borderBottomColor: '#1E293B',
+  container: { paddingHorizontal: 20, gap: 8, paddingVertical: 8 },
+  chip: {
+    minWidth: 48, height: 62,
+    alignItems: 'center', justifyContent: 'center',
+    borderRadius: radii.card, paddingHorizontal: 6,
   },
-  scrollContent: { paddingHorizontal: 12, paddingVertical: 8, gap: 4 },
-  dayPill: {
-    width: 56, alignItems: 'center', paddingVertical: 8,
-    borderRadius: 10, minHeight: 64,
+  chipSelected: { backgroundColor: colors.primary },
+  chipToday: { backgroundColor: colors.surface2 },
+  dayName: {
+    fontSize: 11, fontWeight: '500', color: colors.muted,
+    letterSpacing: 0.5, marginBottom: 4,
   },
-  dayPillSelected: { backgroundColor: '#6366F1' },
-  dayPillToday: { borderWidth: 1, borderColor: '#6366F1' },
-  dayLabel: { color: '#64748B', fontSize: 11, fontWeight: '600', marginBottom: 2 },
-  dayLabelSelected: { color: '#C7D2FE' },
-  dayNum: { color: '#94A3B8', fontSize: 18, fontWeight: '700' },
-  dayNumSelected: { color: '#fff' },
-  todayDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: '#6366F1', marginTop: 3 },
-  todayDotSelected: { backgroundColor: '#fff' },
+  dayNum: { fontSize: 20, fontWeight: '600', color: colors.text },
+  textSelected: { color: '#FFFFFF' },
 });

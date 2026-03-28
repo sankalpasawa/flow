@@ -29,9 +29,9 @@ const Tab = createBottomTabNavigator();
 
 function TabIcon({ name, focused }: { name: string; focused: boolean }) {
   const icons: Record<string, string> = {
-    Canvas: '📅', Someday: '📋', Categories: '🏷️', Logs: '📓', Settings: '⚙️',
+    Today: '☀️', Someday: '📋', Plan: '🌙', Insights: '🎯', Settings: '⚙️',
   };
-  return <Text style={{ fontSize: 20, opacity: focused ? 1 : 0.5 }}>{icons[name] ?? '•'}</Text>;
+  return <Text style={{ fontSize: 22, opacity: focused ? 1 : 0.6 }}>{icons[name] ?? '•'}</Text>;
 }
 
 function TabNavigator() {
@@ -40,22 +40,23 @@ function TabNavigator() {
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: '#0F172A',
-          borderTopColor: '#1E293B',
+          backgroundColor: '#FFFFFF',
+          borderTopColor: '#EDE8E1',
           borderTopWidth: 1,
-          height: 60,
-          paddingBottom: 8,
+          height: 80,
+          paddingBottom: 16,
+          paddingTop: 8,
         },
-        tabBarActiveTintColor: '#6366F1',
-        tabBarInactiveTintColor: '#475569',
-        tabBarLabelStyle: { fontSize: 10, fontWeight: '600' },
+        tabBarActiveTintColor: '#2D4A3E',
+        tabBarInactiveTintColor: '#9A9490',
+        tabBarLabelStyle: { fontSize: 11, fontWeight: '400', letterSpacing: 0.3 },
         tabBarIcon: ({ focused }) => <TabIcon name={route.name} focused={focused} />,
       })}
     >
-      <Tab.Screen name="Canvas" component={CanvasScreen} />
+      <Tab.Screen name="Today" component={CanvasScreen} />
       <Tab.Screen name="Someday" component={BacklogScreen} />
-      <Tab.Screen name="Categories" component={CategoryListScreen} />
-      <Tab.Screen name="Logs" component={LogHistoryScreen} />
+      <Tab.Screen name="Plan" component={LogHistoryScreen} />
+      <Tab.Screen name="Insights" component={CategoryListScreen} />
       <Tab.Screen name="Settings" component={SettingsScreen} />
     </Tab.Navigator>
   );
@@ -121,16 +122,16 @@ export function AppNavigator() {
 
   if (loading || !dbReady) {
     return (
-      <View style={{ flex: 1, backgroundColor: '#0F172A', alignItems: 'center', justifyContent: 'center' }}>
-        <Text style={{ color: '#6366F1', fontSize: 24, fontWeight: '800', marginBottom: 20 }}>DayFlow</Text>
-        <ActivityIndicator color="#6366F1" />
+      <View style={{ flex: 1, backgroundColor: '#FAF7F2', alignItems: 'center', justifyContent: 'center' }}>
+        <Text style={{ color: '#2D4A3E', fontSize: 28, fontWeight: '600', marginBottom: 20 }}>DayFlow</Text>
+        <ActivityIndicator color="#2D4A3E" />
       </View>
     );
   }
 
   return (
     <NavigationContainer>
-      <Stack.Navigator screenOptions={{ headerStyle: { backgroundColor: '#0F172A' }, headerTintColor: '#F1F5F9', headerShadowVisible: false }}>
+      <Stack.Navigator screenOptions={{ headerStyle: { backgroundColor: '#FAF7F2' }, headerTintColor: '#1A1A1A', headerShadowVisible: false }}>
         {!user ? (
           <>
             <Stack.Screen name="SignIn" component={SignInScreen} options={{ headerShown: false }} />

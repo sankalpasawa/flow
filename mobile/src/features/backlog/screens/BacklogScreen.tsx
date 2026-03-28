@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback } from 'react';
+import React, { useEffect } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView,
 } from 'react-native';
@@ -6,6 +6,7 @@ import { useAuthStore } from '../../../store/authStore';
 import { useActivitiesStore } from '../../../store/activitiesStore';
 import { ActivityCard } from '../../canvas/components/ActivityCard';
 import { Activity } from '../../../types';
+import { colors, spacing, radii, shadows } from '../../../theme';
 
 interface Props {
   navigation: { navigate: (screen: string, params?: Record<string, unknown>) => void };
@@ -36,14 +37,10 @@ export function BacklogScreen({ navigation }: Props) {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Someday</Text>
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={() => navigation.navigate('ActivityForm', { backlog: true })}
-          accessibilityLabel="Add task to someday"
-        >
-          <Text style={styles.addButtonText}>+</Text>
-        </TouchableOpacity>
+        <View>
+          <Text style={styles.headerTitle}>Someday</Text>
+          <Text style={styles.headerSubtitle}>{planned.length} tasks waiting</Text>
+        </View>
       </View>
 
       {planned.length === 0 && completed.length === 0 ? (
@@ -61,37 +58,40 @@ export function BacklogScreen({ navigation }: Props) {
           renderItem={renderItem}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
-          ListHeaderComponent={
-            planned.length > 0 ? (
-              <Text style={styles.sectionHeader}>{planned.length} task{planned.length !== 1 ? 's' : ''}</Text>
-            ) : null
-          }
-          stickyHeaderIndices={completed.length > 0 ? [planned.length] : undefined}
         />
       )}
+
+      {/* FAB */}
+      <TouchableOpacity
+        style={[styles.fab, shadows.fab]}
+        onPress={() => navigation.navigate('ActivityForm', { backlog: true })}
+        accessibilityLabel="Add someday task"
+        activeOpacity={0.85}
+      >
+        <Text style={styles.fabText}>+</Text>
+      </TouchableOpacity>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0F172A' },
+  container: { flex: 1, backgroundColor: colors.bg },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 16, paddingVertical: 12,
+    paddingHorizontal: spacing.screen, paddingTop: 20, paddingBottom: 12,
   },
-  headerTitle: { color: '#F1F5F9', fontSize: 22, fontWeight: '800' },
-  addButton: {
-    backgroundColor: '#6366F1', width: 36, height: 36, borderRadius: 18,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  addButtonText: { color: '#fff', fontSize: 22, lineHeight: 26, fontWeight: '400' },
+  headerTitle: { color: colors.text, fontSize: 28, fontWeight: '600' },
+  headerSubtitle: { color: colors.muted, fontSize: 13, marginTop: 2 },
   emptyContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 },
   emptyEmoji: { fontSize: 56, marginBottom: 16 },
-  emptyTitle: { color: '#F1F5F9', fontSize: 20, fontWeight: '700', marginBottom: 8 },
-  emptyBody: { color: '#64748B', fontSize: 15, textAlign: 'center', lineHeight: 22 },
-  listContent: { paddingBottom: 32, paddingTop: 8 },
-  sectionHeader: {
-    color: '#64748B', fontSize: 12, fontWeight: '600',
-    paddingHorizontal: 16, paddingVertical: 8,
+  emptyTitle: { color: colors.text, fontSize: 20, fontWeight: '700', marginBottom: 8 },
+  emptyBody: { color: colors.muted, fontSize: 15, textAlign: 'center', lineHeight: 22 },
+  listContent: { paddingBottom: 100, paddingTop: 8 },
+  fab: {
+    position: 'absolute', bottom: 96, right: 24,
+    width: 56, height: 56, borderRadius: 20,
+    backgroundColor: colors.primary,
+    alignItems: 'center', justifyContent: 'center',
   },
+  fabText: { color: '#fff', fontSize: 26, lineHeight: 28 },
 });
