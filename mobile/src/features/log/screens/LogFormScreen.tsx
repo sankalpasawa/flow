@@ -246,7 +246,7 @@ export function LogFormScreen({ route, navigation }: Props) {
       <TextInput
         style={styles.reflectionInput}
         placeholder="How did it go?"
-        placeholderTextColor="#475569"
+        placeholderTextColor="#9A9490"
         value={reflection}
         onChangeText={(t) => setReflection(t.slice(0, 5000))}
         multiline
@@ -274,61 +274,61 @@ export function LogFormScreen({ route, navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0F172A' },
+  container: { flex: 1, backgroundColor: '#FAF7F2' },
   content: { padding: 20, paddingBottom: 48 },
-  activityTitle: { color: '#F1F5F9', fontSize: 20, fontWeight: '700', marginBottom: 24, lineHeight: 26 },
-  sectionLabel: { color: '#475569', fontSize: 11, fontWeight: '700', letterSpacing: 1, marginBottom: 10, marginTop: 20 },
-  optional: { color: '#334155', fontWeight: '400' },
+  activityTitle: { color: '#1A1A1A', fontSize: 20, fontWeight: '700', marginBottom: 24, lineHeight: 26 },
+  sectionLabel: { color: '#9A9490', fontSize: 11, fontWeight: '700', letterSpacing: 1, marginBottom: 10, marginTop: 20 },
+  optional: { color: '#EDE8E1', fontWeight: '400' },
   scaleRow: { flexDirection: 'row', justifyContent: 'space-between' },
   scaleItem: {
     alignItems: 'center', flex: 1, paddingVertical: 10, borderRadius: 10,
-    backgroundColor: '#1E293B', marginHorizontal: 3, minHeight: 64,
+    backgroundColor: '#FFFFFF', marginHorizontal: 3, minHeight: 64,
   },
-  scaleItemSelected: { backgroundColor: '#312E81' },
+  scaleItemSelected: { backgroundColor: '#EBF2EE' },
   scaleEmoji: { fontSize: 24, marginBottom: 4 },
-  scaleLabel2: { color: '#64748B', fontSize: 10, fontWeight: '500' },
-  scaleLabelSelected: { color: '#A5B4FC' },
+  scaleLabel2: { color: '#9A9490', fontSize: 10, fontWeight: '500' },
+  scaleLabelSelected: { color: '#2D4A3E' },
   chipRow: { flexDirection: 'row', gap: 8 },
   chip: {
-    flex: 1, backgroundColor: '#1E293B', borderRadius: 10,
+    flex: 1, backgroundColor: '#FFFFFF', borderRadius: 10,
     paddingVertical: 12, alignItems: 'center', minHeight: 44,
   },
-  chipSelected: { backgroundColor: '#312E81' },
-  chipText: { color: '#64748B', fontSize: 13, fontWeight: '600' },
-  chipTextSelected: { color: '#A5B4FC' },
+  chipSelected: { backgroundColor: '#EBF2EE' },
+  chipText: { color: '#9A9490', fontSize: 13, fontWeight: '600' },
+  chipTextSelected: { color: '#2D4A3E' },
   reflectionInput: {
-    backgroundColor: '#1E293B', borderRadius: 10,
-    padding: 14, color: '#F1F5F9', fontSize: 15,
+    backgroundColor: '#FFFFFF', borderRadius: 10,
+    padding: 14, color: '#1A1A1A', fontSize: 15,
     minHeight: 100,
   },
-  charCount: { color: '#334155', fontSize: 11, textAlign: 'right', marginTop: 4 },
+  charCount: { color: '#EDE8E1', fontSize: 11, textAlign: 'right', marginTop: 4 },
   submitButton: {
-    backgroundColor: '#6366F1', borderRadius: 12,
+    backgroundColor: '#2D4A3E', borderRadius: 12,
     paddingVertical: 16, alignItems: 'center', marginTop: 24, minHeight: 44,
   },
   submitDisabled: { opacity: 0.4 },
   submitText: { color: '#fff', fontSize: 17, fontWeight: '700' },
   successOverlay: {
-    flex: 1, backgroundColor: '#0F172A',
+    flex: 1, backgroundColor: '#FAF7F2',
     alignItems: 'center', justifyContent: 'center',
   },
   successEmoji: { fontSize: 64, marginBottom: 16 },
-  successTitle: { color: '#F1F5F9', fontSize: 28, fontWeight: '800', marginBottom: 8 },
-  successBody: { color: '#64748B', fontSize: 16 },
+  successTitle: { color: '#1A1A1A', fontSize: 28, fontWeight: '800', marginBottom: 8 },
+  successBody: { color: '#9A9490', fontSize: 16 },
   closedWindow: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 },
   closedEmoji: { fontSize: 48, marginBottom: 16 },
-  closedTitle: { color: '#F1F5F9', fontSize: 22, fontWeight: '700', marginBottom: 8 },
-  closedBody: { color: '#64748B', fontSize: 15, textAlign: 'center', lineHeight: 22, marginBottom: 24 },
+  closedTitle: { color: '#1A1A1A', fontSize: 22, fontWeight: '700', marginBottom: 8 },
+  closedBody: { color: '#9A9490', fontSize: 15, textAlign: 'center', lineHeight: 22, marginBottom: 24 },
   doneButton: {
-    backgroundColor: '#1E293B', borderRadius: 10,
+    backgroundColor: '#FFFFFF', borderRadius: 10,
     paddingVertical: 14, paddingHorizontal: 32, minHeight: 44,
   },
-  doneButtonText: { color: '#94A3B8', fontSize: 16, fontWeight: '600' },
+  doneButtonText: { color: '#5A5550', fontSize: 16, fontWeight: '600' },
   upgradeButton: {
-    backgroundColor: '#6366F1', borderRadius: 10,
+    backgroundColor: '#2D4A3E', borderRadius: 10,
     paddingVertical: 14, paddingHorizontal: 24, minHeight: 44, marginBottom: 12,
   },
   upgradeButtonText: { color: '#fff', fontSize: 15, fontWeight: '700' },
   skipButton: { minHeight: 44, justifyContent: 'center' },
-  skipText: { color: '#475569', fontSize: 14 },
+  skipText: { color: '#9A9490', fontSize: 14 },
 });

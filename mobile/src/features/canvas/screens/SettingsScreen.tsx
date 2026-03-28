@@ -85,28 +85,28 @@ export function SettingsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0F172A' },
+  container: { flex: 1, backgroundColor: '#FAF7F2' },
   header: { paddingHorizontal: 16, paddingVertical: 14 },
-  headerTitle: { color: '#F1F5F9', fontSize: 22, fontWeight: '800' },
+  headerTitle: { color: '#1A1A1A', fontSize: 22, fontWeight: '800' },
   content: { padding: 16, paddingBottom: 48, gap: 8 },
-  sectionLabel: { color: '#475569', fontSize: 11, fontWeight: '700', letterSpacing: 1, marginTop: 12, marginBottom: 6 },
+  sectionLabel: { color: '#9A9490', fontSize: 11, fontWeight: '700', letterSpacing: 1, marginTop: 12, marginBottom: 6 },
   card: {
-    backgroundColor: '#1E293B', borderRadius: 10, padding: 14,
+    backgroundColor: '#FFFFFF', borderRadius: 10, padding: 14,
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     minHeight: 44,
   },
-  cardLabel: { color: '#64748B', fontSize: 14 },
-  cardValue: { color: '#F1F5F9', fontSize: 14, fontWeight: '500' },
+  cardLabel: { color: '#9A9490', fontSize: 14 },
+  cardValue: { color: '#1A1A1A', fontSize: 14, fontWeight: '500' },
   planRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   proBadge: {
-    backgroundColor: '#312E81', borderRadius: 6,
+    backgroundColor: '#EBF2EE', borderRadius: 6,
     paddingHorizontal: 8, paddingVertical: 3,
   },
-  proBadgeText: { color: '#A5B4FC', fontSize: 12, fontWeight: '600' },
+  proBadgeText: { color: '#2D4A3E', fontSize: 12, fontWeight: '600' },
   infoBox: {
-    backgroundColor: '#1E293B', borderRadius: 10, padding: 14,
+    backgroundColor: '#FFFFFF', borderRadius: 10, padding: 14,
   },
-  infoText: { color: '#64748B', fontSize: 13, lineHeight: 19 },
+  infoText: { color: '#9A9490', fontSize: 13, lineHeight: 19 },
   signOutButton: {
     backgroundColor: '#450A0A', borderRadius: 10,
     paddingVertical: 14, alignItems: 'center', marginTop: 16, minHeight: 44,

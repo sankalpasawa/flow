@@ -103,7 +103,7 @@ export function OnboardingScreen({ onComplete }: Props) {
           <TextInput
             style={styles.input}
             placeholder="e.g. Deep work on project proposal"
-            placeholderTextColor="#64748B"
+            placeholderTextColor="#9A9490"
             value={activityTitle}
             onChangeText={setActivityTitle}
             maxLength={80}
@@ -147,39 +147,39 @@ export function OnboardingScreen({ onComplete }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0F172A' },
+  container: { flex: 1, backgroundColor: '#FAF7F2' },
   stepContainer: {
     flex: 1, alignItems: 'center', justifyContent: 'center',
     paddingHorizontal: 28, paddingVertical: 40,
   },
   emoji: { fontSize: 64, marginBottom: 20 },
-  title: { fontSize: 28, fontWeight: '800', color: '#F1F5F9', textAlign: 'center', marginBottom: 16 },
-  body: { fontSize: 17, color: '#94A3B8', textAlign: 'center', lineHeight: 26, marginBottom: 40 },
-  bodySmall: { fontSize: 15, color: '#94A3B8', textAlign: 'center', marginBottom: 20 },
+  title: { fontSize: 28, fontWeight: '800', color: '#1A1A1A', textAlign: 'center', marginBottom: 16 },
+  body: { fontSize: 17, color: '#5A5550', textAlign: 'center', lineHeight: 26, marginBottom: 40 },
+  bodySmall: { fontSize: 15, color: '#5A5550', textAlign: 'center', marginBottom: 20 },
   button: {
-    backgroundColor: '#6366F1', borderRadius: 12, paddingVertical: 16,
+    backgroundColor: '#2D4A3E', borderRadius: 12, paddingVertical: 16,
     paddingHorizontal: 48, alignItems: 'center', minHeight: 44, width: '100%',
   },
   buttonDisabled: { opacity: 0.5 },
   buttonText: { color: '#fff', fontSize: 17, fontWeight: '700' },
   input: {
-    backgroundColor: '#1E293B', borderRadius: 10, paddingHorizontal: 16,
-    paddingVertical: 14, color: '#F1F5F9', fontSize: 16,
+    backgroundColor: '#FFFFFF', borderRadius: 10, paddingHorizontal: 16,
+    paddingVertical: 14, color: '#1A1A1A', fontSize: 16,
     width: '100%', marginBottom: 20, minHeight: 44,
   },
-  label: { color: '#64748B', fontSize: 13, fontWeight: '600', alignSelf: 'flex-start', marginBottom: 10 },
+  label: { color: '#9A9490', fontSize: 13, fontWeight: '600', alignSelf: 'flex-start', marginBottom: 10 },
   categoryGrid: {
     flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 24, justifyContent: 'center',
   },
   catChip: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
-    backgroundColor: '#1E293B', borderRadius: 20, paddingVertical: 8, paddingHorizontal: 12,
+    backgroundColor: '#FFFFFF', borderRadius: 20, paddingVertical: 8, paddingHorizontal: 12,
     minHeight: 44,
   },
-  catChipSelected: { backgroundColor: '#312E81' },
+  catChipSelected: { backgroundColor: '#EBF2EE' },
   catIcon: { fontSize: 16 },
-  catName: { color: '#94A3B8', fontSize: 13 },
-  catNameSelected: { color: '#A5B4FC', fontWeight: '600' },
+  catName: { color: '#5A5550', fontSize: 13 },
+  catNameSelected: { color: '#2D4A3E', fontWeight: '600' },
   skipButton: { marginTop: 16, minHeight: 44, justifyContent: 'center' },
-  skipText: { color: '#475569', fontSize: 14 },
+  skipText: { color: '#9A9490', fontSize: 14 },
 });
