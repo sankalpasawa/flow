@@ -59,14 +59,14 @@ const progressStyles = StyleSheet.create({
   },
 });
 
-function GoalRow({ goal, isLast }: { goal: GoalWithProgress; isLast: boolean }) {
+function GoalRow({ goal, isLast, onPress }: { goal: GoalWithProgress; isLast: boolean; onPress: () => void }) {
   const catColor = getCategoryColor(goal.category_id);
   const icon = goal.category?.icon ?? '\uD83C\uDFAF';
   const statusText = formatProgress(goal);
   const isDone = goal.current_value >= goal.target_value;
 
   return (
-    <View style={[rowStyles.row, isLast && rowStyles.rowLast]}>
+    <Pressable style={[rowStyles.row, isLast && rowStyles.rowLast]} onPress={onPress}>
       <View style={[rowStyles.iconCircle, { backgroundColor: catColor.light }]}>
         <Text style={rowStyles.icon}>{icon}</Text>
       </View>
@@ -83,7 +83,7 @@ function GoalRow({ goal, isLast }: { goal: GoalWithProgress; isLast: boolean }) 
           </Text>
         )}
       </View>
-    </View>
+    </Pressable>
   );
 }
 
@@ -170,7 +170,7 @@ export function GoalSection({ goals, navigation }: Props) {
             <Text style={styles.emptyText}>Set a goal to track your progress</Text>
           ) : (
             activeGoals.map((g, i) => (
-              <GoalRow key={g.id} goal={g} isLast={i === activeGoals.length - 1} />
+              <GoalRow key={g.id} goal={g} isLast={i === activeGoals.length - 1} onPress={() => navigation.navigate('GoalEdit', { goalId: g.id })} />
             ))
           )}
           <Pressable

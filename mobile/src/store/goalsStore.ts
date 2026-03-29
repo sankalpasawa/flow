@@ -2,9 +2,9 @@ import { create } from 'zustand';
 import { startOfWeek, format } from 'date-fns';
 import { Goal } from '../types';
 import {
-  getActiveGoals, createGoal, deleteGoal,
+  getActiveGoals, createGoal, updateGoal, deleteGoal,
   getGoalProgress as dbGetGoalProgress,
-  CreateGoalInput, GoalProgress,
+  CreateGoalInput, UpdateGoalInput, GoalProgress,
 } from '../lib/db/goals';
 
 interface GoalsState {
@@ -12,6 +12,7 @@ interface GoalsState {
   goalsLoading: boolean;
   loadGoals: (userId: string) => Promise<void>;
   createGoal: (input: CreateGoalInput) => Promise<Goal>;
+  updateGoal: (id: string, updates: UpdateGoalInput) => Promise<void>;
   deleteGoal: (id: string) => Promise<void>;
   getGoalProgress: (goalId: string, userId: string) => Promise<GoalProgress>;
 }
@@ -39,6 +40,20 @@ export const useGoalsStore = create<GoalsState>((set, get) => ({
     } catch (err) {
       console.error('[DayFlow] Failed to create goal:', err);
       throw new Error('Could not create goal. Please try again.');
+    }
+  },
+
+  updateGoal: async (id, updates) => {
+    try {
+      await updateGoal(id, updates);
+      set((s) => ({
+        goals: s.goals.map((g) =>
+          g.id === id ? { ...g, ...updates, updated_at: new Date().toISOString() } : g
+        ),
+      }));
+    } catch (err) {
+      console.error('[DayFlow] Failed to update goal:', err);
+      throw new Error('Could not update goal. Please try again.');
     }
   },
 

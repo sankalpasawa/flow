@@ -370,8 +370,33 @@ function buildActivities(): { activities: SeedActivity[]; logs: SeedLog[] } {
   return { activities, logs };
 }
 
+interface SeedGoal {
+  id: string;
+  user_id: string;
+  title: string;
+  metric_type: string;
+  target_value: number;
+  frequency: string;
+  category_id: string;
+  specific_days: string | null;
+  is_active: number;
+  created_at: string;
+  updated_at: string;
+}
+
+function buildGoals(): SeedGoal[] {
+  const ts = nowISO();
+  return [
+    { id: uuid(), user_id: USER_ID, title: 'Read every day', metric_type: 'TIME', target_value: 30, frequency: 'DAILY', category_id: 'sys-learning', specific_days: null, is_active: 1, created_at: ts, updated_at: ts },
+    { id: uuid(), user_id: USER_ID, title: 'Exercise regularly', metric_type: 'SESSIONS', target_value: 4, frequency: 'WEEKLY', category_id: 'sys-health', specific_days: null, is_active: 1, created_at: ts, updated_at: ts },
+    { id: uuid(), user_id: USER_ID, title: 'Deep work focus', metric_type: 'TIME', target_value: 180, frequency: 'DAILY', category_id: 'sys-deep-work', specific_days: null, is_active: 1, created_at: ts, updated_at: ts },
+    { id: uuid(), user_id: USER_ID, title: 'Connect with family', metric_type: 'SESSIONS', target_value: 3, frequency: 'WEEKLY', category_id: 'cust-family', specific_days: null, is_active: 1, created_at: ts, updated_at: ts },
+    { id: uuid(), user_id: USER_ID, title: 'Creative time', metric_type: 'TIME', target_value: 60, frequency: 'WEEKLY', category_id: 'sys-creative', specific_days: null, is_active: 1, created_at: ts, updated_at: ts },
+  ];
+}
+
 export async function seedDummyData(): Promise<void> {
-  const SEED_VERSION = '10';
+  const SEED_VERSION = '11';
   const isWeb = typeof localStorage !== 'undefined';
 
   // Check if already seeded
@@ -425,9 +450,11 @@ export async function seedDummyData(): Promise<void> {
     log_phase: l.log_phase, logged_at: l.logged_at, synced: 0, deleted: 0,
   }));
 
+  const goalRows = buildGoals();
+
   if (isWeb) {
     // Web: write directly to localStorage
-    const dbState = { categories: categoryRows, activities: activityRows, experience_logs: logRows };
+    const dbState = { categories: categoryRows, activities: activityRows, experience_logs: logRows, goals: goalRows };
     localStorage.setItem('dayflow_db', JSON.stringify(dbState));
     localStorage.setItem('dayflow_seed_version', SEED_VERSION);
     localStorage.setItem('dayflow_onboarded', 'true');
@@ -453,6 +480,12 @@ export async function seedDummyData(): Promise<void> {
           [l.id, l.activity_id, l.user_id, l.mood, l.energy, l.completion_pct, l.reflection, l.would_repeat, l.log_phase, l.logged_at, l.synced, l.deleted]
         );
       }
+      for (const g of goalRows) {
+        await db.runAsync(
+          `INSERT OR IGNORE INTO goals (id, user_id, title, metric_type, target_value, frequency, category_id, specific_days, is_active, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [g.id, g.user_id, g.title, g.metric_type, g.target_value, g.frequency, g.category_id, g.specific_days, g.is_active, g.created_at, g.updated_at]
+        );
+      }
       const AsyncStorage = require('@react-native-async-storage/async-storage').default;
       await AsyncStorage.setItem('dayflow_seed_version', SEED_VERSION);
       await AsyncStorage.setItem('dayflow_onboarded', 'true');
@@ -461,7 +494,7 @@ export async function seedDummyData(): Promise<void> {
     }
   }
 
-  console.log(`[DayFlow] Seeded ${activityRows.length} activities and ${logRows.length} logs for Sankalp`);
+  console.log(`[DayFlow] Seeded ${activityRows.length} activities, ${logRows.length} logs, and ${goalRows.length} goals for Sankalp`);
 }
 
 export const DEV_USER_ID = USER_ID;

@@ -1,10 +1,11 @@
 import * as SQLite from 'expo-sqlite';
 import { CREATE_TABLES_SQL } from './schema';
+import type { DatabaseAdapter } from './types';
 
 let _db: SQLite.SQLiteDatabase | null = null;
 
-export async function getDb(): Promise<SQLite.SQLiteDatabase> {
-  if (_db) return _db;
+export async function getDb(): Promise<DatabaseAdapter> {
+  if (_db) return _db as unknown as DatabaseAdapter;
   _db = await SQLite.openDatabaseAsync('dayflow.db');
   await _db.execAsync(CREATE_TABLES_SQL);
 
@@ -17,7 +18,7 @@ export async function getDb(): Promise<SQLite.SQLiteDatabase> {
     try { await _db.execAsync(sql); } catch { /* column already exists */ }
   }
 
-  return _db;
+  return _db as unknown as DatabaseAdapter;
 }
 
 export function generateId(): string {

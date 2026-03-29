@@ -1,5 +1,5 @@
-// SQLite schema — local offline-first store
-// Source of truth on device; synced to Supabase on reconnect
+// Source of truth for table schemas — both web and native use this
+// SQLite schema — local offline-first store; synced to Supabase on reconnect
 
 export const CREATE_TABLES_SQL = `
   PRAGMA journal_mode=WAL;

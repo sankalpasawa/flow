@@ -1,5 +1,7 @@
 // Web database — in-memory with localStorage persistence
-// Implements the same interface as expo-sqlite for web compatibility
+// Implements DatabaseAdapter for web compatibility
+
+import type { DatabaseAdapter } from './types';
 
 type Row = Record<string, unknown>;
 
@@ -266,7 +268,7 @@ function prefixRow(row: Row, alias: string, baseRow: Row): Row {
   return result;
 }
 
-class WebSQLiteDatabase {
+class WebSQLiteDatabase implements DatabaseAdapter {
   constructor() {
     loadFromStorage();
   }
@@ -275,20 +277,18 @@ class WebSQLiteDatabase {
     // Schema creation — tables are virtual, no need to execute DDL
   }
 
-  async getAllAsync<T>(sql: string, ...rawParams: unknown[]): Promise<T[]> {
-    const params = Array.isArray(rawParams[0]) ? rawParams[0] : rawParams;
+  async getAllAsync<T = Record<string, unknown>>(sql: string, params?: any[]): Promise<T[]> {
     try {
-      return parseSelect(sql, params) as T[];
+      return parseSelect(sql, params ?? []) as T[];
     } catch (err) {
       console.error('[DayFlow] Web DB getAllAsync error:', err, sql);
       return [];
     }
   }
 
-  async getFirstAsync<T>(sql: string, ...rawParams: unknown[]): Promise<T | null> {
-    const params = Array.isArray(rawParams[0]) ? rawParams[0] : rawParams;
+  async getFirstAsync<T = Record<string, unknown>>(sql: string, params?: any[]): Promise<T | null> {
     try {
-      const rows = parseSelect(sql, params);
+      const rows = parseSelect(sql, params ?? []);
       return (rows[0] as T) ?? null;
     } catch (err) {
       console.error('[DayFlow] Web DB getFirstAsync error:', err, sql);
@@ -296,14 +296,14 @@ class WebSQLiteDatabase {
     }
   }
 
-  async runAsync(sql: string, ...rawParams: unknown[]): Promise<{ lastInsertRowId: number; changes: number }> {
-    const params = Array.isArray(rawParams[0]) ? rawParams[0] : rawParams;
+  async runAsync(sql: string, params?: any[]): Promise<{ lastInsertRowId: number; changes: number }> {
+    const resolvedParams = params ?? [];
     try {
       const upperSql = sql.trim().toUpperCase();
 
       if (upperSql.startsWith('INSERT')) {
         const isIgnore = upperSql.includes('OR IGNORE');
-        const parsed = parseInsert(sql, params);
+        const parsed = parseInsert(sql, resolvedParams);
         if (parsed) {
           ensureTable(parsed.table);
           if (isIgnore) {
@@ -317,7 +317,7 @@ class WebSQLiteDatabase {
       }
 
       if (upperSql.startsWith('UPDATE')) {
-        const parsed = parseUpdate(sql, params);
+        const parsed = parseUpdate(sql, resolvedParams);
         if (parsed) {
           ensureTable(parsed.table);
           let changes = 0;
@@ -343,7 +343,7 @@ class WebSQLiteDatabase {
 
 let _db: WebSQLiteDatabase | null = null;
 
-export async function getDb(): Promise<any> {
+export async function getDb(): Promise<DatabaseAdapter> {
   if (_db) return _db;
   _db = new WebSQLiteDatabase();
   return _db;
