@@ -2,15 +2,16 @@ import React, { useState, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator,
+  Modal,
 } from 'react-native';
-import { format, parseISO, addMinutes } from 'date-fns';
+import { format, parseISO, addMinutes, addDays, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay } from 'date-fns';
 import { useAuthStore } from '../../../store/authStore';
 import { useActivitiesStore } from '../../../store/activitiesStore';
 import { getCategories } from '../../../lib/db/categories';
 import { Category, RecurrenceType, Weekday, Subtask } from '../../../types';
 import { SYSTEM_CATEGORIES } from '../../categories/systemCategories';
 import { generateId } from '../../../lib/db/db';
-import { colors, radii } from '../../../theme';
+import { colors, radii, spacing } from '../../../theme';
 
 interface RouteParams {
   activityId?: string;
@@ -54,11 +55,24 @@ export function ActivityFormScreen({ route, navigation }: Props) {
   const [isScheduled, setIsScheduled] = useState(
     existingActivity ? existingActivity.is_scheduled : !backlog
   );
+
+  // Derive initial date and hour from params or existing activity
+  const initialDate = (() => {
+    if (existingActivity) return existingActivity.start_time.substring(0, 10);
+    return date ?? format(new Date(), 'yyyy-MM-dd');
+  })();
+  const initialHour = (() => {
+    if (existingActivity) return parseISO(existingActivity.start_time).getHours();
+    return startHour ? parseInt(startHour.split(':')[0]) : new Date().getHours() + 1;
+  })();
+
+  const [selectedDateStr, setSelectedDateStr] = useState(initialDate);
+  const [showCalendar, setShowCalendar] = useState(false);
+  const [calendarMonth, setCalendarMonth] = useState(() => parseISO(initialDate + 'T00:00:00'));
+
   const [startTime, setStartTime] = useState(() => {
     if (existingActivity) return existingActivity.start_time;
-    const d = date ?? format(new Date(), 'yyyy-MM-dd');
-    const h = startHour ? parseInt(startHour.split(':')[0]) : new Date().getHours() + 1;
-    const dt = new Date(`${d}T${h.toString().padStart(2, '0')}:00:00`);
+    const dt = new Date(`${initialDate}T${initialHour.toString().padStart(2, '0')}:00:00`);
     return dt.toISOString();
   });
   const [categoryId, setCategoryId] = useState(existingActivity?.category_id ?? SYSTEM_CATEGORIES[0].id);
@@ -108,10 +122,17 @@ export function ActivityFormScreen({ route, navigation }: Props) {
     setSaving(true);
     try {
       if (existingActivity) {
+        // For scheduled activities, assigned_date = selectedDateStr
+        // For untimed tasks, preserve the existing assigned_date (it holds the day)
+        // Only null it out if the user explicitly switched from scheduled to someday
+        const newAssignedDate = isScheduled
+          ? selectedDateStr
+          : (existingActivity.is_scheduled ? null : existingActivity.assigned_date);
         await editActivity(existingActivity.id, {
           title: title.trim(), description: description.trim() || null,
           start_time: startTime, duration_minutes: duration,
           category_id: categoryId, is_scheduled: isScheduled,
+          assigned_date: newAssignedDate,
           recurrence_type: recurrence, recurrence_days: recurrenceDays,
           subtasks,
         });
@@ -134,21 +155,57 @@ export function ActivityFormScreen({ route, navigation }: Props) {
     }
   }
 
+  function pickDate(dateStr: string) {
+    setSelectedDateStr(dateStr);
+    // Sync into startTime — keep the hour+minute, change only the date
+    const current = parseISO(startTime);
+    const h = current.getHours();
+    const m = current.getMinutes();
+    const newDt = new Date(`${dateStr}T${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:00`);
+    setStartTime(newDt.toISOString());
+  }
+
+  const today = format(new Date(), 'yyyy-MM-dd');
+  const tomorrow = format(addDays(new Date(), 1), 'yyyy-MM-dd');
+
+  // Calendar grid for the "Pick date" modal
+  const calendarDays = (() => {
+    const monthStart = startOfMonth(calendarMonth);
+    const monthEnd = endOfMonth(calendarMonth);
+    const gridStart = startOfWeek(monthStart, { weekStartsOn: 1 });
+    const gridEnd = endOfWeek(monthEnd, { weekStartsOn: 1 });
+    return eachDayOfInterval({ start: gridStart, end: gridEnd });
+  })();
+
   function adjustHour(delta: number) {
     const d = parseISO(startTime);
     d.setHours(d.getHours() + delta);
     setStartTime(d.toISOString());
+    // Keep selectedDateStr in sync if hour rolls past midnight
+    setSelectedDateStr(format(d, 'yyyy-MM-dd'));
   }
 
   const startDt = parseISO(startTime);
   const endDt = addMinutes(startDt, duration);
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+    <View style={styles.overlay}>
+      <TouchableOpacity style={styles.overlayDismiss} activeOpacity={1} onPress={() => navigation.goBack()} />
+      <KeyboardAvoidingView
+        style={styles.sheet}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        {/* Drag handle */}
+        <View style={styles.handleBar}>
+          <View style={styles.handle} />
+        </View>
+        <View style={styles.sheetHeader}>
+          <Text style={styles.sheetTitle}>{existingActivity ? 'Edit Activity' : 'New Activity'}</Text>
+          <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            <Text style={styles.sheetClose}>✕</Text>
+          </TouchableOpacity>
+        </View>
+      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
         <Text style={styles.sectionLabel}>ACTIVITY</Text>
         <TextInput
           style={styles.titleInput}
@@ -190,6 +247,85 @@ export function ActivityFormScreen({ route, navigation }: Props) {
             <Text style={[styles.toggleText, !isScheduled && styles.toggleTextSelected]}>📋 Someday</Text>
           </TouchableOpacity>
         </View>
+
+        {isScheduled && (
+          <>
+            <Text style={styles.sectionLabel}>DATE</Text>
+            <View style={styles.dateChipRow}>
+              <TouchableOpacity
+                style={[styles.dateChip, selectedDateStr === today && styles.dateChipSelected]}
+                onPress={() => pickDate(today)}
+              >
+                <Text style={[styles.dateChipText, selectedDateStr === today && styles.dateChipTextSelected]}>Today</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.dateChip, selectedDateStr === tomorrow && styles.dateChipSelected]}
+                onPress={() => pickDate(tomorrow)}
+              >
+                <Text style={[styles.dateChipText, selectedDateStr === tomorrow && styles.dateChipTextSelected]}>Tomorrow</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.dateChip, selectedDateStr !== today && selectedDateStr !== tomorrow && styles.dateChipSelected]}
+                onPress={() => { setCalendarMonth(parseISO(selectedDateStr + 'T00:00:00')); setShowCalendar(true); }}
+              >
+                <Text style={[styles.dateChipText, selectedDateStr !== today && selectedDateStr !== tomorrow && styles.dateChipTextSelected]}>
+                  {selectedDateStr !== today && selectedDateStr !== tomorrow
+                    ? format(parseISO(selectedDateStr + 'T00:00:00'), 'MMM d')
+                    : 'Pick date'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Calendar modal */}
+            <Modal visible={showCalendar} transparent animationType="slide">
+              <View style={styles.calendarOverlay}>
+                <View style={styles.calendarSheet}>
+                  <View style={styles.calendarHeader}>
+                    <TouchableOpacity onPress={() => setCalendarMonth(prev => addDays(startOfMonth(prev), -1))} style={styles.calendarNav}>
+                      <Text style={styles.calendarNavText}>‹</Text>
+                    </TouchableOpacity>
+                    <Text style={styles.calendarMonthLabel}>{format(calendarMonth, 'MMMM yyyy')}</Text>
+                    <TouchableOpacity onPress={() => setCalendarMonth(prev => addDays(endOfMonth(prev), 1))} style={styles.calendarNav}>
+                      <Text style={styles.calendarNavText}>›</Text>
+                    </TouchableOpacity>
+                  </View>
+                  <View style={styles.calendarWeekRow}>
+                    {['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'].map(d => (
+                      <Text key={d} style={styles.calendarWeekDay}>{d}</Text>
+                    ))}
+                  </View>
+                  <View style={styles.calendarGrid}>
+                    {calendarDays.map((day, i) => {
+                      const dayStr = format(day, 'yyyy-MM-dd');
+                      const inMonth = isSameMonth(day, calendarMonth);
+                      const isSelected = dayStr === selectedDateStr;
+                      const isToday = isSameDay(day, new Date());
+                      return (
+                        <TouchableOpacity
+                          key={i}
+                          style={[styles.calendarDay, isSelected && styles.calendarDaySelected]}
+                          onPress={() => { pickDate(dayStr); setShowCalendar(false); }}
+                        >
+                          <Text style={[
+                            styles.calendarDayText,
+                            !inMonth && styles.calendarDayMuted,
+                            isSelected && styles.calendarDayTextSelected,
+                            isToday && !isSelected && styles.calendarDayToday,
+                          ]}>
+                            {format(day, 'd')}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                  <TouchableOpacity style={styles.calendarDone} onPress={() => setShowCalendar(false)}>
+                    <Text style={styles.calendarDoneText}>Done</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </Modal>
+          </>
+        )}
 
         {isScheduled && (
           <>
@@ -339,13 +475,27 @@ export function ActivityFormScreen({ route, navigation }: Props) {
           )}
         </TouchableOpacity>
       </ScrollView>
-    </KeyboardAvoidingView>
+      </KeyboardAvoidingView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg },
-  content: { padding: 20, paddingBottom: 40 },
+  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)' },
+  overlayDismiss: { height: 60 },
+  sheet: {
+    flex: 1, backgroundColor: colors.bg,
+    borderTopLeftRadius: radii.sheet, borderTopRightRadius: radii.sheet,
+  },
+  handleBar: { alignItems: 'center', paddingTop: 10, paddingBottom: 4 },
+  handle: { width: 36, height: 4, borderRadius: 2, backgroundColor: colors.border },
+  sheetHeader: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: spacing.screen, paddingBottom: 8,
+  },
+  sheetTitle: { color: colors.text, fontSize: 18, fontWeight: '600' },
+  sheetClose: { color: colors.muted, fontSize: 20, fontWeight: '400' },
+  content: { padding: 20, paddingTop: 0, paddingBottom: 40 },
   sectionLabel: { color: colors.muted, fontSize: 12, fontWeight: '600', letterSpacing: 0.6, marginBottom: 8, marginTop: 20, textTransform: 'uppercase' },
   titleInput: {
     backgroundColor: colors.surface, borderRadius: radii.md, borderWidth: 1.5, borderColor: colors.border,
@@ -441,4 +591,42 @@ const styles = StyleSheet.create({
   },
   saveButtonDisabled: { opacity: 0.6 },
   saveButtonText: { color: '#fff', fontSize: 15, fontWeight: '600', letterSpacing: 0.3 },
+
+  // Date picker chips
+  dateChipRow: { flexDirection: 'row', gap: 8 },
+  dateChip: {
+    flex: 1, backgroundColor: colors.surface, borderRadius: radii.md,
+    paddingVertical: 10, alignItems: 'center', minHeight: 44,
+    borderWidth: 1.5, borderColor: colors.border,
+  },
+  dateChipSelected: { backgroundColor: colors.primaryBg, borderColor: colors.primary },
+  dateChipText: { color: colors.text2, fontSize: 13, fontWeight: '600' },
+  dateChipTextSelected: { color: colors.primary },
+
+  // Calendar modal
+  calendarOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.3)', justifyContent: 'flex-end' },
+  calendarSheet: {
+    backgroundColor: colors.surface, borderTopLeftRadius: radii.sheet, borderTopRightRadius: radii.sheet,
+    padding: spacing.xxl, paddingBottom: 40,
+  },
+  calendarHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
+  calendarNav: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
+  calendarNavText: { color: colors.primary, fontSize: 24, fontWeight: '600' },
+  calendarMonthLabel: { color: colors.text, fontSize: 16, fontWeight: '600' },
+  calendarWeekRow: { flexDirection: 'row', marginBottom: 8 },
+  calendarWeekDay: { flex: 1, textAlign: 'center', color: colors.muted, fontSize: 12, fontWeight: '600' },
+  calendarGrid: { flexDirection: 'row', flexWrap: 'wrap' },
+  calendarDay: {
+    width: '14.28%', aspectRatio: 1, alignItems: 'center', justifyContent: 'center',
+  },
+  calendarDaySelected: { backgroundColor: colors.primary, borderRadius: 20 },
+  calendarDayText: { color: colors.text, fontSize: 14, fontWeight: '500' },
+  calendarDayMuted: { color: colors.muted, opacity: 0.4 },
+  calendarDayTextSelected: { color: '#fff', fontWeight: '700' },
+  calendarDayToday: { color: colors.primary, fontWeight: '700' },
+  calendarDone: {
+    backgroundColor: colors.primary, borderRadius: radii.button,
+    paddingVertical: 14, alignItems: 'center', marginTop: 16,
+  },
+  calendarDoneText: { color: '#fff', fontSize: 15, fontWeight: '600' },
 });

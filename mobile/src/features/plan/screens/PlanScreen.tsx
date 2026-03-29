@@ -191,23 +191,25 @@ export function PlanScreen({ navigation }: Props) {
             </FadeInSection>
           )}
 
-          {/* Someday — grouped by category */}
+          {/* Someday — grouped by category, collapsed by default */}
           {somedayTasks.length > 0 && (
             <FadeInSection index={sectionIndex++}>
               <Section
                 title="Someday"
                 icon="💭"
                 count={somedayTasks.length}
+                defaultCollapsed={true}
+                maxHeight={360}
               >
                 {somedayGroups.map((group, gi) => (
-                  <React.Fragment key={group.categoryId}>
-                    <CategorySubHeader
-                      icon={group.categoryIcon}
-                      name={group.categoryName}
-                      count={group.tasks.length}
-                      categoryId={group.categoryId}
-                      isFirst={gi === 0}
-                    />
+                  <CollapsibleCategoryGroup
+                    key={group.categoryId}
+                    icon={group.categoryIcon}
+                    name={group.categoryName}
+                    count={group.tasks.length}
+                    categoryId={group.categoryId}
+                    isFirst={gi === 0}
+                  >
                     {group.tasks.map((t) => (
                       <SomedayRow
                         key={t.id}
@@ -217,7 +219,7 @@ export function PlanScreen({ navigation }: Props) {
                         onPress={() => navigation.navigate('ActivityDetail', { activityId: t.id })}
                       />
                     ))}
-                  </React.Fragment>
+                  </CollapsibleCategoryGroup>
                 ))}
               </Section>
             </FadeInSection>
@@ -244,14 +246,16 @@ export function PlanScreen({ navigation }: Props) {
 
 // ─── Collapsible section wrapper ─────────────────
 
-function Section({ title, icon, count, emptyText, children }: {
+function Section({ title, icon, count, emptyText, children, defaultCollapsed = false, maxHeight }: {
   title: string;
   icon: string;
   count: number;
   emptyText?: string;
   children: React.ReactNode;
+  defaultCollapsed?: boolean;
+  maxHeight?: number;
 }) {
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(defaultCollapsed);
   const chevronRotation = useRef(new Animated.Value(0)).current;
   const hasChildren = React.Children.toArray(children).length > 0;
 
@@ -291,11 +295,19 @@ function Section({ title, icon, count, emptyText, children }: {
         </Animated.Text>
       </Pressable>
       {!collapsed && (
-        <View style={styles.sectionBody}>
-          {hasChildren ? children : (
-            <Text style={styles.emptyText}>{emptyText ?? 'None'}</Text>
-          )}
-        </View>
+        maxHeight ? (
+          <ScrollView style={[styles.sectionBody, { maxHeight }]} nestedScrollEnabled showsVerticalScrollIndicator={false}>
+            {hasChildren ? children : (
+              <Text style={styles.emptyText}>{emptyText ?? 'None'}</Text>
+            )}
+          </ScrollView>
+        ) : (
+          <View style={styles.sectionBody}>
+            {hasChildren ? children : (
+              <Text style={styles.emptyText}>{emptyText ?? 'None'}</Text>
+            )}
+          </View>
+        )
       )}
     </View>
   );
@@ -303,18 +315,30 @@ function Section({ title, icon, count, emptyText, children }: {
 
 // ─── Category sub-header inside Someday ──────────
 
-function CategorySubHeader({ icon, name, count, categoryId, isFirst }: {
+function CollapsibleCategoryGroup({ icon, name, count, categoryId, isFirst, children }: {
   icon: string; name: string; count: number; categoryId: string; isFirst: boolean;
+  children: React.ReactNode;
 }) {
+  const [collapsed, setCollapsed] = useState(true);
   const catColor = getCategoryColor(categoryId);
 
   return (
-    <View style={[styles.catSubHeader, !isFirst && styles.catSubHeaderDivider]}>
-      <View style={[styles.catIconCircle, { backgroundColor: catColor.light }]}>
-        <Text style={styles.catSubIcon}>{icon}</Text>
-      </View>
-      <Text style={styles.catSubName}>{name}</Text>
-      <Text style={styles.catSubCount}>{count}</Text>
+    <View>
+      <Pressable
+        style={[styles.catSubHeader, !isFirst && styles.catSubHeaderDivider]}
+        onPress={() => {
+          LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+          setCollapsed(prev => !prev);
+        }}
+      >
+        <View style={[styles.catIconCircle, { backgroundColor: catColor.light }]}>
+          <Text style={styles.catSubIcon}>{icon}</Text>
+        </View>
+        <Text style={styles.catSubName}>{name}</Text>
+        <Text style={styles.catSubCount}>{count}</Text>
+        <Text style={[styles.catChevron, collapsed && styles.catChevronCollapsed]}>›</Text>
+      </Pressable>
+      {!collapsed && children}
     </View>
   );
 }
@@ -519,6 +543,13 @@ const styles = StyleSheet.create({
   catSubCount: {
     color: colors.muted, fontSize: 11, fontWeight: '600',
     fontVariant: ['tabular-nums'],
+  },
+  catChevron: {
+    color: colors.muted, fontSize: 16, fontWeight: '500',
+    width: 16, textAlign: 'center',
+  },
+  catChevronCollapsed: {
+    transform: [{ rotate: '-90deg' }],
   },
 
   // Rows

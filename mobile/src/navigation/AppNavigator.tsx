@@ -30,10 +30,17 @@ const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
 function TabIcon({ name, focused }: { name: string; focused: boolean }) {
-  const icons: Record<string, string> = {
-    Today: '☀️', Someday: '📋', Plan: '🌙', Insights: '🎯', Settings: '⚙️',
+  const labels: Record<string, string> = {
+    Today: '●', Plan: '◐', Insights: '◎', Settings: '◉',
   };
-  return <Text style={{ fontSize: 22, opacity: focused ? 1 : 0.6 }}>{icons[name] ?? '•'}</Text>;
+  return (
+    <Text style={{
+      fontSize: 14, color: focused ? '#2D4A3E' : '#C4BFB8',
+      fontWeight: focused ? '800' : '400',
+    }}>
+      {labels[name] ?? '•'}
+    </Text>
+  );
 }
 
 function TabNavigator() {
@@ -45,13 +52,13 @@ function TabNavigator() {
           backgroundColor: '#FFFFFF',
           borderTopColor: '#EDE8E1',
           borderTopWidth: 1,
-          height: 80,
-          paddingBottom: 16,
-          paddingTop: 8,
+          height: 64,
+          paddingBottom: 10,
+          paddingTop: 6,
         },
         tabBarActiveTintColor: '#2D4A3E',
         tabBarInactiveTintColor: '#9A9490',
-        tabBarLabelStyle: { fontSize: 11, fontWeight: '400', letterSpacing: 0.3 },
+        tabBarLabelStyle: { fontSize: 11, fontWeight: '500', letterSpacing: 0.3 },
         tabBarIcon: ({ focused }) => <TabIcon name={route.name} focused={focused} />,
       })}
     >
@@ -148,9 +155,11 @@ export function AppNavigator() {
             <Stack.Screen
               name="ActivityForm"
               component={ActivityFormScreen}
-              options={({ route }) => ({
-                title: (route.params as { activityId?: string })?.activityId ? 'Edit Activity' : 'New Activity',
-              })}
+              options={{
+                presentation: 'transparentModal',
+                headerShown: false,
+                animation: 'slide_from_bottom',
+              }}
             />
             <Stack.Screen
               name="ActivityDetail"

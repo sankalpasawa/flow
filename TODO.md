@@ -4,8 +4,8 @@
 
 - [x] **Plan Tab**: Next-day planning screen. Shows tomorrow's plan, carry-forward overdue items, someday backlog. Move tasks to tomorrow/someday. "Add to Tomorrow" CTA. (Recurring auto-populate deferred — needs instance generation system.)
 - [x] **Demo account seed**: `demo@dayflow.app` / `demo1234` — 210 tasks from Any.do export. Sign out from Settings to switch accounts. Both users share `dayflow_db` localStorage, partitioned by `user_id`.
-- [ ] **Date picker in ActivityForm**: Add ability to pick a specific date for an activity (today/tomorrow/pick date/someday). Currently the form takes date from route params only.
-- [ ] **Activity form as bottom sheet**: Per design spec, creation/editing should use iOS-style bottom sheets with drag handles, not full-screen navigation.
+- [x] **Date picker in ActivityForm**: Add ability to pick a specific date for an activity (today/tomorrow/pick date/someday). Currently the form takes date from route params only.
+- [x] **Activity form as bottom sheet**: Per design spec, creation/editing should use iOS-style bottom sheets with drag handles, not full-screen navigation.
 - [ ] **Unit tests**: Add tests for new features — search, carry-forward, task creation, activity type switching, overdue logic. Existing test infra in `src/__tests__/`.
 
 ## Medium Priority
@@ -44,5 +44,5 @@
 ## Bugs Known
 
 - [ ] DateStrip may not scroll to today on initial load (web-only, SectionList scrollToLocation doesn't work in react-native-web)
-- [ ] `assigned_date` not yet wired into ActivityFormScreen — tasks get assigned_date from route param but no date picker UI
+- [x] `assigned_date` not yet wired into ActivityFormScreen — tasks get assigned_date from route param but no date picker UI
 - [ ] SettingsScreen/LogFormScreen colors may need manual polish after bulk sed replacement

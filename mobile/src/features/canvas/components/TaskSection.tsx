@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
-import { colors, radii, shadows } from '../../../theme';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Dimensions } from 'react-native';
+import { colors, radii, shadows, spacing } from '../../../theme';
 import { Activity } from '../../../types';
 import { TaskItem } from './TaskItem';
 
@@ -14,6 +14,7 @@ interface Props {
 
 export function TaskSection({ tasks, onToggle, onPress, onQuickAdd, todayStr }: Props) {
   const [newTitle, setNewTitle] = useState('');
+  const [expanded, setExpanded] = useState(false);
 
   function handleSubmit() {
     if (!newTitle.trim()) return;
@@ -25,14 +26,14 @@ export function TaskSection({ tasks, onToggle, onPress, onQuickAdd, todayStr }: 
   const completed = tasks.filter(t => t.status === 'COMPLETED');
   const allTasks = [...planned, ...completed];
 
-  if (allTasks.length === 0 && !newTitle) {
+  if (allTasks.length === 0) {
     return (
-      <View style={styles.container}>
+      <View style={styles.containerCompact}>
         <View style={styles.quickAddRow}>
           <Text style={styles.quickAddIcon}>+</Text>
           <TextInput
             style={styles.quickAddInput}
-            placeholder="Add a task for today..."
+            placeholder="Add task..."
             placeholderTextColor={colors.muted}
             value={newTitle}
             onChangeText={setNewTitle}
@@ -45,39 +46,85 @@ export function TaskSection({ tasks, onToggle, onPress, onQuickAdd, todayStr }: 
     );
   }
 
+  const firstTask = allTasks[0];
+  const hasMore = allTasks.length > 1;
+
   return (
-    <View style={[styles.container, shadows.card]}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Tasks</Text>
-        <Text style={styles.headerCount}>{planned.length}</Text>
-      </View>
+    <View style={styles.container}>
+      {/* Header — tap to expand/collapse */}
+      <TouchableOpacity
+        style={styles.header}
+        onPress={() => setExpanded(!expanded)}
+        activeOpacity={0.7}
+      >
+        <View style={styles.headerLeft}>
+          <Text style={styles.headerTitle}>Tasks</Text>
+          {planned.length > 0 && (
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>{planned.length}</Text>
+            </View>
+          )}
+        </View>
+        <View style={styles.headerRight}>
+          {completed.length > 0 && (
+            <Text style={styles.completedText}>{completed.length} done</Text>
+          )}
+          {hasMore && (
+            <Text style={[styles.chevron, expanded && styles.chevronUp]}>
+              {expanded ? '‹' : '›'}
+            </Text>
+          )}
+        </View>
+      </TouchableOpacity>
 
-      {allTasks.map((task) => {
-        const isOverdue = task.assigned_date !== null && task.assigned_date < todayStr && task.status === 'PLANNED';
-        return (
-          <TaskItem
-            key={task.id}
-            task={task}
-            onPress={() => onPress(task.id)}
-            onToggle={() => onToggle(task.id)}
-            isOverdue={isOverdue}
-          />
-        );
-      })}
-
-      <View style={styles.quickAddRow}>
-        <Text style={styles.quickAddIcon}>+</Text>
-        <TextInput
-          style={styles.quickAddInput}
-          placeholder="Add a task..."
-          placeholderTextColor={colors.muted}
-          value={newTitle}
-          onChangeText={setNewTitle}
-          onSubmitEditing={handleSubmit}
-          returnKeyType="done"
-          maxLength={80}
+      {/* Collapsed: show first task only */}
+      {!expanded && (
+        <TaskItem
+          task={firstTask}
+          onPress={() => onPress(firstTask.id)}
+          onToggle={() => onToggle(firstTask.id)}
+          isOverdue={firstTask.assigned_date !== null && firstTask.assigned_date < todayStr && firstTask.status === 'PLANNED'}
         />
-      </View>
+      )}
+
+      {/* Expanded: show all tasks in scrollable area — 60% of screen */}
+      {expanded && (
+        <ScrollView
+          style={{ maxHeight: Dimensions.get('window').height * 0.6 }}
+          showsVerticalScrollIndicator={false}
+          nestedScrollEnabled
+        >
+          {allTasks.map((task) => {
+            const isOverdue = task.assigned_date !== null && task.assigned_date < todayStr && task.status === 'PLANNED';
+            return (
+              <TaskItem
+                key={task.id}
+                task={task}
+                onPress={() => onPress(task.id)}
+                onToggle={() => onToggle(task.id)}
+                isOverdue={isOverdue}
+              />
+            );
+          })}
+        </ScrollView>
+      )}
+
+      {/* Quick add — only when expanded */}
+      {expanded && (
+        <View style={styles.quickAddRow}>
+          <Text style={styles.quickAddIcon}>+</Text>
+          <TextInput
+            style={styles.quickAddInput}
+            placeholder="Add task..."
+            placeholderTextColor={colors.muted}
+            value={newTitle}
+            onChangeText={setNewTitle}
+            onSubmitEditing={handleSubmit}
+            returnKeyType="done"
+            maxLength={80}
+          />
+        </View>
+      )}
     </View>
   );
 }
@@ -86,30 +133,58 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: colors.surface,
     borderRadius: radii.card,
-    marginHorizontal: 12,
-    marginBottom: 16,
+    marginHorizontal: spacing.md,
+    marginBottom: spacing.sm,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  containerCompact: {
+    backgroundColor: colors.surface,
+    borderRadius: radii.sm,
+    marginHorizontal: spacing.md,
+    marginBottom: spacing.sm,
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: colors.border,
   },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 16, paddingVertical: 10,
+    paddingHorizontal: 12, paddingVertical: 6,
     borderBottomWidth: 1, borderBottomColor: colors.border,
   },
-  headerTitle: { color: colors.text, fontSize: 13, fontWeight: '600', letterSpacing: 0.5, textTransform: 'uppercase' },
-  headerCount: {
-    color: colors.muted, fontSize: 12, fontWeight: '600',
-    backgroundColor: colors.surface2, borderRadius: 10,
-    paddingHorizontal: 8, paddingVertical: 2,
+  headerLeft: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+  },
+  headerRight: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+  },
+  headerTitle: {
+    color: colors.text, fontSize: 12, fontWeight: '600',
+    letterSpacing: 0.4, textTransform: 'uppercase',
+  },
+  badge: {
+    backgroundColor: colors.primary, borderRadius: 8,
+    paddingHorizontal: 6, paddingVertical: 1, minWidth: 18,
+    alignItems: 'center',
+  },
+  badgeText: { color: '#fff', fontSize: 10, fontWeight: '700' },
+  completedText: { color: colors.muted, fontSize: 10, fontWeight: '500' },
+  chevron: {
+    color: colors.muted, fontSize: 16, fontWeight: '500',
+    transform: [{ rotate: '90deg' }],
+  },
+  chevronUp: {
+    transform: [{ rotate: '-90deg' }],
   },
   quickAddRow: {
-    flexDirection: 'row', alignItems: 'center', gap: 10,
-    paddingHorizontal: 16, paddingVertical: 8,
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    paddingHorizontal: 12, paddingVertical: 4,
+    borderTopWidth: 1, borderTopColor: colors.border,
   },
-  quickAddIcon: { color: colors.primary, fontSize: 18, fontWeight: '600' },
+  quickAddIcon: { color: colors.primary, fontSize: 14, fontWeight: '600' },
   quickAddInput: {
-    flex: 1, color: colors.text, fontSize: 14,
-    paddingVertical: 6, minHeight: 36,
+    flex: 1, color: colors.text, fontSize: 13,
+    paddingVertical: 4, minHeight: 28,
   },
 });
