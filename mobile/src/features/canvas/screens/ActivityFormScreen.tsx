@@ -215,6 +215,8 @@ export function ActivityFormScreen({ route, navigation }: Props) {
 
   const ITEM_HEIGHT = 44;
 
+  const isPast = existingActivity && new Date(existingActivity.start_time).getTime() + existingActivity.duration_minutes * 60000 < Date.now();
+
   return (
     <View style={styles.overlay}>
       <TouchableOpacity style={styles.overlayDismiss} activeOpacity={1} onPress={() => navigation.goBack()} />
@@ -234,6 +236,18 @@ export function ActivityFormScreen({ route, navigation }: Props) {
         </View>
 
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+          {/* Log Experience — prominent at top for past activities */}
+          {isPast && (
+            <TouchableOpacity
+              style={styles.logButtonTop}
+              onPress={() => navigation.navigate('LogForm', { activityId: existingActivity!.id })}
+              accessibilityLabel="Log experience"
+              accessibilityRole="button"
+            >
+              <Text style={styles.logButtonTopText}>Log Experience</Text>
+            </TouchableOpacity>
+          )}
+
           {/* Title — hero input */}
           <TextInput
             style={styles.titleInput}
@@ -297,13 +311,24 @@ export function ActivityFormScreen({ route, navigation }: Props) {
                 </Text>
               </TouchableOpacity>
             ))}
+            {isCustomDuration && !showCustomDuration ? (
+              <TouchableOpacity
+                style={[styles.durationPill, styles.durationPillSelected]}
+                onPress={() => setShowCustomDuration(true)}
+                accessibilityLabel="Custom duration"
+              >
+                <Text style={[styles.durationPillText, styles.durationPillTextSelected]}>
+                  {`${duration}m`}
+                </Text>
+              </TouchableOpacity>
+            ) : null}
             <TouchableOpacity
-              style={[styles.durationPill, isCustomDuration && styles.durationPillSelected]}
-              onPress={() => setShowCustomDuration(true)}
+              style={[styles.durationPillCircle, showCustomDuration && styles.durationPillSelected]}
+              onPress={() => setShowCustomDuration(prev => !prev)}
               accessibilityLabel="Custom duration"
             >
-              <Text style={[styles.durationPillText, isCustomDuration && styles.durationPillTextSelected]}>
-                {isCustomDuration ? `${duration}m` : 'Custom'}
+              <Text style={[styles.durationPillCircleText, showCustomDuration && styles.durationPillTextSelected]}>
+                +
               </Text>
             </TouchableOpacity>
           </View>
@@ -463,14 +488,16 @@ export function ActivityFormScreen({ route, navigation }: Props) {
 
           {existingActivity && (
             <>
-              <TouchableOpacity
-                style={styles.logButton}
-                onPress={() => navigation.navigate('LogForm', { activityId: existingActivity.id })}
-                accessibilityLabel="Log experience"
-                accessibilityRole="button"
-              >
-                <Text style={styles.logButtonText}>Log Experience</Text>
-              </TouchableOpacity>
+              {!isPast && (
+                <TouchableOpacity
+                  style={styles.logButton}
+                  onPress={() => navigation.navigate('LogForm', { activityId: existingActivity.id })}
+                  accessibilityLabel="Log experience"
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.logButtonText}>Log Experience</Text>
+                </TouchableOpacity>
+              )}
 
               <TouchableOpacity
                 style={styles.deleteButton}
@@ -818,7 +845,19 @@ const styles = StyleSheet.create({
     minHeight: 80, textAlignVertical: 'top',
   },
 
+  // Duration pill — circular "+" button
+  durationPillCircle: {
+    backgroundColor: colors.surface2, borderRadius: 18,
+    width: 36, height: 36, alignItems: 'center', justifyContent: 'center',
+  },
+  durationPillCircleText: { color: colors.text2, fontSize: 18, fontWeight: '600' },
+
   // Buttons
+  logButtonTop: {
+    backgroundColor: colors.primary, borderRadius: radii.button,
+    paddingVertical: 14, alignItems: 'center', marginBottom: 8, minHeight: 44,
+  },
+  logButtonTopText: { color: '#fff', fontSize: 15, fontWeight: '600', letterSpacing: 0.3 },
   logButton: {
     backgroundColor: colors.primaryBg, borderRadius: radii.button,
     paddingVertical: 16, alignItems: 'center', marginTop: 24, minHeight: 44,
