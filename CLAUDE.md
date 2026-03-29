@@ -75,15 +75,30 @@ The web DB (`db.web.ts`) is a custom in-memory SQL parser, NOT real SQLite. It s
 - **Use agents for parallel work**: Spawn subagents for independent tasks (reading files, running reviews, fixing separate bugs). Don't do everything sequentially.
 - **Always create task lists**: Use TaskCreate for any multi-step work to track progress visibly.
 
+## Design Principles (from user)
+1. **Auto-scroll to current time** — canvas always opens focused on now
+2. **Strong natural colors** — not faded/pastel. Rich, warm, vibrant
+3. **Duration = visual height** — activity blocks height matches their time span (calendar-style)
+4. **Micro-interactions everywhere** — swipe to complete, haptics, pull to refresh, smooth transitions
+5. **Swipeable date strip** — thumb-friendly horizontal swipe, no arrow buttons
+6. **Modern depth** — proper shadows, pixel-perfect alignment, 4px grid spacing
+7. **Infinite day scroll** — after 11 PM scrolling continues to next day, date updates
+8. **No middle screen** — tapping activity goes directly to edit (bottom sheet), not detail view
+9. **No would_repeat** — remove from log form, unnecessary friction
+10. **No completion circles** — remove checkbox from cards, use horizontal swipe gesture instead
+11. **Horizontal swipe to complete** — swipe right to mark done
+12. **Clean means beautiful, not bare** — keep useful info (category, duration), remove noise (mindset on card, badges)
+13. **Always persist instructions** — every decision goes to CLAUDE.md/TODO.md and gets pushed to git
+
 ## What to Work On
 Read `TODO.md` for the full list. Top priorities:
-1. DB abstraction refactor (see Architecture Debt above)
-2. Goals feature follow-up (seed goals data, AI-powered goal suggestions, goal editing)
-2. Unit tests for new features
-3. Settings screen toggles (notifications, mindset prompts, quiet hours)
-4. Warm theme polish for remaining screens
+1. Canvas rewrite: duration-proportional blocks, infinite day scroll, auto-scroll to now
+2. Swipe gestures: complete activities, swipeable date strip
+3. Goals feature follow-up (seed goals data, AI suggestions, editing)
+4. Unit tests for new features
 
 ## Running on Device
 - Run `npx expo start` from `mobile/` directory
 - Scan the QR code with iPhone camera to open in Expo Go
 - Web: `npx expo start --web` then open http://localhost:8081
+- SDK 54 for Expo Go compatibility
