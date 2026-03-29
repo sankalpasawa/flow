@@ -7,6 +7,16 @@ export async function getDb(): Promise<SQLite.SQLiteDatabase> {
   if (_db) return _db;
   _db = await SQLite.openDatabaseAsync('dayflow.db');
   await _db.execAsync(CREATE_TABLES_SQL);
+
+  // Migrations: add columns that may be missing from older DB versions
+  const migrations = [
+    `ALTER TABLE activities ADD COLUMN activity_type TEXT NOT NULL DEFAULT 'TIME_BLOCK'`,
+    `ALTER TABLE activities ADD COLUMN assigned_date TEXT`,
+  ];
+  for (const sql of migrations) {
+    try { await _db.execAsync(sql); } catch { /* column already exists */ }
+  }
+
   return _db;
 }
 
