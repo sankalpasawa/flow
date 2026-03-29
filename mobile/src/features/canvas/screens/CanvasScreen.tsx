@@ -31,7 +31,7 @@ interface HourSlot {
 
 function buildHourSlots(activities: Activity[], date: Date): HourSlot[] {
   const slots: HourSlot[] = [];
-  for (let h = 0; h < 24; h++) {
+  for (let h = 6; h < 24; h++) {
     const items = activities.filter((a) => {
       const start = parseISO(a.start_time);
       return start.getHours() === h && isSameDay(start, date);
@@ -120,6 +120,7 @@ export function CanvasScreen({ navigation }: Props) {
           >
             {slots.map((slot) => {
               const isCurrentHour = isToday && slot.hourNum === now.getHours();
+              const isPast = isToday && slot.hourNum < now.getHours();
               const hasItems = slot.items.length > 0;
 
               return (
@@ -129,6 +130,7 @@ export function CanvasScreen({ navigation }: Props) {
                     <Text style={[styles.hourLabel, isCurrentHour && styles.hourNow]}>
                       {slot.hour}
                     </Text>
+                    {isCurrentHour && <View style={styles.nowDot} />}
                     <View style={[styles.hourLine, isCurrentHour && styles.hourLineNow]} />
                   </View>
 
@@ -141,15 +143,16 @@ export function CanvasScreen({ navigation }: Props) {
                       const isCurrentlyActive = isWithinInterval(now, { start: actStart, end: actEnd }) && isToday;
                       const isOverdue = activity.status === 'PLANNED' && actStart < now && !isSameDay(actStart, now);
                       return (
-                        <ActivityCard
-                          key={activity.id}
-                          activity={activity}
-                          log={log}
-                          isNow={isCurrentlyActive}
-                          isOverdue={isOverdue}
-                          onPress={() => navigation.navigate('ActivityDetail', { activityId: activity.id })}
-                          onQuickComplete={() => quickToggleComplete(activity.id)}
-                        />
+                        <View key={activity.id} style={isPast ? { opacity: 0.7 } : undefined}>
+                          <ActivityCard
+                            activity={activity}
+                            log={log}
+                            isNow={isCurrentlyActive}
+                            isOverdue={isOverdue}
+                            onPress={() => navigation.navigate('ActivityDetail', { activityId: activity.id })}
+                            onQuickComplete={() => quickToggleComplete(activity.id)}
+                          />
+                        </View>
                       );
                     })
                   ) : (
@@ -187,10 +190,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.screen, paddingTop: 12, paddingBottom: 2,
   },
   headerTitle: {
-    color: colors.text, fontSize: 22, fontWeight: '700', letterSpacing: -0.3,
+    color: colors.text, fontSize: 28, fontWeight: '700', letterSpacing: -0.6,
   },
   searchBtn: {
-    width: 32, height: 32, borderRadius: 16,
+    width: 40, height: 40, borderRadius: 20,
     alignItems: 'center', justifyContent: 'center',
   },
   searchIcon: { color: colors.muted, fontSize: 20 },
@@ -209,17 +212,19 @@ const styles = StyleSheet.create({
     height: 24,
   },
   hourLabel: {
-    color: colors.muted, fontSize: 11, fontWeight: '500',
+    color: colors.muted, fontSize: 12, fontWeight: '600',
     width: 42,
   },
   hourNow: { color: colors.terra, fontWeight: '700' },
-  hourLine: { flex: 1, height: 0.5, backgroundColor: colors.border },
-  hourLineNow: { height: 1.5, backgroundColor: colors.terra, opacity: 0.6 },
+  hourLine: { flex: 1, height: 1, backgroundColor: colors.border },
+  hourLineNow: { height: 2, backgroundColor: colors.terra, opacity: 0.8 },
+  nowDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.terra, marginRight: 4 },
 
-  // Empty slot — subtle tap target
+  // Empty slot — subtle dotted line tap target
   emptyTap: {
-    height: 28, marginLeft: 54, marginRight: 12,
-    justifyContent: 'center',
+    height: 32, marginLeft: 54, marginRight: 12,
+    borderBottomWidth: 1, borderBottomColor: colors.border, borderStyle: 'dashed',
+    opacity: 0.3,
   },
 
   // FAB

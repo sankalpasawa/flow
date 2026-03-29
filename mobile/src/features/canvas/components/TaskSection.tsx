@@ -47,7 +47,6 @@ export function TaskSection({ tasks, onToggle, onPress, onQuickAdd, todayStr }: 
     );
   }
 
-  const firstTask = allTasks[0];
   const hasMore = allTasks.length > 1;
 
   return (
@@ -78,15 +77,16 @@ export function TaskSection({ tasks, onToggle, onPress, onQuickAdd, todayStr }: 
         </View>
       </TouchableOpacity>
 
-      {/* Collapsed: show first task only */}
-      {!expanded && (
+      {/* Collapsed: show up to 3 tasks */}
+      {!expanded && allTasks.slice(0, 3).map((task) => (
         <TaskItem
-          task={firstTask}
-          onPress={() => onPress(firstTask.id)}
-          onToggle={() => onToggle(firstTask.id)}
-          isOverdue={firstTask.assigned_date !== null && firstTask.assigned_date < todayStr && firstTask.status === 'PLANNED'}
+          key={task.id}
+          task={task}
+          onPress={() => onPress(task.id)}
+          onToggle={() => onToggle(task.id)}
+          isOverdue={task.assigned_date !== null && task.assigned_date < todayStr && task.status === 'PLANNED'}
         />
-      )}
+      ))}
 
       {/* Expanded: show all tasks in scrollable area — 60% of screen */}
       {expanded && (
@@ -153,7 +153,7 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 12, paddingVertical: 6,
+    paddingHorizontal: 14, paddingVertical: 10,
     borderBottomWidth: 1, borderBottomColor: colors.border,
   },
   headerLeft: {
@@ -163,8 +163,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 8,
   },
   headerTitle: {
-    color: colors.text, fontSize: 12, fontWeight: '600',
-    letterSpacing: 0.4, textTransform: 'uppercase',
+    color: colors.text, fontSize: 14, fontWeight: '600',
+    letterSpacing: 0.4,
   },
   badge: {
     backgroundColor: colors.primary, borderRadius: 8,
@@ -172,7 +172,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   badgeText: { color: '#fff', fontSize: 10, fontWeight: '700' },
-  completedText: { color: colors.muted, fontSize: 10, fontWeight: '500' },
+  completedText: { color: colors.muted, fontSize: 12, fontWeight: '500' },
   chevron: {
     color: colors.muted, fontSize: 16, fontWeight: '500',
     transform: [{ rotate: '90deg' }],

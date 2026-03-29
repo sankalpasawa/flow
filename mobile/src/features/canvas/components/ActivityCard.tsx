@@ -49,7 +49,7 @@ export function ActivityCard({ activity, log, onPress, onQuickComplete, isNow, i
             !isDone && { borderWidth: 1.5, borderColor: catColor.solid + '50' },
           ]}
           onPress={(e) => { e.stopPropagation?.(); onQuickComplete?.(); }}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
           {isDone && <Text style={styles.check}>✓</Text>}
         </Pressable>
@@ -71,12 +71,6 @@ export function ActivityCard({ activity, log, onPress, onQuickComplete, isNow, i
         </View>
       </View>
 
-      {/* Mindset prompt — subtle italic */}
-      {activity.mindset_prompt && !isDone && (
-        <Text style={styles.mindset} numberOfLines={1}>
-          {activity.mindset_prompt}
-        </Text>
-      )}
     </AnimatedPressable>
   );
 }
@@ -88,12 +82,14 @@ function moodColor(mood: number): string {
 
 const styles = StyleSheet.create({
   card: {
-    borderLeftWidth: 3,
-    borderRadius: radii.sm,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    marginBottom: 4,
+    borderLeftWidth: 2,
+    borderRadius: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    marginBottom: 8,
     marginHorizontal: 12,
+    borderWidth: 0.5,
+    borderColor: colors.border,
   },
   nowCard: {
     borderLeftWidth: 4,
@@ -105,13 +101,13 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   circle: {
-    width: 22, height: 22, borderRadius: 11,
+    width: 26, height: 26, borderRadius: 13,
     alignItems: 'center', justifyContent: 'center',
   },
-  check: { color: '#fff', fontSize: 11, fontWeight: '700' },
+  check: { color: '#fff', fontSize: 13, fontWeight: '700' },
   content: { flex: 1 },
   title: {
-    color: colors.text, fontSize: 14, fontWeight: '500',
+    color: colors.text, fontSize: 16, fontWeight: '600',
   },
   titleDone: {
     textDecorationLine: 'line-through', color: colors.muted,
@@ -120,16 +116,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row', gap: 8, marginTop: 2,
   },
   meta: {
-    color: colors.text2, fontSize: 11,
+    color: colors.text2, fontSize: 12,
   },
   indicators: {
     flexDirection: 'row', gap: 4, alignItems: 'center',
   },
   dot: {
     width: 7, height: 7, borderRadius: 4,
-  },
-  mindset: {
-    color: colors.primaryLight, fontSize: 11, fontStyle: 'italic',
-    marginTop: 6, marginLeft: 32, opacity: 0.7,
   },
 });

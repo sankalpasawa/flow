@@ -6,15 +6,15 @@ export const colors = {
   surface: '#FFFFFF',
   surface2: '#F4F0EA',
   text: '#1A1A1A',
-  text2: '#5A5550',
-  muted: '#9A9490',
-  border: '#F0EAE0',
+  text2: '#4B4642',
+  muted: '#746E69',
+  border: '#DED6CA',
   shadow: 'rgba(45,74,62,0.10)',
 
   // Primary (Deep Work green)
   primary: '#2D4A3E',
   primaryLight: '#3D6454',
-  primaryBg: '#EBF2EE',
+  primaryBg: '#E3ECE6',
 
   // Category palette
   terra: '#C4795B',

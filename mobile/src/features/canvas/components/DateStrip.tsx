@@ -67,7 +67,7 @@ export function DateStrip({ selectedDate, onSelectDate }: Props) {
                 accessibilityState={{ selected: isSelected }}
               >
                 <Text style={[styles.dayName, isSelected && styles.textSelected, isToday && !isSelected && styles.dayNameToday]}>
-                  {format(date, 'EEE').toUpperCase()}
+                  {format(date, 'EEE')}
                 </Text>
                 <Text style={[styles.dayNum, isSelected && styles.textSelected, isToday && !isSelected && styles.dayNumToday]}>
                   {format(date, 'd')}
@@ -168,18 +168,18 @@ const styles = StyleSheet.create({
     justifyContent: 'space-evenly',
   },
   chip: {
-    width: 44, height: 52,
+    width: 48, height: 60,
     alignItems: 'center', justifyContent: 'center',
     borderRadius: radii.sm,
   },
   chipSelected: { backgroundColor: colors.primary },
   chipToday: { backgroundColor: colors.primaryBg },
   dayName: {
-    fontSize: 10, fontWeight: '500', color: colors.muted,
+    fontSize: 11, fontWeight: '500', color: colors.muted,
     letterSpacing: 0.4, marginBottom: 2,
   },
   dayNameToday: { color: colors.primary },
-  dayNum: { fontSize: 17, fontWeight: '600', color: colors.text },
+  dayNum: { fontSize: 19, fontWeight: '600', color: colors.text },
   dayNumToday: { color: colors.primary },
   textSelected: { color: '#FFFFFF' },
 
