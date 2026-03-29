@@ -179,11 +179,9 @@ export function PlanScreen({ navigation }: Props) {
           contentContainerStyle={styles.scrollContent}
         >
           {/* Goals Section */}
-          {goalsWithProgress.length > 0 && (
-            <FadeInSection index={sectionIndex++}>
-              <GoalSection goals={goalsWithProgress} navigation={navigation} />
-            </FadeInSection>
-          )}
+          <FadeInSection index={sectionIndex++}>
+            <GoalSection goals={goalsWithProgress} navigation={navigation} />
+          </FadeInSection>
 
           {/* Goal Suggestion — behind on a goal */}
           {behindGoal && (
