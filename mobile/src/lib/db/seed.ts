@@ -307,6 +307,7 @@ function buildActivities(): { activities: SeedActivity[]; logs: SeedLog[] } {
     { id: uuid(), activity_type: 'TASK', title: 'Clean badminton racket', start_time: now, duration_minutes: 0, category_id: 'cust-chores', assigned_date: todayDate, is_scheduled: false, status: 'PLANNED', priority: 'LOW', recurrence_type: 'NONE', mindset_prompt: null, actual_start: null, actual_end: null },
     { id: uuid(), activity_type: 'TASK', title: 'Anand meeting follow up', start_time: now, duration_minutes: 0, category_id: 'sys-personal', assigned_date: todayDate, is_scheduled: false, status: 'PLANNED', priority: 'HIGH', recurrence_type: 'NONE', mindset_prompt: null, actual_start: null, actual_end: null },
     { id: uuid(), activity_type: 'TASK', title: 'password for google doc', start_time: now, duration_minutes: 0, category_id: 'sys-personal', assigned_date: todayDate, is_scheduled: false, status: 'COMPLETED', priority: 'MEDIUM', recurrence_type: 'NONE', mindset_prompt: null, actual_start: null, actual_end: now },
+    { id: uuid(), activity_type: 'TASK', title: 'Credit card', start_time: now, duration_minutes: 0, category_id: 'sys-personal', assigned_date: todayDate, is_scheduled: false, status: 'PLANNED', priority: 'HIGH', recurrence_type: 'NONE', mindset_prompt: null, actual_start: null, actual_end: null },
     // Yesterday's overdue task (should carry forward)
     { id: uuid(), activity_type: 'TASK', title: 'Shriraj wallet', start_time: now, duration_minutes: 0, category_id: 'sys-personal', assigned_date: yesterdayDate, is_scheduled: false, status: 'PLANNED', priority: 'MEDIUM', recurrence_type: 'NONE', mindset_prompt: null, actual_start: null, actual_end: null },
     { id: uuid(), activity_type: 'TASK', title: 'Photo on ig about shreyaa', start_time: now, duration_minutes: 0, category_id: 'sys-personal', assigned_date: yesterdayDate, is_scheduled: false, status: 'PLANNED', priority: 'LOW', recurrence_type: 'NONE', mindset_prompt: null, actual_start: null, actual_end: null },
@@ -366,6 +367,7 @@ function buildActivities(): { activities: SeedActivity[]; logs: SeedLog[] } {
     { id: uuid(), title: 'Logic gates', start_time: now, duration_minutes: 45, category_id: 'cust-duniyadari', activity_type: 'TASK', assigned_date: null, is_scheduled: false, status: 'PLANNED', priority: 'LOW', recurrence_type: 'NONE', mindset_prompt: null, actual_start: null, actual_end: null },
     { id: uuid(), title: 'Play Vice City', start_time: now, duration_minutes: 60, category_id: 'sys-rest', activity_type: 'TASK', assigned_date: null, is_scheduled: false, status: 'PLANNED', priority: 'LOW', recurrence_type: 'NONE', mindset_prompt: null, actual_start: null, actual_end: null },
     { id: uuid(), title: 'Manjuman boys', start_time: now, duration_minutes: 60, category_id: 'sys-rest', activity_type: 'TASK', assigned_date: null, is_scheduled: false, status: 'PLANNED', priority: 'LOW', recurrence_type: 'NONE', mindset_prompt: null, actual_start: null, actual_end: null },
+    { id: uuid(), title: 'Hdhdhd', start_time: now, duration_minutes: 0, category_id: 'sys-personal', activity_type: 'TASK', assigned_date: null, is_scheduled: false, status: 'PLANNED', priority: 'LOW', recurrence_type: 'NONE', mindset_prompt: null, actual_start: null, actual_end: null },
   );
 
   return { activities, logs };
@@ -375,7 +377,7 @@ export async function seedDummyData(): Promise<void> {
   if (typeof localStorage === 'undefined') return;
 
   // Check if already seeded with latest version (bump to re-seed)
-  const SEED_VERSION = '7';
+  const SEED_VERSION = '8';
   if (localStorage.getItem('dayflow_seed_version') === SEED_VERSION) return;
 
   // Write directly to localStorage, bypassing the web DB's SQL parser
