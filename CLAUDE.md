@@ -69,9 +69,16 @@ The web DB (`db.web.ts`) is a custom in-memory SQL parser, NOT real SQLite. It s
 - LEFT JOIN bug was fixed: `prefixRow` no longer overwrites base table columns with joined table columns
 - Both user accounts share the same `dayflow_db` localStorage key; rows are partitioned by `user_id`
 
+## Architecture Debt — Prioritize Before Next Feature
+- **DB abstraction layer**: The web DB (`db.web.ts`) and native SQLite (`db.ts`) have no shared interface. Seed, queries, and schema live in separate paths. Refactor into one `DatabaseAdapter` interface with web and native implementations. This removes the dual-path seeding hack and prevents "missing column" bugs (schema.ts must match what queries expect).
+- **Schema as source of truth**: `schema.ts` defines native tables, but `db.web.ts` creates tables lazily. Any new column must be added in BOTH places. Unify this.
+- **Use agents for parallel work**: Spawn subagents for independent tasks (reading files, running reviews, fixing separate bugs). Don't do everything sequentially.
+- **Always create task lists**: Use TaskCreate for any multi-step work to track progress visibly.
+
 ## What to Work On
 Read `TODO.md` for the full list. Top priorities:
-1. Goals feature follow-up (seed goals data, AI-powered goal suggestions, goal editing)
+1. DB abstraction refactor (see Architecture Debt above)
+2. Goals feature follow-up (seed goals data, AI-powered goal suggestions, goal editing)
 2. Unit tests for new features
 3. Settings screen toggles (notifications, mindset prompts, quiet hours)
 4. Warm theme polish for remaining screens
