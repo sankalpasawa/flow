@@ -396,7 +396,7 @@ function buildGoals(): SeedGoal[] {
 }
 
 export async function seedDummyData(): Promise<void> {
-  const SEED_VERSION = '11';
+  const SEED_VERSION = '12';
   const isWeb = typeof localStorage !== 'undefined';
 
   // Check if already seeded
@@ -462,6 +462,11 @@ export async function seedDummyData(): Promise<void> {
     // Native: use SQLite via getDb
     try {
       const db = await getDb();
+      // Delete existing seed data before re-inserting (FK order: logs → activities → goals → categories)
+      await db.runAsync('DELETE FROM experience_logs WHERE user_id = ?', [USER_ID]);
+      await db.runAsync('DELETE FROM activities WHERE user_id = ?', [USER_ID]);
+      await db.runAsync('DELETE FROM goals WHERE user_id = ?', [USER_ID]);
+      await db.runAsync('DELETE FROM categories WHERE user_id = ? OR user_id IS NULL', [USER_ID]);
       for (const c of categoryRows) {
         await db.runAsync(
           `INSERT OR IGNORE INTO categories (id, user_id, name, color, icon, is_system, sort_order, synced) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
