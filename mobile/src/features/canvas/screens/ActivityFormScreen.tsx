@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator,
-  Modal, Animated,
+  Modal, Animated, Alert,
 } from 'react-native';
 import { format, parseISO, addMinutes, addDays, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay } from 'date-fns';
 import { useAuthStore } from '../../../store/authStore';
@@ -46,7 +46,7 @@ const ALL_WEEKDAYS: Weekday[] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'
 export function ActivityFormScreen({ route, navigation }: Props) {
   const { activityId, startHour, date, backlog } = route.params ?? {};
   const { user } = useAuthStore();
-  const { activities, untimedTasks, backlog: storeBacklog, planActivities, planTasks, carryForward, addActivity, editActivity } = useActivitiesStore();
+  const { activities, untimedTasks, backlog: storeBacklog, planActivities, planTasks, carryForward, addActivity, editActivity, removeActivity } = useActivitiesStore();
   const existingActivity = activityId
     ? (activities.find(a => a.id === activityId)
       || untimedTasks.find(a => a.id === activityId)
@@ -512,6 +512,47 @@ export function ActivityFormScreen({ route, navigation }: Props) {
           <Text style={{ color: '#FCA5A5', fontSize: 14, textAlign: 'center', marginTop: 12 }}>{errorMessage}</Text>
         )}
 
+        {existingActivity && (
+          <>
+            <TouchableOpacity
+              style={styles.logButton}
+              onPress={() => navigation.navigate('LogForm', { activityId: existingActivity.id })}
+              accessibilityLabel="Log experience"
+              accessibilityRole="button"
+            >
+              <Text style={styles.logButtonText}>Log Experience</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.deleteButton}
+              onPress={() => {
+                const doDelete = () => {
+                  removeActivity(existingActivity.id);
+                  navigation.goBack();
+                };
+                if (Platform.OS === 'web') {
+                  if (window.confirm('Delete this activity? This cannot be undone.')) {
+                    doDelete();
+                  }
+                } else {
+                  Alert.alert(
+                    'Delete Activity',
+                    'Delete this activity? This cannot be undone.',
+                    [
+                      { text: 'Cancel', style: 'cancel' },
+                      { text: 'Delete', style: 'destructive', onPress: doDelete },
+                    ],
+                  );
+                }
+              }}
+              accessibilityLabel="Delete activity"
+              accessibilityRole="button"
+            >
+              <Text style={styles.deleteButtonText}>Delete Activity</Text>
+            </TouchableOpacity>
+          </>
+        )}
+
         <TouchableOpacity
           style={[styles.saveButton, saving && styles.saveButtonDisabled]}
           onPress={handleSave}
@@ -636,6 +677,15 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center',
   },
   subtaskAddBtnText: { color: '#fff', fontSize: 18 },
+  logButton: {
+    backgroundColor: colors.primaryBg, borderRadius: radii.button,
+    paddingVertical: 16, alignItems: 'center', marginTop: 24, minHeight: 44,
+  },
+  logButtonText: { color: colors.primary, fontSize: 15, fontWeight: '600', letterSpacing: 0.3 },
+  deleteButton: {
+    paddingVertical: 14, alignItems: 'center', marginTop: 12, minHeight: 44,
+  },
+  deleteButtonText: { color: colors.danger, fontSize: 14, fontWeight: '600' },
   saveButton: {
     backgroundColor: colors.primary, borderRadius: radii.button,
     paddingVertical: 16, alignItems: 'center', marginTop: 32, minHeight: 44,

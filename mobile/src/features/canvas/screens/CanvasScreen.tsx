@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useCallback, useMemo, useState } from 'react'
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
   SafeAreaView, ActivityIndicator, Platform, RefreshControl, useWindowDimensions,
-  NativeSyntheticEvent, NativeScrollEvent,
+  NativeSyntheticEvent, NativeScrollEvent, InteractionManager,
 } from 'react-native';
 import { format, isSameDay, isWithinInterval, parseISO, addDays, subDays } from 'date-fns';
 import { useAuthStore } from '../../../store/authStore';
@@ -12,7 +12,7 @@ import { DateStrip } from '../components/DateStrip';
 import { ActivityCard } from '../components/ActivityCard';
 import { TaskSection } from '../components/TaskSection';
 import { Activity } from '../../../types';
-import { colors, shadows, spacing } from '../../../theme';
+import { colors, shadows, spacing, type } from '../../../theme';
 import {
   HOUR_HEIGHT, START_HOUR, END_HOUR, HOUR_LABEL_WIDTH,
   TOTAL_CANVAS_HEIGHT, getActivityPosition, formatHour,
@@ -100,18 +100,55 @@ export function CanvasScreen({ navigation }: Props) {
   const [prevDayActivities, setPrevDayActivities] = useState<Activity[]>([]);
   const [nextDayActivities, setNextDayActivities] = useState<Activity[]>([]);
   const isResettingScroll = useRef(false);
+  // Track whether we're in a seamless day transition (skip loading spinner)
+  const isSeamlessTransition = useRef(false);
+  // Cache for pre-fetched adjacent day data keyed by date string
+  const adjacentCache = useRef<Record<string, Activity[]>>({});
 
+  /** Full load: fetches center day via store + adjacent days for the 3-day window */
   const load = useCallback(
-    async (date: Date) => {
+    async (date: Date, seamless = false) => {
       if (!user) return;
+      if (seamless) {
+        isSeamlessTransition.current = true;
+      }
       await loadDay(user.id, date);
       // Load adjacent days for infinite scroll
+      const prevDate = subDays(date, 1);
+      const nextDate = addDays(date, 1);
+      const prevKey = format(prevDate, 'yyyy-MM-dd');
+      const nextKey = format(nextDate, 'yyyy-MM-dd');
+
+      // Use cached data if available (pre-fetched), otherwise fetch
+      const prevCached = adjacentCache.current[prevKey];
+      const nextCached = adjacentCache.current[nextKey];
+
       const [prev, next] = await Promise.all([
-        getActivitiesForDay(user.id, format(subDays(date, 1), 'yyyy-MM-dd')),
-        getActivitiesForDay(user.id, format(addDays(date, 1), 'yyyy-MM-dd')),
+        prevCached ? Promise.resolve(prevCached) : getActivitiesForDay(user.id, prevKey),
+        nextCached ? Promise.resolve(nextCached) : getActivitiesForDay(user.id, nextKey),
       ]);
       setPrevDayActivities(prev);
       setNextDayActivities(next);
+
+      // Pre-fetch the outer adjacent days (day-2 and day+2) so they're ready
+      // when the user scrolls again
+      const outerPrevKey = format(subDays(date, 2), 'yyyy-MM-dd');
+      const outerNextKey = format(addDays(date, 2), 'yyyy-MM-dd');
+      Promise.all([
+        getActivitiesForDay(user.id, outerPrevKey),
+        getActivitiesForDay(user.id, outerNextKey),
+      ]).then(([outerPrev, outerNext]) => {
+        adjacentCache.current[outerPrevKey] = outerPrev;
+        adjacentCache.current[outerNextKey] = outerNext;
+      }).catch(() => { /* pre-fetch is best-effort */ });
+
+      // Store the fetched adjacent data in cache for future transitions
+      adjacentCache.current[prevKey] = prev;
+      adjacentCache.current[nextKey] = next;
+
+      if (seamless) {
+        isSeamlessTransition.current = false;
+      }
     },
     [user, loadDay]
   );
@@ -138,8 +175,22 @@ export function CanvasScreen({ navigation }: Props) {
     document.head.appendChild(style);
   }, []);
 
-  // Auto-scroll to center day (today's section) on mount and date change
+  // Auto-scroll to center day on mount and explicit date changes (DateStrip tap).
+  // During seamless transitions the scroll handler already repositioned — skip.
+  const lastScrolledDate = useRef<string>('');
   useEffect(() => {
+    const dateKey = format(selectedDate, 'yyyy-MM-dd');
+    // Skip if this render was triggered by a seamless boundary transition —
+    // the scroll position was already set by the scroll handler.
+    if (isSeamlessTransition.current) {
+      lastScrolledDate.current = dateKey;
+      return;
+    }
+    // Also skip if we already scrolled to this date (avoids double-fire from
+    // activities array updating after loadDay resolves)
+    if (lastScrolledDate.current === dateKey && !refreshing) return;
+    lastScrolledDate.current = dateKey;
+
     const timer = setTimeout(() => {
       isResettingScroll.current = true;
       const centerOffset = TOTAL_CANVAS_HEIGHT; // skip prev day section
@@ -152,25 +203,76 @@ export function CanvasScreen({ navigation }: Props) {
       }
       // Allow boundary detection after scroll reset settles
       setTimeout(() => { isResettingScroll.current = false; }, 200);
-    }, 300);
+    }, 100);
     return () => clearTimeout(timer);
-  }, [activities, selectedDate]);
+  }, [selectedDate, refreshing]);
 
   const now = new Date();
   const isToday = isSameDay(selectedDate, now);
 
-  // Boundary detection on scroll
+  // Debounce timer ref for boundary detection
+  const boundaryDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    return () => { if (boundaryDebounce.current) clearTimeout(boundaryDebounce.current); };
+  }, []);
+
+  // Boundary detection on scroll — debounced + deferred to avoid mid-scroll jank.
+  // Instead of calling setSelectedDate (which triggers loading spinner + full re-render),
+  // we: (1) reset scroll to center, (2) shift the 3-day data window using pre-loaded data,
+  // (3) defer the actual date update via InteractionManager so the frame stays smooth.
   const handleScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
     if (isResettingScroll.current) return;
     const scrollY = e.nativeEvent.contentOffset.y;
-    if (scrollY < TOTAL_CANVAS_HEIGHT * 0.3) {
-      isResettingScroll.current = true;
-      setSelectedDate(subDays(selectedDate, 1));
-    } else if (scrollY > TOTAL_CANVAS_HEIGHT * 1.7) {
-      isResettingScroll.current = true;
-      setSelectedDate(addDays(selectedDate, 1));
+
+    const crossedTop = scrollY < TOTAL_CANVAS_HEIGHT * 0.3;
+    const crossedBottom = scrollY > TOTAL_CANVAS_HEIGHT * 1.7;
+
+    if (!crossedTop && !crossedBottom) {
+      // Clear any pending boundary transition if user scrolled back to safe zone
+      if (boundaryDebounce.current) {
+        clearTimeout(boundaryDebounce.current);
+        boundaryDebounce.current = null;
+      }
+      return;
     }
-  }, [selectedDate, setSelectedDate]);
+
+    // Already have a pending transition — don't stack another
+    if (boundaryDebounce.current) return;
+
+    boundaryDebounce.current = setTimeout(() => {
+      boundaryDebounce.current = null;
+      isResettingScroll.current = true;
+
+      const direction = crossedTop ? -1 : 1;
+      const newDate = direction === -1 ? subDays(selectedDate, 1) : addDays(selectedDate, 1);
+
+      // 1. Immediately reset scroll to center so there's no visible jump
+      const centerOffset = TOTAL_CANVAS_HEIGHT;
+      scrollRef.current?.scrollTo({ y: centerOffset, animated: false });
+
+      // 2. Defer the date/data update until after the scroll reset paints
+      InteractionManager.runAfterInteractions(() => {
+        // Shift the 3-day window: reuse already-loaded data for the overlap
+        if (direction === -1) {
+          // Scrolled to previous day — prev becomes center, center becomes next
+          setNextDayActivities([...activities]);
+        } else {
+          // Scrolled to next day — next becomes center, center becomes prev
+          setPrevDayActivities([...activities]);
+        }
+        setSelectedDate(newDate);
+        // Load with seamless flag to skip showing the loading spinner
+        void load(newDate, true);
+
+        // Re-enable boundary detection after the transition settles
+        requestAnimationFrame(() => {
+          setTimeout(() => {
+            isResettingScroll.current = false;
+          }, 150);
+        });
+      });
+    }, 100); // 100ms debounce — lets fast flick scrolls settle before committing
+  }, [selectedDate, setSelectedDate, activities, load]);
 
   // 3-day window dates
   const prevDate = useMemo(() => subDays(selectedDate, 1), [selectedDate]);
@@ -237,7 +339,7 @@ export function CanvasScreen({ navigation }: Props) {
 
       {/* Canvas — 3-day infinite scroll */}
       <View nativeID="canvas-wrapper" style={styles.canvasWrapper}>
-        {loading && !refreshing ? (
+        {loading && !refreshing && !isSeamlessTransition.current ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator color={colors.primary} size="small" />
           </View>
@@ -377,13 +479,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.screen, paddingTop: 12, paddingBottom: 2,
   },
   headerTitle: {
-    color: colors.text, fontSize: 28, fontWeight: '700', letterSpacing: -0.6,
+    color: colors.text, ...type.h1,
   },
   searchBtn: {
-    width: 40, height: 40, borderRadius: 20,
+    width: 44, height: 44, borderRadius: 22,
     alignItems: 'center', justifyContent: 'center',
   },
-  searchIcon: { color: colors.muted, fontSize: 20 },
+  searchIcon: { color: colors.muted, fontSize: 24 },
 
   // Canvas
   loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center' },
@@ -411,7 +513,7 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   hourLabel: {
-    color: colors.muted, fontSize: 11, fontWeight: '600',
+    color: colors.muted, ...type.caption,
     width: HOUR_LABEL_WIDTH - 8,
     textAlign: 'right',
     marginRight: 8,

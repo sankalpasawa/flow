@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { colors, getCategoryColor } from '../../../theme';
+import { colors, getCategoryColor, type } from '../../../theme';
 import { Activity } from '../../../types';
 
 interface Props {
@@ -57,7 +57,7 @@ const styles = StyleSheet.create({
   },
   checkboxDone: { backgroundColor: colors.done, borderColor: colors.done },
   checkmark: { color: '#fff', fontSize: 12, fontWeight: '800' },
-  title: { flex: 1, color: colors.text, fontSize: 14, fontWeight: '400' },
+  title: { flex: 1, color: colors.text, ...type.bodyRegular },
   titleDone: { textDecorationLine: 'line-through', color: colors.muted },
   subtaskCount: { color: colors.muted, fontSize: 11, fontWeight: '600' },
   overdueDot: {

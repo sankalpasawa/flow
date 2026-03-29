@@ -11,7 +11,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import * as Haptics from 'expo-haptics';
-import { colors, getCategoryColor, radii } from '../../../theme';
+import { colors, getCategoryColor, radii, type } from '../../../theme';
 import { Activity, ExperienceLog } from '../../../types';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -129,14 +129,16 @@ export function ActivityCard({ activity, log, onPress, onQuickComplete, isNow, i
   const durationText = duration === 0 ? '' : duration < 60 ? `${duration}m` : `${Math.floor(duration / 60)}h${duration % 60 ? ` ${duration % 60}m` : ''}`;
 
   const compact = height !== undefined && height < 40;
+  const cardBorderRadius = compact ? 8 : 14;
 
   return (
     <GestureDetector gesture={composed}>
-      <Animated.View style={{ position: 'relative' }}>
+      <Animated.View style={{ position: 'relative', marginBottom: 2 }}>
         {/* Green background revealed on swipe */}
         <Animated.View
           style={[
             styles.swipeBg,
+            { borderRadius: cardBorderRadius },
             height !== undefined && { height },
             bgAnimStyle,
           ]}
@@ -147,7 +149,16 @@ export function ActivityCard({ activity, log, onPress, onQuickComplete, isNow, i
         <AnimatedPressable
           style={[
             styles.card,
-            { borderLeftColor: catColor.solid, backgroundColor: catColor.light },
+            {
+              borderLeftColor: catColor.solid,
+              backgroundColor: catColor.light,
+              borderRadius: cardBorderRadius,
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 1 },
+              shadowOpacity: 0.04,
+              shadowRadius: 2,
+              elevation: 1,
+            },
             height !== undefined && { height, paddingVertical: compact ? 2 : 6 },
             isNow && styles.nowCard,
             isSkipped && { opacity: 0.4 },
@@ -219,7 +230,7 @@ const styles = StyleSheet.create({
   },
   content: { flex: 1 },
   title: {
-    color: colors.text, fontSize: 16, fontWeight: '600',
+    color: colors.text, ...type.body,
   },
   titleCompact: {
     fontSize: 13,
@@ -231,7 +242,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row', gap: 8, marginTop: 2,
   },
   meta: {
-    color: colors.text2, fontSize: 12,
+    color: colors.text2, ...type.micro,
   },
   indicators: {
     flexDirection: 'row', gap: 4, alignItems: 'center',

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Dimensions } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
-import { colors, radii, shadows, spacing } from '../../../theme';
+import { colors, radii, shadows, spacing, type } from '../../../theme';
 import { Activity } from '../../../types';
 import { TaskItem } from './TaskItem';
 
@@ -163,8 +163,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 8,
   },
   headerTitle: {
-    color: colors.text, fontSize: 14, fontWeight: '600',
-    letterSpacing: 0.4,
+    color: colors.text, ...type.caption,
   },
   badge: {
     backgroundColor: colors.primary, borderRadius: 8,

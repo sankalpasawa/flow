@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, LayoutAnimation, Platform, UI
 import type { ViewToken } from 'react-native';
 import { format, addDays, subDays, isSameDay, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, addMonths, subMonths } from 'date-fns';
 import * as Haptics from 'expo-haptics';
-import { colors, radii, spacing } from '../../../theme';
+import { colors, radii, spacing, type } from '../../../theme';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -247,11 +247,11 @@ const styles = StyleSheet.create({
   chipSelected: { backgroundColor: colors.primary },
   chipToday: { backgroundColor: colors.primaryBg },
   dayName: {
-    fontSize: 11, fontWeight: '500', color: colors.muted,
-    letterSpacing: 0.4, marginBottom: 2,
+    ...type.micro, color: colors.muted,
+    marginBottom: 2,
   },
   dayNameToday: { color: colors.primary },
-  dayNum: { fontSize: 19, fontWeight: '600', color: colors.text },
+  dayNum: { fontSize: 19, fontWeight: '600' as const, color: colors.text },
   dayNumToday: { color: colors.primary },
   textSelected: { color: '#FFFFFF' },
 
