@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator,
-  Modal, Animated, Alert,
+  Modal, Alert, FlatList,
 } from 'react-native';
 import { format, parseISO, addMinutes, addDays, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay } from 'date-fns';
 import { useAuthStore } from '../../../store/authStore';
@@ -17,7 +17,7 @@ interface RouteParams {
   activityId?: string;
   startHour?: string;
   date?: string;
-  backlog?: boolean; // true = creating unscheduled task
+  backlog?: boolean;
 }
 
 interface Props {
@@ -25,23 +25,18 @@ interface Props {
   navigation: { goBack: () => void; navigate: (screen: string, params?: Record<string, unknown>) => void };
 }
 
-const DURATION_OPTIONS = [0, 15, 30, 45, 60, 90, 120, 180, 240];
-
-const RECURRENCE_OPTIONS: { value: RecurrenceType; label: string; icon: string }[] = [
-  { value: 'NONE', label: 'Once', icon: '1️⃣' },
-  { value: 'DAILY', label: 'Daily', icon: '📅' },
-  { value: 'WEEKDAYS', label: 'Weekdays', icon: '💼' },
-  { value: 'WEEKLY', label: 'Weekly', icon: '🔄' },
-  { value: 'BIWEEKLY', label: 'Every 2 weeks', icon: '🔄' },
-  { value: 'TRIWEEKLY', label: 'Every 3 weeks', icon: '🔄' },
-  { value: 'MONTHLY', label: 'Monthly', icon: '📆' },
-  { value: 'BIMONTHLY', label: 'Every 2 months', icon: '📆' },
-  { value: 'QUARTERLY', label: 'Every 3 months', icon: '📆' },
-  { value: 'BIANNUAL', label: 'Every 6 months', icon: '📆' },
-  { value: 'YEARLY', label: 'Yearly', icon: '🗓️' },
-];
+const DURATION_PRESETS = [0, 15, 30, 60];
+const MINUTE_INCREMENTS = Array.from({ length: 12 }, (_, i) => i * 5); // 0,5,10,...55
+const HOURS = Array.from({ length: 24 }, (_, i) => i);
 
 const ALL_WEEKDAYS: Weekday[] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+const REPEAT_OPTIONS: { value: RecurrenceType; label: string }[] = [
+  { value: 'DAILY', label: 'Daily' },
+  { value: 'WEEKDAYS', label: 'Weekdays' },
+  { value: 'WEEKLY', label: 'Weekly' },
+  { value: 'MONTHLY', label: 'Monthly' },
+];
 
 export function ActivityFormScreen({ route, navigation }: Props) {
   const { activityId, startHour, date, backlog } = route.params ?? {};
@@ -60,11 +55,12 @@ export function ActivityFormScreen({ route, navigation }: Props) {
   const [title, setTitle] = useState(existingActivity?.title ?? '');
   const [description, setDescription] = useState(existingActivity?.description ?? '');
   const [duration, setDuration] = useState(existingActivity?.duration_minutes ?? (backlog ? 0 : 15));
-  const [isScheduled, setIsScheduled] = useState(
+  const [customDuration, setCustomDuration] = useState('');
+  const [showCustomDuration, setShowCustomDuration] = useState(false);
+  const [isScheduled] = useState(
     existingActivity ? existingActivity.is_scheduled : !backlog
   );
 
-  // Derive initial date and hour from params or existing activity
   const initialDate = (() => {
     if (existingActivity) return existingActivity.start_time.substring(0, 10);
     return date ?? format(new Date(), 'yyyy-MM-dd');
@@ -73,43 +69,52 @@ export function ActivityFormScreen({ route, navigation }: Props) {
     if (existingActivity) return parseISO(existingActivity.start_time).getHours();
     return startHour ? parseInt(startHour.split(':')[0]) : new Date().getHours() + 1;
   })();
+  const initialMinute = (() => {
+    if (existingActivity) return parseISO(existingActivity.start_time).getMinutes();
+    return startHour && startHour.includes(':') ? parseInt(startHour.split(':')[1]) : 0;
+  })();
 
   const [selectedDateStr, setSelectedDateStr] = useState(initialDate);
   const [showCalendar, setShowCalendar] = useState(false);
   const [calendarMonth, setCalendarMonth] = useState(() => parseISO(initialDate + 'T00:00:00'));
 
+  const [selectedHour, setSelectedHour] = useState(initialHour);
+  const [selectedMinute, setSelectedMinute] = useState(initialMinute);
+  const [showTimePicker, setShowTimePicker] = useState(false);
+
   const [startTime, setStartTime] = useState(() => {
     if (existingActivity) return existingActivity.start_time;
-    const dt = new Date(`${initialDate}T${initialHour.toString().padStart(2, '0')}:00:00`);
+    const dt = new Date(`${initialDate}T${initialHour.toString().padStart(2, '0')}:${initialMinute.toString().padStart(2, '0')}:00`);
     return dt.toISOString();
   });
   const [categoryId, setCategoryId] = useState(existingActivity?.category_id ?? SYSTEM_CATEGORIES[0].id);
+  const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [recurrence, setRecurrence] = useState<RecurrenceType>(existingActivity?.recurrence_type ?? 'NONE');
   const [recurrenceDays, setRecurrenceDays] = useState<Weekday[]>(existingActivity?.recurrence_days ?? []);
+  const [showRepeatPicker, setShowRepeatPicker] = useState(false);
   const [subtasks, setSubtasks] = useState<Subtask[]>(existingActivity?.subtasks ?? []);
   const [newSubtask, setNewSubtask] = useState('');
+  const [showSubtasks, setShowSubtasks] = useState((existingActivity?.subtasks ?? []).length > 0);
+  const [showNotes, setShowNotes] = useState(!!(existingActivity?.description));
   const [categories, setCategories] = useState<Category[]>(SYSTEM_CATEGORIES);
   const [saving, setSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [showMore, setShowMore] = useState(false);
-  const chevronAnim = useRef(new Animated.Value(0)).current;
 
-  function toggleMore() {
-    setShowMore(prev => {
-      Animated.timing(chevronAnim, {
-        toValue: prev ? 0 : 1,
-        duration: 200,
-        useNativeDriver: true,
-      }).start();
-      return !prev;
-    });
-  }
+  // Refs for scroll pickers
+  const hourScrollRef = useRef<FlatList>(null);
+  const minuteScrollRef = useRef<FlatList>(null);
 
   useEffect(() => {
     if (user) getCategories(user.id).then(setCategories).catch((err) => {
       console.error('[DayFlow] Failed to load categories:', err);
     });
   }, [user]);
+
+  // Sync startTime when hour/minute change via picker
+  const syncStartTime = useCallback((h: number, m: number) => {
+    const newDt = new Date(`${selectedDateStr}T${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:00`);
+    setStartTime(newDt.toISOString());
+  }, [selectedDateStr]);
 
   const showDayPicker = recurrence === 'WEEKLY' || recurrence === 'BIWEEKLY' || recurrence === 'TRIWEEKLY';
 
@@ -143,9 +148,6 @@ export function ActivityFormScreen({ route, navigation }: Props) {
     setSaving(true);
     try {
       if (existingActivity) {
-        // For scheduled activities, assigned_date = selectedDateStr
-        // For untimed tasks, preserve the existing assigned_date (it holds the day)
-        // Only null it out if the user explicitly switched from scheduled to someday
         const newAssignedDate = isScheduled
           ? selectedDateStr
           : (existingActivity.is_scheduled ? null : existingActivity.assigned_date);
@@ -178,18 +180,25 @@ export function ActivityFormScreen({ route, navigation }: Props) {
 
   function pickDate(dateStr: string) {
     setSelectedDateStr(dateStr);
-    // Sync into startTime — keep the hour+minute, change only the date
-    const current = parseISO(startTime);
-    const h = current.getHours();
-    const m = current.getMinutes();
-    const newDt = new Date(`${dateStr}T${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:00`);
+    const newDt = new Date(`${dateStr}T${selectedHour.toString().padStart(2, '0')}:${selectedMinute.toString().padStart(2, '0')}:00`);
     setStartTime(newDt.toISOString());
   }
 
-  const today = format(new Date(), 'yyyy-MM-dd');
-  const tomorrow = format(addDays(new Date(), 1), 'yyyy-MM-dd');
+  function confirmTimePick() {
+    syncStartTime(selectedHour, selectedMinute);
+    setShowTimePicker(false);
+  }
 
-  // Calendar grid for the "Pick date" modal
+  function handleCustomDurationSubmit() {
+    const val = parseInt(customDuration);
+    if (!isNaN(val) && val > 0) {
+      setDuration(val);
+    }
+    setShowCustomDuration(false);
+    setCustomDuration('');
+  }
+
+  // Calendar grid
   const calendarDays = (() => {
     const monthStart = startOfMonth(calendarMonth);
     const monthEnd = endOfMonth(calendarMonth);
@@ -198,16 +207,13 @@ export function ActivityFormScreen({ route, navigation }: Props) {
     return eachDayOfInterval({ start: gridStart, end: gridEnd });
   })();
 
-  function adjustHour(delta: number) {
-    const d = parseISO(startTime);
-    d.setHours(d.getHours() + delta);
-    setStartTime(d.toISOString());
-    // Keep selectedDateStr in sync if hour rolls past midnight
-    setSelectedDateStr(format(d, 'yyyy-MM-dd'));
-  }
-
   const startDt = parseISO(startTime);
   const endDt = addMinutes(startDt, duration);
+
+  const selectedCategory = categories.find(c => c.id === categoryId) ?? categories[0];
+  const isCustomDuration = !DURATION_PRESETS.includes(duration);
+
+  const ITEM_HEIGHT = 44;
 
   return (
     <View style={styles.overlay}>
@@ -223,351 +229,474 @@ export function ActivityFormScreen({ route, navigation }: Props) {
         <View style={styles.sheetHeader}>
           <Text style={styles.sheetTitle}>{existingActivity ? 'Edit Activity' : 'New Activity'}</Text>
           <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-            <Text style={styles.sheetClose}>✕</Text>
-          </TouchableOpacity>
-        </View>
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-        <Text style={styles.sectionLabel}>ACTIVITY</Text>
-        <TextInput
-          style={styles.titleInput}
-          placeholder="What are you planning?"
-          placeholderTextColor="#475569"
-          value={title}
-          onChangeText={setTitle}
-          maxLength={80}
-          autoFocus={!existingActivity}
-          accessibilityLabel="Activity title"
-        />
-        <Text style={styles.charCount}>{title.length}/80</Text>
-
-        {/* Scheduled toggle */}
-        <Text style={styles.sectionLabel}>SCHEDULING</Text>
-        <View style={styles.toggleRow}>
-          <TouchableOpacity
-            style={[styles.toggleChip, isScheduled && styles.toggleChipSelected]}
-            onPress={() => setIsScheduled(true)}
-          >
-            <Text style={[styles.toggleText, isScheduled && styles.toggleTextSelected]}>📅 Scheduled</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.toggleChip, !isScheduled && styles.toggleChipSelected]}
-            onPress={() => setIsScheduled(false)}
-          >
-            <Text style={[styles.toggleText, !isScheduled && styles.toggleTextSelected]}>📋 Someday</Text>
+            <Text style={styles.sheetClose}>{'\u2715'}</Text>
           </TouchableOpacity>
         </View>
 
-        {isScheduled && (
-          <>
-            <Text style={styles.sectionLabel}>DATE</Text>
-            <View style={styles.dateChipRow}>
+        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+          {/* Title — hero input */}
+          <TextInput
+            style={styles.titleInput}
+            placeholder="What needs to happen?"
+            placeholderTextColor={colors.muted}
+            value={title}
+            onChangeText={setTitle}
+            maxLength={80}
+            autoFocus={!existingActivity}
+            accessibilityLabel="Activity title"
+          />
+
+          {/* Date row */}
+          {isScheduled && (
+            <TouchableOpacity
+              style={styles.formRow}
+              onPress={() => { setCalendarMonth(parseISO(selectedDateStr + 'T00:00:00')); setShowCalendar(true); }}
+              activeOpacity={0.6}
+            >
+              <Text style={styles.formRowIcon}>{'📅'}</Text>
+              <Text style={styles.formRowLabel}>
+                {selectedDateStr === format(new Date(), 'yyyy-MM-dd')
+                  ? 'Today'
+                  : selectedDateStr === format(addDays(new Date(), 1), 'yyyy-MM-dd')
+                    ? 'Tomorrow'
+                    : format(parseISO(selectedDateStr + 'T00:00:00'), 'EEE, MMM d')}
+              </Text>
+              <Text style={styles.formRowChevron}>{'>'}</Text>
+            </TouchableOpacity>
+          )}
+
+          {/* Time row */}
+          {isScheduled && (
+            <TouchableOpacity
+              style={styles.formRow}
+              onPress={() => setShowTimePicker(true)}
+              activeOpacity={0.6}
+            >
+              <Text style={styles.formRowIcon}>{'🕐'}</Text>
+              <Text style={styles.formRowLabel}>
+                {format(startDt, 'HH:mm')}
+                {duration > 0 ? ` \u2192 ${format(endDt, 'HH:mm')}` : ''}
+              </Text>
+              <Text style={styles.formRowChevron}>{'>'}</Text>
+            </TouchableOpacity>
+          )}
+
+          {/* Duration pills */}
+          <Text style={styles.sectionLabel}>DURATION</Text>
+          <View style={styles.durationGrid}>
+            {DURATION_PRESETS.map((d) => (
               <TouchableOpacity
-                style={[styles.dateChip, selectedDateStr === today && styles.dateChipSelected]}
-                onPress={() => pickDate(today)}
+                key={d}
+                style={[styles.durationPill, duration === d && styles.durationPillSelected]}
+                onPress={() => { setDuration(d); setShowCustomDuration(false); }}
+                accessibilityLabel={`${d} minutes`}
+                accessibilityState={{ selected: duration === d }}
               >
-                <Text style={[styles.dateChipText, selectedDateStr === today && styles.dateChipTextSelected]}>Today</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.dateChip, selectedDateStr === tomorrow && styles.dateChipSelected]}
-                onPress={() => pickDate(tomorrow)}
-              >
-                <Text style={[styles.dateChipText, selectedDateStr === tomorrow && styles.dateChipTextSelected]}>Tomorrow</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.dateChip, selectedDateStr !== today && selectedDateStr !== tomorrow && styles.dateChipSelected]}
-                onPress={() => { setCalendarMonth(parseISO(selectedDateStr + 'T00:00:00')); setShowCalendar(true); }}
-              >
-                <Text style={[styles.dateChipText, selectedDateStr !== today && selectedDateStr !== tomorrow && styles.dateChipTextSelected]}>
-                  {selectedDateStr !== today && selectedDateStr !== tomorrow
-                    ? format(parseISO(selectedDateStr + 'T00:00:00'), 'MMM d')
-                    : 'Pick date'}
+                <Text style={[styles.durationPillText, duration === d && styles.durationPillTextSelected]}>
+                  {d === 0 ? 'None' : d < 60 ? `${d}m` : `${d / 60}h`}
                 </Text>
               </TouchableOpacity>
-            </View>
-
-            {/* Calendar modal */}
-            <Modal visible={showCalendar} transparent animationType="slide">
-              <View style={styles.calendarOverlay}>
-                <View style={styles.calendarSheet}>
-                  <View style={styles.calendarHeader}>
-                    <TouchableOpacity onPress={() => setCalendarMonth(prev => addDays(startOfMonth(prev), -1))} style={styles.calendarNav}>
-                      <Text style={styles.calendarNavText}>‹</Text>
-                    </TouchableOpacity>
-                    <Text style={styles.calendarMonthLabel}>{format(calendarMonth, 'MMMM yyyy')}</Text>
-                    <TouchableOpacity onPress={() => setCalendarMonth(prev => addDays(endOfMonth(prev), 1))} style={styles.calendarNav}>
-                      <Text style={styles.calendarNavText}>›</Text>
-                    </TouchableOpacity>
-                  </View>
-                  <View style={styles.calendarWeekRow}>
-                    {['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'].map(d => (
-                      <Text key={d} style={styles.calendarWeekDay}>{d}</Text>
-                    ))}
-                  </View>
-                  <View style={styles.calendarGrid}>
-                    {calendarDays.map((day, i) => {
-                      const dayStr = format(day, 'yyyy-MM-dd');
-                      const inMonth = isSameMonth(day, calendarMonth);
-                      const isSelected = dayStr === selectedDateStr;
-                      const isToday = isSameDay(day, new Date());
-                      return (
-                        <TouchableOpacity
-                          key={i}
-                          style={[styles.calendarDay, isSelected && styles.calendarDaySelected]}
-                          onPress={() => { pickDate(dayStr); setShowCalendar(false); }}
-                        >
-                          <Text style={[
-                            styles.calendarDayText,
-                            !inMonth && styles.calendarDayMuted,
-                            isSelected && styles.calendarDayTextSelected,
-                            isToday && !isSelected && styles.calendarDayToday,
-                          ]}>
-                            {format(day, 'd')}
-                          </Text>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </View>
-                  <TouchableOpacity style={styles.calendarDone} onPress={() => setShowCalendar(false)}>
-                    <Text style={styles.calendarDoneText}>Done</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </Modal>
-          </>
-        )}
-
-        {isScheduled && (
-          <>
-            <Text style={styles.sectionLabel}>TIME</Text>
-            <View style={styles.timeRow}>
-              <View style={styles.timePicker}>
-                <TouchableOpacity onPress={() => adjustHour(-1)} style={styles.timeBtn} accessibilityLabel="Decrease hour">
-                  <Text style={styles.timeBtnText}>−</Text>
-                </TouchableOpacity>
-                <Text style={styles.timeValue}>{format(startDt, 'HH:mm')}</Text>
-                <TouchableOpacity onPress={() => adjustHour(1)} style={styles.timeBtn} accessibilityLabel="Increase hour">
-                  <Text style={styles.timeBtnText}>+</Text>
-                </TouchableOpacity>
-              </View>
-              <Text style={styles.timeSep}>→</Text>
-              <Text style={styles.endTime}>{format(endDt, 'HH:mm')}</Text>
-            </View>
-          </>
-        )}
-
-        <Text style={styles.sectionLabel}>DURATION</Text>
-        <View style={styles.durationGrid}>
-          {DURATION_OPTIONS.map((d) => (
+            ))}
             <TouchableOpacity
-              key={d}
-              style={[styles.durationChip, duration === d && styles.durationChipSelected]}
-              onPress={() => setDuration(d)}
-              accessibilityLabel={`${d} minutes`}
-              accessibilityState={{ selected: duration === d }}
+              style={[styles.durationPill, isCustomDuration && styles.durationPillSelected]}
+              onPress={() => setShowCustomDuration(true)}
+              accessibilityLabel="Custom duration"
             >
-              <Text style={[styles.durationText, duration === d && styles.durationTextSelected]}>
-                {d === 0 ? 'None' : d < 60 ? `${d}m` : `${d / 60}h`}
+              <Text style={[styles.durationPillText, isCustomDuration && styles.durationPillTextSelected]}>
+                {isCustomDuration ? `${duration}m` : 'Custom'}
               </Text>
             </TouchableOpacity>
-          ))}
-        </View>
-
-        <Text style={styles.sectionLabel}>CATEGORY</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.hScroll}>
-          <View style={styles.hRow}>
-            {categories.map((cat) => (
-              <TouchableOpacity
-                key={cat.id}
-                style={[styles.catChip, categoryId === cat.id && { backgroundColor: cat.color + '33', borderColor: cat.color }]}
-                onPress={() => setCategoryId(cat.id)}
-                accessibilityLabel={cat.name}
-                accessibilityState={{ selected: categoryId === cat.id }}
-              >
-                <Text style={styles.catIcon}>{cat.icon}</Text>
-                <Text style={[styles.catName, categoryId === cat.id && { color: cat.color }]}>{cat.name}</Text>
-              </TouchableOpacity>
-            ))}
           </View>
-        </ScrollView>
 
-        {/* More options accordion */}
-        <TouchableOpacity
-          style={styles.moreToggle}
-          onPress={toggleMore}
-          activeOpacity={0.7}
-          accessibilityLabel={showMore ? 'Hide more options' : 'Show more options'}
-          accessibilityRole="button"
-        >
-          <Text style={styles.moreToggleText}>More options</Text>
-          <Animated.Text
-            style={[
-              styles.moreToggleChevron,
-              {
-                transform: [{
-                  rotate: chevronAnim.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: ['0deg', '90deg'],
-                  }),
-                }],
-              },
-            ]}
+          {/* Custom duration input */}
+          {showCustomDuration && (
+            <View style={styles.customDurationRow}>
+              <TextInput
+                style={styles.customDurationInput}
+                placeholder="Minutes"
+                placeholderTextColor={colors.muted}
+                keyboardType="number-pad"
+                value={customDuration}
+                onChangeText={setCustomDuration}
+                onSubmitEditing={handleCustomDurationSubmit}
+                autoFocus
+                maxLength={4}
+              />
+              <TouchableOpacity style={styles.customDurationBtn} onPress={handleCustomDurationSubmit}>
+                <Text style={styles.customDurationBtnText}>Set</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {/* Category row */}
+          <TouchableOpacity
+            style={styles.formRow}
+            onPress={() => setShowCategoryPicker(true)}
+            activeOpacity={0.6}
           >
-            ›
-          </Animated.Text>
-        </TouchableOpacity>
+            <Text style={styles.formRowIcon}>{selectedCategory?.icon ?? ''}</Text>
+            <Text style={styles.formRowLabel}>{selectedCategory?.name ?? 'Category'}</Text>
+            <Text style={styles.formRowChevron}>{'>'}</Text>
+          </TouchableOpacity>
 
-        {showMore && (
-          <>
-            <Text style={styles.sectionLabel}>FREQUENCY</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.hScroll}>
-              <View style={styles.hRow}>
-                {RECURRENCE_OPTIONS.map((opt) => (
+          {/* Frequency row */}
+          <TouchableOpacity
+            style={styles.formRow}
+            onPress={() => {
+              if (recurrence === 'NONE') {
+                setShowRepeatPicker(true);
+              } else {
+                setRecurrence('NONE');
+                setRecurrenceDays([]);
+              }
+            }}
+            activeOpacity={0.6}
+          >
+            <Text style={styles.formRowIcon}>{'🔄'}</Text>
+            <Text style={styles.formRowLabel}>
+              {recurrence === 'NONE' ? 'Once' : REPEAT_OPTIONS.find(o => o.value === recurrence)?.label ?? recurrence}
+            </Text>
+            {recurrence === 'NONE' ? (
+              <Text style={styles.formRowChevron}>{'>'}</Text>
+            ) : (
+              <Text style={styles.formRowClear}>{'Clear'}</Text>
+            )}
+          </TouchableOpacity>
+
+          {/* Day picker for weekly */}
+          {showDayPicker && (
+            <View style={styles.dayPickerRow}>
+              {ALL_WEEKDAYS.map((day) => (
+                <TouchableOpacity
+                  key={day}
+                  style={[styles.dayChip, recurrenceDays.includes(day) && styles.dayChipSelected]}
+                  onPress={() => toggleDay(day)}
+                  accessibilityLabel={day}
+                  accessibilityState={{ selected: recurrenceDays.includes(day) }}
+                >
+                  <Text style={[styles.dayText, recurrenceDays.includes(day) && styles.dayTextSelected]}>
+                    {day}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+
+          {/* Subtasks — expandable */}
+          <TouchableOpacity
+            style={styles.expandableRow}
+            onPress={() => setShowSubtasks(prev => !prev)}
+            activeOpacity={0.6}
+          >
+            <Text style={styles.expandableLabel}>Subtasks</Text>
+            {subtasks.length > 0 && (
+              <Text style={styles.expandableBadge}>{subtasks.length}</Text>
+            )}
+            <Text style={styles.expandableChevron}>{showSubtasks ? '\u2303' : '\u2304'}</Text>
+          </TouchableOpacity>
+
+          {showSubtasks && (
+            <View style={styles.expandableContent}>
+              {subtasks.map((st) => (
+                <View key={st.id} style={styles.subtaskItem}>
                   <TouchableOpacity
-                    key={opt.value}
-                    style={[styles.recurrenceChip, recurrence === opt.value && styles.recurrenceChipSelected]}
-                    onPress={() => setRecurrence(opt.value)}
-                    accessibilityLabel={`${opt.label} frequency`}
-                    accessibilityState={{ selected: recurrence === opt.value }}
+                    style={[styles.subtaskCheckbox, st.done && styles.subtaskCheckboxDone]}
+                    onPress={() => toggleSubtask(st.id)}
                   >
-                    <Text style={styles.recurrenceIcon}>{opt.icon}</Text>
-                    <Text style={[styles.recurrenceText, recurrence === opt.value && styles.recurrenceTextSelected]}>
-                      {opt.label}
+                    {st.done && <Text style={styles.subtaskCheckmark}>{'\u2713'}</Text>}
+                  </TouchableOpacity>
+                  <Text style={[styles.subtaskTitle, st.done && styles.subtaskTitleDone]}>{st.title}</Text>
+                  <TouchableOpacity onPress={() => removeSubtask(st.id)} style={styles.subtaskRemove}>
+                    <Text style={styles.subtaskRemoveText}>{'\u2715'}</Text>
+                  </TouchableOpacity>
+                </View>
+              ))}
+              <View style={styles.subtaskAddRow}>
+                <TextInput
+                  style={styles.subtaskInput}
+                  placeholder="Add a subtask..."
+                  placeholderTextColor={colors.muted}
+                  value={newSubtask}
+                  onChangeText={setNewSubtask}
+                  onSubmitEditing={addSubtask}
+                  returnKeyType="done"
+                  maxLength={80}
+                />
+                {newSubtask.trim() ? (
+                  <TouchableOpacity style={styles.subtaskAddBtn} onPress={addSubtask}>
+                    <Text style={styles.subtaskAddBtnText}>+</Text>
+                  </TouchableOpacity>
+                ) : null}
+              </View>
+            </View>
+          )}
+
+          {/* Notes — expandable */}
+          <TouchableOpacity
+            style={styles.expandableRow}
+            onPress={() => setShowNotes(prev => !prev)}
+            activeOpacity={0.6}
+          >
+            <Text style={styles.expandableLabel}>Notes</Text>
+            {!!description && <Text style={styles.expandableBadge}>{'\u2022'}</Text>}
+            <Text style={styles.expandableChevron}>{showNotes ? '\u2303' : '\u2304'}</Text>
+          </TouchableOpacity>
+
+          {showNotes && (
+            <View style={styles.expandableContent}>
+              <TextInput
+                style={styles.notesInput}
+                placeholder="Add details or notes..."
+                placeholderTextColor={colors.muted}
+                value={description}
+                onChangeText={setDescription}
+                multiline
+                maxLength={500}
+                accessibilityLabel="Activity notes"
+              />
+            </View>
+          )}
+
+          {errorMessage && (
+            <Text style={{ color: colors.danger, fontSize: 14, textAlign: 'center', marginTop: 12 }}>{errorMessage}</Text>
+          )}
+
+          {existingActivity && (
+            <>
+              <TouchableOpacity
+                style={styles.logButton}
+                onPress={() => navigation.navigate('LogForm', { activityId: existingActivity.id })}
+                accessibilityLabel="Log experience"
+                accessibilityRole="button"
+              >
+                <Text style={styles.logButtonText}>Log Experience</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.deleteButton}
+                onPress={() => {
+                  const doDelete = () => {
+                    removeActivity(existingActivity.id);
+                    navigation.goBack();
+                  };
+                  if (Platform.OS === 'web') {
+                    if (window.confirm('Delete this activity? This cannot be undone.')) {
+                      doDelete();
+                    }
+                  } else {
+                    Alert.alert(
+                      'Delete Activity',
+                      'Delete this activity? This cannot be undone.',
+                      [
+                        { text: 'Cancel', style: 'cancel' },
+                        { text: 'Delete', style: 'destructive', onPress: doDelete },
+                      ],
+                    );
+                  }
+                }}
+                accessibilityLabel="Delete activity"
+                accessibilityRole="button"
+              >
+                <Text style={styles.deleteButtonText}>Delete Activity</Text>
+              </TouchableOpacity>
+            </>
+          )}
+
+          <TouchableOpacity
+            style={[styles.saveButton, saving && styles.saveButtonDisabled]}
+            onPress={handleSave}
+            disabled={saving}
+            accessibilityLabel={existingActivity ? 'Save changes' : 'Create activity'}
+            accessibilityRole="button"
+          >
+            {saving ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.saveButtonText}>{existingActivity ? 'Save Changes' : 'Create Activity'}</Text>
+            )}
+          </TouchableOpacity>
+        </ScrollView>
+      </KeyboardAvoidingView>
+
+      {/* ─── Calendar modal ─── */}
+      <Modal visible={showCalendar} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalSheet}>
+            <View style={styles.modalHandleBar}><View style={styles.handle} /></View>
+            <View style={styles.modalHeader}>
+              <TouchableOpacity onPress={() => setCalendarMonth(prev => addDays(startOfMonth(prev), -1))} style={styles.modalNav}>
+                <Text style={styles.modalNavText}>{'\u2039'}</Text>
+              </TouchableOpacity>
+              <Text style={styles.modalTitle}>{format(calendarMonth, 'MMMM yyyy')}</Text>
+              <TouchableOpacity onPress={() => setCalendarMonth(prev => addDays(endOfMonth(prev), 1))} style={styles.modalNav}>
+                <Text style={styles.modalNavText}>{'\u203A'}</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.calendarWeekRow}>
+              {['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'].map(d => (
+                <Text key={d} style={styles.calendarWeekDay}>{d}</Text>
+              ))}
+            </View>
+            <View style={styles.calendarGrid}>
+              {calendarDays.map((day, i) => {
+                const dayStr = format(day, 'yyyy-MM-dd');
+                const inMonth = isSameMonth(day, calendarMonth);
+                const isSelected = dayStr === selectedDateStr;
+                const isToday = isSameDay(day, new Date());
+                return (
+                  <TouchableOpacity
+                    key={i}
+                    style={[styles.calendarDay, isSelected && styles.calendarDaySelected]}
+                    onPress={() => { pickDate(dayStr); setShowCalendar(false); }}
+                  >
+                    <Text style={[
+                      styles.calendarDayText,
+                      !inMonth && styles.calendarDayMuted,
+                      isSelected && styles.calendarDayTextSelected,
+                      isToday && !isSelected && styles.calendarDayToday,
+                    ]}>
+                      {format(day, 'd')}
                     </Text>
                   </TouchableOpacity>
-                ))}
-              </View>
-            </ScrollView>
-
-            {/* Day picker for weekly recurrences */}
-            {showDayPicker && (
-              <>
-                <Text style={styles.sectionLabel}>REPEAT ON</Text>
-                <View style={styles.dayPickerRow}>
-                  {ALL_WEEKDAYS.map((day) => (
-                    <TouchableOpacity
-                      key={day}
-                      style={[styles.dayChip, recurrenceDays.includes(day) && styles.dayChipSelected]}
-                      onPress={() => toggleDay(day)}
-                      accessibilityLabel={day}
-                      accessibilityState={{ selected: recurrenceDays.includes(day) }}
-                    >
-                      <Text style={[styles.dayText, recurrenceDays.includes(day) && styles.dayTextSelected]}>
-                        {day}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </>
-            )}
-
-            {/* Subtasks */}
-            <Text style={styles.sectionLabel}>SUBTASKS</Text>
-            {subtasks.map((st) => (
-              <View key={st.id} style={styles.subtaskItem}>
-                <TouchableOpacity
-                  style={[styles.subtaskCheckbox, st.done && styles.subtaskCheckboxDone]}
-                  onPress={() => toggleSubtask(st.id)}
-                >
-                  {st.done && <Text style={styles.subtaskCheckmark}>✓</Text>}
-                </TouchableOpacity>
-                <Text style={[styles.subtaskTitle, st.done && styles.subtaskTitleDone]}>{st.title}</Text>
-                <TouchableOpacity onPress={() => removeSubtask(st.id)} style={styles.subtaskRemove}>
-                  <Text style={styles.subtaskRemoveText}>✕</Text>
-                </TouchableOpacity>
-              </View>
-            ))}
-            <View style={styles.subtaskAddRow}>
-              <TextInput
-                style={styles.subtaskInput}
-                placeholder="Add a subtask..."
-                placeholderTextColor="#475569"
-                value={newSubtask}
-                onChangeText={setNewSubtask}
-                onSubmitEditing={addSubtask}
-                returnKeyType="done"
-                maxLength={80}
-              />
-              {newSubtask.trim() ? (
-                <TouchableOpacity style={styles.subtaskAddBtn} onPress={addSubtask}>
-                  <Text style={styles.subtaskAddBtnText}>+</Text>
-                </TouchableOpacity>
-              ) : null}
+                );
+              })}
             </View>
-
-            <Text style={styles.sectionLabel}>NOTES</Text>
-            <TextInput
-              style={[styles.titleInput, styles.descriptionInput]}
-              placeholder="Add details or notes..."
-              placeholderTextColor="#475569"
-              value={description}
-              onChangeText={setDescription}
-              multiline
-              maxLength={500}
-              accessibilityLabel="Activity notes"
-            />
-          </>
-        )}
-
-        {errorMessage && (
-          <Text style={{ color: '#FCA5A5', fontSize: 14, textAlign: 'center', marginTop: 12 }}>{errorMessage}</Text>
-        )}
-
-        {existingActivity && (
-          <>
-            <TouchableOpacity
-              style={styles.logButton}
-              onPress={() => navigation.navigate('LogForm', { activityId: existingActivity.id })}
-              accessibilityLabel="Log experience"
-              accessibilityRole="button"
-            >
-              <Text style={styles.logButtonText}>Log Experience</Text>
+            <TouchableOpacity style={styles.modalDoneBtn} onPress={() => setShowCalendar(false)}>
+              <Text style={styles.modalDoneBtnText}>Done</Text>
             </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
-            <TouchableOpacity
-              style={styles.deleteButton}
-              onPress={() => {
-                const doDelete = () => {
-                  removeActivity(existingActivity.id);
-                  navigation.goBack();
-                };
-                if (Platform.OS === 'web') {
-                  if (window.confirm('Delete this activity? This cannot be undone.')) {
-                    doDelete();
-                  }
-                } else {
-                  Alert.alert(
-                    'Delete Activity',
-                    'Delete this activity? This cannot be undone.',
-                    [
-                      { text: 'Cancel', style: 'cancel' },
-                      { text: 'Delete', style: 'destructive', onPress: doDelete },
-                    ],
-                  );
-                }
-              }}
-              accessibilityLabel="Delete activity"
-              accessibilityRole="button"
-            >
-              <Text style={styles.deleteButtonText}>Delete Activity</Text>
+      {/* ─── Time picker modal ─── */}
+      <Modal visible={showTimePicker} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalSheet}>
+            <View style={styles.modalHandleBar}><View style={styles.handle} /></View>
+            <Text style={[styles.modalTitle, { textAlign: 'center', marginBottom: 16 }]}>Pick Time</Text>
+            <View style={styles.timePickerRow}>
+              {/* Hour column */}
+              <View style={styles.timePickerColumn}>
+                <Text style={styles.timePickerColumnLabel}>Hour</Text>
+                <View style={styles.timePickerList}>
+                  <FlatList
+                    ref={hourScrollRef}
+                    data={HOURS}
+                    keyExtractor={(item) => `h-${item}`}
+                    renderItem={({ item }) => (
+                      <TouchableOpacity
+                        style={[styles.timePickerItem, selectedHour === item && styles.timePickerItemSelected]}
+                        onPress={() => setSelectedHour(item)}
+                      >
+                        <Text style={[styles.timePickerItemText, selectedHour === item && styles.timePickerItemTextSelected]}>
+                          {item.toString().padStart(2, '0')}
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                    getItemLayout={(_, index) => ({ length: ITEM_HEIGHT, offset: ITEM_HEIGHT * index, index })}
+                    initialScrollIndex={Math.max(0, selectedHour - 2)}
+                    showsVerticalScrollIndicator={false}
+                  />
+                </View>
+              </View>
+              <Text style={styles.timePickerColon}>:</Text>
+              {/* Minute column */}
+              <View style={styles.timePickerColumn}>
+                <Text style={styles.timePickerColumnLabel}>Min</Text>
+                <View style={styles.timePickerList}>
+                  <FlatList
+                    ref={minuteScrollRef}
+                    data={MINUTE_INCREMENTS}
+                    keyExtractor={(item) => `m-${item}`}
+                    renderItem={({ item }) => (
+                      <TouchableOpacity
+                        style={[styles.timePickerItem, selectedMinute === item && styles.timePickerItemSelected]}
+                        onPress={() => setSelectedMinute(item)}
+                      >
+                        <Text style={[styles.timePickerItemText, selectedMinute === item && styles.timePickerItemTextSelected]}>
+                          {item.toString().padStart(2, '0')}
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                    getItemLayout={(_, index) => ({ length: ITEM_HEIGHT, offset: ITEM_HEIGHT * index, index })}
+                    initialScrollIndex={Math.max(0, MINUTE_INCREMENTS.indexOf(selectedMinute) - 2)}
+                    showsVerticalScrollIndicator={false}
+                  />
+                </View>
+              </View>
+            </View>
+            <Text style={styles.timePickerPreview}>
+              {selectedHour.toString().padStart(2, '0')}:{selectedMinute.toString().padStart(2, '0')}
+            </Text>
+            <TouchableOpacity style={styles.modalDoneBtn} onPress={confirmTimePick}>
+              <Text style={styles.modalDoneBtnText}>Set Time</Text>
             </TouchableOpacity>
-          </>
-        )}
+          </View>
+        </View>
+      </Modal>
 
-        <TouchableOpacity
-          style={[styles.saveButton, saving && styles.saveButtonDisabled]}
-          onPress={handleSave}
-          disabled={saving}
-          accessibilityLabel={existingActivity ? 'Save changes' : 'Create activity'}
-          accessibilityRole="button"
-        >
-          {saving ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.saveButtonText}>{existingActivity ? 'Save Changes' : 'Create Activity'}</Text>
-          )}
-        </TouchableOpacity>
-      </ScrollView>
-      </KeyboardAvoidingView>
+      {/* ─── Category picker modal ─── */}
+      <Modal visible={showCategoryPicker} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalSheet}>
+            <View style={styles.modalHandleBar}><View style={styles.handle} /></View>
+            <Text style={[styles.modalTitle, { textAlign: 'center', marginBottom: 16 }]}>Category</Text>
+            <ScrollView style={styles.categoryList} showsVerticalScrollIndicator={false}>
+              {categories.map((cat) => (
+                <TouchableOpacity
+                  key={cat.id}
+                  style={[styles.categoryItem, categoryId === cat.id && { backgroundColor: cat.color + '18' }]}
+                  onPress={() => { setCategoryId(cat.id); setShowCategoryPicker(false); }}
+                >
+                  <Text style={styles.categoryItemIcon}>{cat.icon}</Text>
+                  <Text style={[styles.categoryItemName, categoryId === cat.id && { color: cat.color, fontWeight: '700' }]}>{cat.name}</Text>
+                  {categoryId === cat.id && <Text style={[styles.categoryItemCheck, { color: cat.color }]}>{'\u2713'}</Text>}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+            <TouchableOpacity style={styles.modalDoneBtn} onPress={() => setShowCategoryPicker(false)}>
+              <Text style={styles.modalDoneBtnText}>Done</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ─── Repeat picker modal ─── */}
+      <Modal visible={showRepeatPicker} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalSheet}>
+            <View style={styles.modalHandleBar}><View style={styles.handle} /></View>
+            <Text style={[styles.modalTitle, { textAlign: 'center', marginBottom: 16 }]}>Repeat</Text>
+            {REPEAT_OPTIONS.map((opt) => (
+              <TouchableOpacity
+                key={opt.value}
+                style={[styles.repeatItem, recurrence === opt.value && styles.repeatItemSelected]}
+                onPress={() => {
+                  setRecurrence(opt.value);
+                  if (opt.value !== 'WEEKLY') setRecurrenceDays([]);
+                  setShowRepeatPicker(false);
+                }}
+              >
+                <Text style={[styles.repeatItemText, recurrence === opt.value && styles.repeatItemTextSelected]}>
+                  {opt.label}
+                </Text>
+                {recurrence === opt.value && (
+                  <Text style={styles.repeatItemCheck}>{'\u2713'}</Text>
+                )}
+              </TouchableOpacity>
+            ))}
+            <TouchableOpacity
+              style={[styles.repeatItem, { marginTop: 8, borderTopWidth: 1, borderTopColor: colors.border }]}
+              onPress={() => { setRecurrence('NONE'); setRecurrenceDays([]); setShowRepeatPicker(false); }}
+            >
+              <Text style={[styles.repeatItemText, { color: colors.muted }]}>No repeat</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.modalDoneBtn, { marginTop: 16 }]} onPress={() => setShowRepeatPicker(false)}>
+              <Text style={styles.modalDoneBtnText}>Done</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -587,69 +716,72 @@ const styles = StyleSheet.create({
   },
   sheetTitle: { color: colors.text, fontSize: 18, fontWeight: '600' },
   sheetClose: { color: colors.muted, fontSize: 20, fontWeight: '400' },
-  content: { padding: 20, paddingTop: 0, paddingBottom: 40 },
-  sectionLabel: { color: colors.muted, fontSize: 12, fontWeight: '600', letterSpacing: 0.6, marginBottom: 8, marginTop: 20, textTransform: 'uppercase' },
+  content: { padding: 20, paddingTop: 4, paddingBottom: 40 },
+
+  // Title — hero
   titleInput: {
-    backgroundColor: colors.surface, borderRadius: radii.md, borderWidth: 1.5, borderColor: colors.border,
-    paddingHorizontal: 16, paddingVertical: 14, color: colors.text, fontSize: 15, minHeight: 44,
+    fontSize: 20, fontWeight: '600', color: colors.text,
+    backgroundColor: 'transparent', borderWidth: 0,
+    paddingHorizontal: 0, paddingVertical: 12, minHeight: 48,
   },
-  descriptionInput: { fontSize: 14, minHeight: 60, textAlignVertical: 'top' },
-  charCount: { color: colors.muted, fontSize: 11, textAlign: 'right', marginTop: 4 },
-  toggleRow: { flexDirection: 'row', gap: 8 },
-  toggleChip: {
-    flex: 1, backgroundColor: colors.surface, borderRadius: radii.md,
-    paddingVertical: 12, alignItems: 'center', minHeight: 44,
-    borderWidth: 1.5, borderColor: colors.border,
-  },
-  toggleChipSelected: { backgroundColor: colors.primaryBg, borderColor: colors.primary },
-  toggleText: { color: colors.muted, fontSize: 14, fontWeight: '600' },
-  toggleTextSelected: { color: colors.primary },
-  timeRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  timePicker: {
+
+  // Section label
+  sectionLabel: { color: colors.muted, fontSize: 12, fontWeight: '600', letterSpacing: 0.6, marginBottom: 8, marginTop: 20, textTransform: 'uppercase' },
+
+  // Form rows (date, time, category, frequency)
+  formRow: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: colors.surface, borderRadius: radii.md, borderWidth: 1.5, borderColor: colors.border, padding: 8,
+    paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: colors.border,
   },
-  timeBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
-  timeBtnText: { color: colors.primary, fontSize: 22, fontWeight: '700' },
-  timeValue: { color: colors.text, fontSize: 20, fontWeight: '700', minWidth: 56, textAlign: 'center' },
-  timeSep: { color: colors.muted, fontSize: 16 },
-  endTime: { color: colors.text2, fontSize: 16, fontWeight: '600' },
+  formRowIcon: { fontSize: 18 },
+  formRowLabel: { flex: 1, color: colors.text, fontSize: 15, fontWeight: '500' },
+  formRowChevron: { color: colors.muted, fontSize: 16, fontWeight: '600' },
+  formRowClear: { color: colors.primary, fontSize: 13, fontWeight: '600' },
+
+  // Duration pills (borderless, filled bg)
   durationGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  durationChip: {
-    backgroundColor: colors.surface, borderRadius: radii.pill,
-    paddingVertical: 8, paddingHorizontal: 14, minHeight: 40, justifyContent: 'center',
-    borderWidth: 1.5, borderColor: colors.border,
+  durationPill: {
+    backgroundColor: colors.surface2, borderRadius: radii.pill,
+    paddingVertical: 8, paddingHorizontal: 16, minHeight: 36, justifyContent: 'center',
   },
-  durationChipSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
-  durationText: { color: colors.text2, fontSize: 12, fontWeight: '600' },
-  durationTextSelected: { color: '#fff' },
-  hScroll: { marginHorizontal: -20 },
-  hRow: { flexDirection: 'row', gap: 8, paddingHorizontal: 20 },
-  catChip: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    backgroundColor: colors.surface, borderRadius: radii.pill, borderWidth: 1.5, borderColor: colors.border,
-    paddingVertical: 8, paddingHorizontal: 12, minHeight: 44,
-  },
-  catIcon: { fontSize: 16 },
-  catName: { color: colors.text2, fontSize: 13, fontWeight: '500' },
-  recurrenceChip: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    backgroundColor: colors.surface, borderRadius: radii.pill, borderWidth: 1.5, borderColor: colors.border,
-    paddingVertical: 8, paddingHorizontal: 14, minHeight: 44,
-  },
-  recurrenceChipSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
-  recurrenceIcon: { fontSize: 14 },
-  recurrenceText: { color: colors.text2, fontSize: 13, fontWeight: '600' },
-  recurrenceTextSelected: { color: '#fff' },
-  dayPickerRow: { flexDirection: 'row', gap: 6, justifyContent: 'space-between' },
-  dayChip: {
+  durationPillSelected: { backgroundColor: colors.primary },
+  durationPillText: { color: colors.text2, fontSize: 13, fontWeight: '600' },
+  durationPillTextSelected: { color: '#fff' },
+
+  // Custom duration
+  customDurationRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8 },
+  customDurationInput: {
     flex: 1, backgroundColor: colors.surface, borderRadius: radii.sm,
-    paddingVertical: 10, alignItems: 'center', minHeight: 40,
-    borderWidth: 1.5, borderColor: colors.border,
+    borderWidth: 1, borderColor: colors.border,
+    paddingHorizontal: 12, paddingVertical: 10, color: colors.text, fontSize: 15,
   },
-  dayChipSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
+  customDurationBtn: {
+    backgroundColor: colors.primary, borderRadius: radii.sm,
+    paddingHorizontal: 16, paddingVertical: 10,
+  },
+  customDurationBtnText: { color: '#fff', fontSize: 14, fontWeight: '600' },
+
+  // Expandable sections (subtasks, notes)
+  expandableRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: colors.border,
+  },
+  expandableLabel: { flex: 1, color: colors.text, fontSize: 15, fontWeight: '500' },
+  expandableBadge: { color: colors.primary, fontSize: 13, fontWeight: '700' },
+  expandableChevron: { color: colors.muted, fontSize: 18 },
+  expandableContent: { paddingTop: 8, paddingBottom: 4 },
+
+  // Day picker
+  dayPickerRow: { flexDirection: 'row', gap: 6, justifyContent: 'space-between', marginTop: 8 },
+  dayChip: {
+    flex: 1, backgroundColor: colors.surface2, borderRadius: radii.sm,
+    paddingVertical: 10, alignItems: 'center', minHeight: 40,
+  },
+  dayChipSelected: { backgroundColor: colors.primary },
   dayText: { color: colors.text2, fontSize: 12, fontWeight: '600' },
   dayTextSelected: { color: '#fff' },
+
+  // Subtasks
   subtaskItem: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
     backgroundColor: colors.surface, borderRadius: radii.sm, borderWidth: 1, borderColor: colors.border,
@@ -666,7 +798,7 @@ const styles = StyleSheet.create({
   subtaskTitleDone: { textDecorationLine: 'line-through', color: colors.muted },
   subtaskRemove: { width: 24, height: 24, alignItems: 'center', justifyContent: 'center' },
   subtaskRemoveText: { color: colors.muted, fontSize: 14 },
-  subtaskAddRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  subtaskAddRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 },
   subtaskInput: {
     flex: 1, backgroundColor: colors.surface, borderRadius: radii.sm,
     borderWidth: 1, borderColor: colors.border,
@@ -677,6 +809,16 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center',
   },
   subtaskAddBtnText: { color: '#fff', fontSize: 18 },
+
+  // Notes
+  notesInput: {
+    backgroundColor: colors.surface, borderRadius: radii.sm,
+    borderWidth: 1, borderColor: colors.border,
+    paddingHorizontal: 12, paddingVertical: 10, color: colors.text, fontSize: 14,
+    minHeight: 80, textAlignVertical: 'top',
+  },
+
+  // Buttons
   logButton: {
     backgroundColor: colors.primaryBg, borderRadius: radii.button,
     paddingVertical: 16, alignItems: 'center', marginTop: 24, minHeight: 44,
@@ -692,35 +834,25 @@ const styles = StyleSheet.create({
   },
   saveButtonDisabled: { opacity: 0.6 },
   saveButtonText: { color: '#fff', fontSize: 15, fontWeight: '600', letterSpacing: 0.3 },
-  moreToggle: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    marginTop: 24, paddingVertical: 12, paddingHorizontal: 4,
-    borderTopWidth: 1, borderTopColor: colors.border,
-  },
-  moreToggleText: { color: colors.text2, fontSize: 14, fontWeight: '600' },
-  moreToggleChevron: { color: colors.muted, fontSize: 20, fontWeight: '600' },
 
-  // Date picker chips
-  dateChipRow: { flexDirection: 'row', gap: 8 },
-  dateChip: {
-    flex: 1, backgroundColor: colors.surface, borderRadius: radii.md,
-    paddingVertical: 10, alignItems: 'center', minHeight: 44,
-    borderWidth: 1.5, borderColor: colors.border,
-  },
-  dateChipSelected: { backgroundColor: colors.primaryBg, borderColor: colors.primary },
-  dateChipText: { color: colors.text2, fontSize: 13, fontWeight: '600' },
-  dateChipTextSelected: { color: colors.primary },
-
-  // Calendar modal
-  calendarOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.3)', justifyContent: 'flex-end' },
-  calendarSheet: {
-    backgroundColor: colors.surface, borderTopLeftRadius: radii.sheet, borderTopRightRadius: radii.sheet,
+  // ─── Modal shared ───
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.3)', justifyContent: 'flex-end' },
+  modalSheet: {
+    backgroundColor: colors.bg, borderTopLeftRadius: radii.sheet, borderTopRightRadius: radii.sheet,
     padding: spacing.xxl, paddingBottom: 40,
   },
-  calendarHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
-  calendarNav: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  calendarNavText: { color: colors.primary, fontSize: 24, fontWeight: '600' },
-  calendarMonthLabel: { color: colors.text, fontSize: 16, fontWeight: '600' },
+  modalHandleBar: { alignItems: 'center', marginBottom: 8 },
+  modalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
+  modalNav: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
+  modalNavText: { color: colors.primary, fontSize: 24, fontWeight: '600' },
+  modalTitle: { color: colors.text, fontSize: 16, fontWeight: '600' },
+  modalDoneBtn: {
+    backgroundColor: colors.primary, borderRadius: radii.button,
+    paddingVertical: 14, alignItems: 'center', marginTop: 16,
+  },
+  modalDoneBtnText: { color: '#fff', fontSize: 15, fontWeight: '600' },
+
+  // ─── Calendar ───
   calendarWeekRow: { flexDirection: 'row', marginBottom: 8 },
   calendarWeekDay: { flex: 1, textAlign: 'center', color: colors.muted, fontSize: 12, fontWeight: '600' },
   calendarGrid: { flexDirection: 'row', flexWrap: 'wrap' },
@@ -732,9 +864,43 @@ const styles = StyleSheet.create({
   calendarDayMuted: { color: colors.muted, opacity: 0.4 },
   calendarDayTextSelected: { color: '#fff', fontWeight: '700' },
   calendarDayToday: { color: colors.primary, fontWeight: '700' },
-  calendarDone: {
-    backgroundColor: colors.primary, borderRadius: radii.button,
-    paddingVertical: 14, alignItems: 'center', marginTop: 16,
+
+  // ─── Time picker ───
+  timePickerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  timePickerColumn: { alignItems: 'center', flex: 1 },
+  timePickerColumnLabel: { color: colors.muted, fontSize: 12, fontWeight: '600', marginBottom: 8, textTransform: 'uppercase' },
+  timePickerList: { height: 220, overflow: 'hidden', borderRadius: radii.md, backgroundColor: colors.surface },
+  timePickerItem: {
+    height: 44, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24,
   },
-  calendarDoneText: { color: '#fff', fontSize: 15, fontWeight: '600' },
+  timePickerItemSelected: { backgroundColor: colors.primaryBg },
+  timePickerItemText: { color: colors.text2, fontSize: 18, fontWeight: '500' },
+  timePickerItemTextSelected: { color: colors.primary, fontWeight: '700' },
+  timePickerColon: { color: colors.text, fontSize: 28, fontWeight: '700', marginTop: 20 },
+  timePickerPreview: {
+    textAlign: 'center', color: colors.text, fontSize: 32, fontWeight: '700',
+    marginTop: 16, marginBottom: 4,
+  },
+
+  // ─── Category picker ───
+  categoryList: { maxHeight: 340 },
+  categoryItem: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    paddingVertical: 14, paddingHorizontal: 12, borderRadius: radii.sm,
+    marginBottom: 2,
+  },
+  categoryItemIcon: { fontSize: 20 },
+  categoryItemName: { flex: 1, color: colors.text, fontSize: 15, fontWeight: '500' },
+  categoryItemCheck: { fontSize: 16, fontWeight: '700' },
+
+  // ─── Repeat picker ───
+  repeatItem: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingVertical: 14, paddingHorizontal: 12, borderRadius: radii.sm,
+    marginBottom: 2,
+  },
+  repeatItemSelected: { backgroundColor: colors.primaryBg },
+  repeatItemText: { color: colors.text, fontSize: 15, fontWeight: '500' },
+  repeatItemTextSelected: { color: colors.primary, fontWeight: '700' },
+  repeatItemCheck: { color: colors.primary, fontSize: 16, fontWeight: '700' },
 });

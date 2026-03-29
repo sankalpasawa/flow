@@ -91,6 +91,8 @@ The web DB (`db.web.ts`) is a custom in-memory SQL parser, NOT real SQLite. It s
 13. **Always persist instructions** — every decision goes to CLAUDE.md/TODO.md and gets pushed to git
 14. **Consistent calendar across app** — same HOUR_HEIGHT, colors, block sizing, overlap layout used in Today canvas, Plan Hours view, and any future calendar views. Single source of truth for calendar constants.
 15. **Design system as code** — all UI built from a formal design system (typography scale, spacing grid, colors, shadows, component sizes, animation durations). No hardcoded values in components.
+16. **Edit activity form** — no header (today/tom/date/someday). Time picker: scroll wheel to minute precision. Duration: None, 15m, 30m, 1h, then custom widget. Category: dropdown. Frequency: once or repeat (Any.do style repeat UI). Keep it minimal.
+17. **No infinite scroll on canvas** — single day. Horizontal thumb swipe left/right changes day. Keep it simple.
 
 ## What to Work On
 Read `TODO.md` for the full list. Top priorities:

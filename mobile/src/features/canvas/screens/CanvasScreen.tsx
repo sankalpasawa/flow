@@ -2,12 +2,13 @@ import React, { useEffect, useRef, useCallback, useMemo, useState } from 'react'
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
   SafeAreaView, ActivityIndicator, Platform, RefreshControl, useWindowDimensions,
-  NativeSyntheticEvent, NativeScrollEvent, InteractionManager,
 } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { runOnJS } from 'react-native-reanimated';
+import * as Haptics from 'expo-haptics';
 import { format, isSameDay, isWithinInterval, parseISO, addDays, subDays } from 'date-fns';
 import { useAuthStore } from '../../../store/authStore';
 import { useActivitiesStore } from '../../../store/activitiesStore';
-import { getActivitiesForDay } from '../../../lib/db/activities';
 import { DateStrip } from '../components/DateStrip';
 import { ActivityCard } from '../components/ActivityCard';
 import { TaskSection } from '../components/TaskSection';
@@ -22,15 +23,10 @@ interface Props {
   navigation: { navigate: (screen: string, params?: Record<string, unknown>) => void };
 }
 
-/**
- * Standard calendar overlap algorithm (Google Calendar / Notion Calendar style).
- * Groups overlapping activities into columns so they render side by side.
- */
 function computeOverlapLayout(activities: Activity[]): Map<string, { column: number; totalColumns: number }> {
   const result = new Map<string, { column: number; totalColumns: number }>();
   if (activities.length === 0) return result;
 
-  // Parse times once and sort by start, then by duration descending (longer events first)
   const parsed = activities.map((a) => {
     const start = parseISO(a.start_time).getTime();
     const end = start + a.duration_minutes * 60000;
@@ -38,7 +34,6 @@ function computeOverlapLayout(activities: Activity[]): Map<string, { column: num
   });
   parsed.sort((a, b) => a.start - b.start || (b.end - b.start) - (a.end - a.start));
 
-  // Build overlap groups: connected components where any pair overlaps
   const groups: (typeof parsed)[] = [];
   let currentGroup = [parsed[0]];
   let groupEnd = parsed[0].end;
@@ -46,7 +41,6 @@ function computeOverlapLayout(activities: Activity[]): Map<string, { column: num
   for (let i = 1; i < parsed.length; i++) {
     const item = parsed[i];
     if (item.start < groupEnd) {
-      // Overlaps with the current group
       currentGroup.push(item);
       groupEnd = Math.max(groupEnd, item.end);
     } else {
@@ -57,13 +51,11 @@ function computeOverlapLayout(activities: Activity[]): Map<string, { column: num
   }
   groups.push(currentGroup);
 
-  // Assign columns within each group using a greedy approach
   for (const group of groups) {
-    const columns: number[] = []; // columns[i] = end time of the last activity in column i
+    const columns: number[] = [];
     const assignments = new Map<string, number>();
 
     for (const item of group) {
-      // Find the first column where this activity fits (no overlap)
       let placed = false;
       for (let c = 0; c < columns.length; c++) {
         if (item.start >= columns[c]) {
@@ -81,10 +73,7 @@ function computeOverlapLayout(activities: Activity[]): Map<string, { column: num
 
     const totalColumns = columns.length;
     for (const item of group) {
-      result.set(item.id, {
-        column: assignments.get(item.id)!,
-        totalColumns,
-      });
+      result.set(item.id, { column: assignments.get(item.id)!, totalColumns });
     }
   }
 
@@ -93,89 +82,29 @@ function computeOverlapLayout(activities: Activity[]): Map<string, { column: num
 
 export function CanvasScreen({ navigation }: Props) {
   const { user } = useAuthStore();
-  const { activities, untimedTasks, logs, loading, selectedDate, setSelectedDate, loadDay, quickToggleComplete, addTask } = useActivitiesStore();
+  const { activities, untimedTasks, logs, loading, selectedDate, setSelectedDate, loadDay, quickToggleComplete, addTask, editActivity } = useActivitiesStore();
   const scrollRef = useRef<ScrollView>(null);
   const { width: windowWidth } = useWindowDimensions();
   const [refreshing, setRefreshing] = useState(false);
-  const [prevDayActivities, setPrevDayActivities] = useState<Activity[]>([]);
-  const [nextDayActivities, setNextDayActivities] = useState<Activity[]>([]);
-  const isResettingScroll = useRef(false);
-  // Track whether we're in a seamless day transition (skip loading spinner)
-  const isSeamlessTransition = useRef(false);
-  // Cache for pre-fetched adjacent day data keyed by date string
-  const adjacentCache = useRef<Record<string, Activity[]>>({});
 
-  /** Full load: fetches center day via store + adjacent days for the 3-day window */
-  const load = useCallback(
-    async (date: Date, seamless = false) => {
-      if (!user) return;
-      if (seamless) {
-        isSeamlessTransition.current = true;
-      }
-      await loadDay(user.id, date);
-      // Load adjacent days for infinite scroll
-      const prevDate = subDays(date, 1);
-      const nextDate = addDays(date, 1);
-      const prevKey = format(prevDate, 'yyyy-MM-dd');
-      const nextKey = format(nextDate, 'yyyy-MM-dd');
+  const load = useCallback(async (date: Date) => {
+    if (!user) return;
+    await loadDay(user.id, date);
+  }, [user, loadDay]);
 
-      // Use cached data if available (pre-fetched), otherwise fetch
-      const prevCached = adjacentCache.current[prevKey];
-      const nextCached = adjacentCache.current[nextKey];
-
-      const [prev, next] = await Promise.all([
-        prevCached ? Promise.resolve(prevCached) : getActivitiesForDay(user.id, prevKey),
-        nextCached ? Promise.resolve(nextCached) : getActivitiesForDay(user.id, nextKey),
-      ]);
-      setPrevDayActivities(prev);
-      setNextDayActivities(next);
-
-      // Pre-fetch the outer adjacent days (day-2 and day+2) so they're ready
-      // when the user scrolls again
-      const outerPrevKey = format(subDays(date, 2), 'yyyy-MM-dd');
-      const outerNextKey = format(addDays(date, 2), 'yyyy-MM-dd');
-      Promise.all([
-        getActivitiesForDay(user.id, outerPrevKey),
-        getActivitiesForDay(user.id, outerNextKey),
-      ]).then(([outerPrev, outerNext]) => {
-        adjacentCache.current[outerPrevKey] = outerPrev;
-        adjacentCache.current[outerNextKey] = outerNext;
-      }).catch(() => { /* pre-fetch is best-effort */ });
-
-      // Store the fetched adjacent data in cache for future transitions
-      adjacentCache.current[prevKey] = prev;
-      adjacentCache.current[nextKey] = next;
-
-      if (seamless) {
-        isSeamlessTransition.current = false;
-      }
-    },
-    [user, loadDay]
-  );
-
-  // Load data when selectedDate changes — but skip if it was a scroll-driven change
-  // (scroll-driven changes just update the header, data is already loaded for 3 days)
-  const lastLoadedDate = useRef(selectedDate);
-  useEffect(() => {
-    // Only reload if the date jumped more than 1 day (e.g. tap on date strip, not scroll)
-    const diff = Math.abs(selectedDate.getTime() - lastLoadedDate.current.getTime());
-    const isScrollDriven = diff <= 86400000 * 1.5; // within ~1.5 days = scroll
-    if (!isScrollDriven || !lastLoadedDate.current) {
-      void load(selectedDate);
-    }
-    lastLoadedDate.current = selectedDate;
-  }, [selectedDate, load]);
+  useEffect(() => { void load(selectedDate); }, [selectedDate, load]);
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
-    try {
-      await load(selectedDate);
-    } finally {
-      setRefreshing(false);
-    }
+    try { await load(selectedDate); } finally { setRefreshing(false); }
   }, [load, selectedDate]);
 
-  // Inject CSS fix for web scroll containment
+  const handleReschedule = useCallback(async (activityId: string, newStartTime: string) => {
+    await editActivity(activityId, { start_time: newStartTime });
+    if (user) await loadDay(user.id, selectedDate);
+  }, [editActivity, loadDay, user, selectedDate]);
+
+  // CSS fix for web scroll containment
   useEffect(() => {
     if (Platform.OS !== 'web' || typeof document === 'undefined') return;
     const id = 'dayflow-scroll-fix';
@@ -186,102 +115,57 @@ export function CanvasScreen({ navigation }: Props) {
     document.head.appendChild(style);
   }, []);
 
-  // Auto-scroll to center day on mount and explicit date changes (DateStrip tap).
-  // During seamless transitions the scroll handler already repositioned — skip.
-  const lastScrolledDate = useRef<string>('');
+  // Scroll to current hour when viewing today
   useEffect(() => {
-    const dateKey = format(selectedDate, 'yyyy-MM-dd');
-    // Skip if this render was triggered by a seamless boundary transition —
-    // the scroll position was already set by the scroll handler.
-    if (isSeamlessTransition.current) {
-      lastScrolledDate.current = dateKey;
-      return;
-    }
-    // Also skip if we already scrolled to this date (avoids double-fire from
-    // activities array updating after loadDay resolves)
-    if (lastScrolledDate.current === dateKey && !refreshing) return;
-    lastScrolledDate.current = dateKey;
-
+    if (!isSameDay(selectedDate, new Date())) return;
     const timer = setTimeout(() => {
-      isResettingScroll.current = true;
-      const centerOffset = TOTAL_CANVAS_HEIGHT; // skip prev day section
-      if (isSameDay(selectedDate, new Date())) {
-        const now = new Date();
-        const timeOffset = ((now.getHours() - START_HOUR) + now.getMinutes() / 60) * HOUR_HEIGHT - 100;
-        scrollRef.current?.scrollTo({ y: centerOffset + Math.max(0, timeOffset), animated: false });
-      } else {
-        scrollRef.current?.scrollTo({ y: centerOffset, animated: false });
-      }
-      // Allow boundary detection after scroll reset settles
-      setTimeout(() => { isResettingScroll.current = false; }, 200);
+      const y = Math.max(0, (new Date().getHours() - 2) * HOUR_HEIGHT);
+      scrollRef.current?.scrollTo({ y, animated: false });
     }, 100);
     return () => clearTimeout(timer);
-  }, [selectedDate, refreshing]);
+  }, [selectedDate]);
 
   const now = new Date();
   const isToday = isSameDay(selectedDate, now);
 
-  // Track which day the user is visually looking at based on scroll position.
-  // Update the date strip lazily — no scroll reset, no data reload, no jank.
-  const displayedDateRef = useRef(selectedDate);
-
-  const handleScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    if (isResettingScroll.current) return;
-    const scrollY = e.nativeEvent.contentOffset.y;
-
-    // Determine which day section is most visible
-    let dayOffset = 0;
-    if (scrollY < TOTAL_CANVAS_HEIGHT * 0.5) {
-      dayOffset = -1; // viewing previous day
-    } else if (scrollY > TOTAL_CANVAS_HEIGHT * 1.5) {
-      dayOffset = 1; // viewing next day
-    }
-
-    const visibleDate = dayOffset === -1 ? subDays(selectedDate, 1)
-      : dayOffset === 1 ? addDays(selectedDate, 1)
-      : selectedDate;
-
-    // Only update date strip if the visible day actually changed
-    if (!isSameDay(visibleDate, displayedDateRef.current)) {
-      displayedDateRef.current = visibleDate;
-      setSelectedDate(visibleDate);
-    }
-  }, [selectedDate, setSelectedDate]);
-
-  // 3-day window dates
-  const prevDate = useMemo(() => subDays(selectedDate, 1), [selectedDate]);
-  const nextDate = useMemo(() => addDays(selectedDate, 1), [selectedDate]);
-
-  // Filter timed activities for each day
-  const filterTimedForDay = useCallback((acts: Activity[], date: Date) =>
-    acts.filter((a) => {
+  const timedActivities = useMemo(() =>
+    activities.filter((a) => {
       const start = parseISO(a.start_time);
-      return isSameDay(start, date) && start.getHours() >= START_HOUR;
+      return isSameDay(start, selectedDate) && start.getHours() >= START_HOUR;
     }),
-    []
+    [activities, selectedDate]
   );
 
-  const timedActivities = useMemo(() => filterTimedForDay(activities, selectedDate), [activities, selectedDate, filterTimedForDay]);
-  const prevTimedActivities = useMemo(() => filterTimedForDay(prevDayActivities, prevDate), [prevDayActivities, prevDate, filterTimedForDay]);
-  const nextTimedActivities = useMemo(() => filterTimedForDay(nextDayActivities, nextDate), [nextDayActivities, nextDate, filterTimedForDay]);
-
-  // Compute overlap layouts for each day
   const overlapLayout = useMemo(() => computeOverlapLayout(timedActivities), [timedActivities]);
-  const prevOverlapLayout = useMemo(() => computeOverlapLayout(prevTimedActivities), [prevTimedActivities]);
-  const nextOverlapLayout = useMemo(() => computeOverlapLayout(nextTimedActivities), [nextTimedActivities]);
 
   const ACTIVITY_RIGHT_MARGIN = 12;
   const availableWidth = windowWidth - HOUR_LABEL_WIDTH - ACTIVITY_RIGHT_MARGIN;
 
-  // Build hour labels
   const hours = useMemo(() => {
     const h: number[] = [];
     for (let i = START_HOUR; i < END_HOUR; i++) h.push(i);
     return h;
   }, []);
 
-  // Current time indicator position (shown in whichever section is today)
-  const nowY = ((now.getHours() - START_HOUR) + now.getMinutes() / 60) * HOUR_HEIGHT;
+  const nowY = (now.getHours() + now.getMinutes() / 60) * HOUR_HEIGHT;
+
+  // Horizontal swipe to change day
+  const swipeGesture = Gesture.Pan()
+    .activeOffsetX([-30, 30])
+    .failOffsetY([-10, 10])
+    .onEnd((e) => {
+      'worklet';
+      if (Math.abs(e.translationX) > 60) {
+        const direction = e.translationX > 0 ? -1 : 1;
+        runOnJS(changeDay)(direction);
+      }
+    });
+
+  function changeDay(direction: number) {
+    const newDate = direction === 1 ? addDays(selectedDate, 1) : subDays(selectedDate, 1);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setSelectedDate(newDate);
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -290,17 +174,14 @@ export function CanvasScreen({ navigation }: Props) {
         <Text style={styles.headerTitle}>
           {isToday ? 'Today' : format(selectedDate, 'EEE, MMM d')}
         </Text>
-        <TouchableOpacity
-          style={styles.searchBtn}
-          onPress={() => navigation.navigate('Search')}
-        >
-          <Text style={styles.searchIcon}>⌕</Text>
+        <TouchableOpacity style={styles.searchBtn} onPress={() => navigation.navigate('Search')}>
+          <Text style={styles.searchIcon}>{'\u2315'}</Text>
         </TouchableOpacity>
       </View>
 
       <DateStrip selectedDate={selectedDate} onSelectDate={setSelectedDate} />
 
-      {/* Tasks */}
+      {/* Tasks — pinned above canvas */}
       <TaskSection
         tasks={untimedTasks}
         todayStr={format(new Date(), 'yyyy-MM-dd')}
@@ -311,9 +192,10 @@ export function CanvasScreen({ navigation }: Props) {
         }}
       />
 
-      {/* Canvas — 3-day infinite scroll */}
+      {/* Canvas — single day, swipe left/right to change day */}
+      <GestureDetector gesture={swipeGesture}>
       <View nativeID="canvas-wrapper" style={styles.canvasWrapper}>
-        {loading && !refreshing && !isSeamlessTransition.current ? (
+        {loading && !refreshing ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator color={colors.primary} size="small" />
           </View>
@@ -321,116 +203,87 @@ export function CanvasScreen({ navigation }: Props) {
           <ScrollView
             ref={scrollRef}
             style={styles.canvas}
-            contentContainerStyle={[styles.canvasContent, { height: TOTAL_CANVAS_HEIGHT * 3 + 100 }]}
+            contentContainerStyle={{ height: TOTAL_CANVAS_HEIGHT + 40 }}
             showsVerticalScrollIndicator={false}
-            onScroll={handleScroll}
-            scrollEventThrottle={64}
-            refreshControl={
-              <RefreshControl
-                refreshing={refreshing}
-                onRefresh={handleRefresh}
-              />
-            }
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
           >
-            {/* Day sections: prev, current, next */}
-            {([
-              { date: prevDate, dayActivities: prevTimedActivities, layout: prevOverlapLayout, key: 'prev' },
-              { date: selectedDate, dayActivities: timedActivities, layout: overlapLayout, key: 'current' },
-              { date: nextDate, dayActivities: nextTimedActivities, layout: nextOverlapLayout, key: 'next' },
-            ] as const).map(({ date: sectionDate, dayActivities: sectionActivities, layout: sectionLayout, key: sectionKey }, sectionIndex) => {
-              const isSectionToday = isSameDay(sectionDate, now);
-              return (
-                <View key={sectionKey} style={{ height: TOTAL_CANVAS_HEIGHT }}>
-                  {/* Day separator */}
-                  {sectionIndex > 0 && (
-                    <View style={styles.daySeparator} pointerEvents="none">
-                      <View style={styles.daySeparatorLine} />
-                      <Text style={styles.daySeparatorLabel}>
-                        {isSectionToday ? 'Today' : format(sectionDate, 'EEE, MMM d')}
-                      </Text>
-                      <View style={styles.daySeparatorLine} />
-                    </View>
-                  )}
-
-                  {/* Timeline container */}
-                  <View style={styles.timeline}>
-                    {/* Hour grid lines and labels */}
-                    {hours.map((h) => {
-                      const y = (h - START_HOUR) * HOUR_HEIGHT;
-                      const isCurrentHour = isSectionToday && h === now.getHours();
-                      return (
-                        <View key={h} style={[styles.hourRow, { top: y }]} pointerEvents="none">
-                          <Text style={[styles.hourLabel, isCurrentHour && styles.hourNow]}>
-                            {formatHour(h)}
-                          </Text>
-                          <View style={[styles.hourLine, isCurrentHour && styles.hourLineNow]} />
-                        </View>
-                      );
-                    })}
-
-                    {/* Current time indicator */}
-                    {isSectionToday && nowY >= 0 && (
-                      <View style={[styles.nowIndicator, { top: nowY }]} pointerEvents="none">
-                        <View style={styles.nowDot} />
-                        <View style={styles.nowLine} />
-                      </View>
-                    )}
-
-                    {/* Empty tap areas for each hour (behind activities) */}
-                    {hours.map((h) => {
-                      const y = (h - START_HOUR) * HOUR_HEIGHT;
-                      return (
-                        <TouchableOpacity
-                          key={`empty-${sectionKey}-${h}`}
-                          style={[styles.emptyTap, { top: y, height: HOUR_HEIGHT }]}
-                          onPress={() => navigation.navigate('ActivityForm', { startHour: `${h}:00`, date: format(sectionDate, 'yyyy-MM-dd') })}
-                          activeOpacity={0.3}
-                        />
-                      );
-                    })}
-
-                    {/* Activity blocks */}
-                    {sectionActivities.map((activity) => {
-                      const { top, height } = getActivityPosition(activity.start_time, activity.duration_minutes);
-                      const log = logs[activity.id];
-                      const actStart = parseISO(activity.start_time);
-                      const actEnd = new Date(actStart.getTime() + activity.duration_minutes * 60000);
-                      const isCurrentlyActive = isSectionToday && isWithinInterval(now, { start: actStart, end: actEnd });
-                      const isPast = isSectionToday && actEnd < now;
-                      const isOverdue = activity.status === 'PLANNED' && actStart < now && !isSameDay(actStart, now);
-
-                      const itemLayout = sectionLayout.get(activity.id);
-                      const colWidth = itemLayout ? availableWidth / itemLayout.totalColumns : availableWidth;
-                      const leftOffset = itemLayout ? HOUR_LABEL_WIDTH + itemLayout.column * colWidth : HOUR_LABEL_WIDTH;
-
-                      return (
-                        <View
-                          key={activity.id}
-                          style={[
-                            styles.activityBlock,
-                            { top, height, left: leftOffset, width: colWidth, right: undefined },
-                            isPast && { opacity: 0.7 },
-                          ]}
-                        >
-                          <ActivityCard
-                            activity={activity}
-                            log={log}
-                            isNow={isCurrentlyActive}
-                            isOverdue={isOverdue}
-                            height={height}
-                            onPress={() => navigation.navigate('ActivityForm', { activityId: activity.id })}
-                            onQuickComplete={() => quickToggleComplete(activity.id)}
-                          />
-                        </View>
-                      );
-                    })}
+            <View style={styles.timeline}>
+              {/* Hour grid */}
+              {hours.map((h) => {
+                const y = (h - START_HOUR) * HOUR_HEIGHT;
+                const isPastHour = isToday && h < now.getHours();
+                return (
+                  <View key={h} style={[styles.hourRow, { top: y }]} pointerEvents="none">
+                    <Text style={[styles.hourLabel, isToday && h === now.getHours() && styles.hourNow]}>
+                      {formatHour(h)}
+                    </Text>
+                    <View style={[styles.hourLine, isPastHour && styles.hourLinePast]} />
                   </View>
+                );
+              })}
+
+              {/* Empty hour tap targets */}
+              {hours.map((h) => {
+                const y = (h - START_HOUR) * HOUR_HEIGHT;
+                return (
+                  <TouchableOpacity
+                    key={`empty-${h}`}
+                    style={[styles.emptyTap, { top: y, height: HOUR_HEIGHT }]}
+                    onPress={() => navigation.navigate('ActivityForm', { startHour: `${h}:00`, date: format(selectedDate, 'yyyy-MM-dd') })}
+                    activeOpacity={0.3}
+                  />
+                );
+              })}
+
+              {/* Now indicator */}
+              {isToday && nowY >= 0 && (
+                <View style={[styles.nowIndicator, { top: nowY }]} pointerEvents="none">
+                  <View style={styles.nowDot} />
+                  <View style={styles.nowLine} />
                 </View>
-              );
-            })}
+              )}
+
+              {/* Activity blocks */}
+              {timedActivities.map((activity) => {
+                const { top, height } = getActivityPosition(activity.start_time, activity.duration_minutes);
+                const log = logs[activity.id];
+                const actStart = parseISO(activity.start_time);
+                const actEnd = new Date(actStart.getTime() + activity.duration_minutes * 60000);
+                const isCurrentlyActive = isToday && isWithinInterval(now, { start: actStart, end: actEnd });
+                const isPast = isToday && actEnd < now;
+                const isOverdue = activity.status === 'PLANNED' && actStart < now && !isSameDay(actStart, now);
+
+                const itemLayout = overlapLayout.get(activity.id);
+                const colWidth = itemLayout ? availableWidth / itemLayout.totalColumns : availableWidth;
+                const leftOffset = itemLayout ? HOUR_LABEL_WIDTH + itemLayout.column * colWidth : HOUR_LABEL_WIDTH;
+
+                return (
+                  <View
+                    key={activity.id}
+                    style={[
+                      styles.activityBlock,
+                      { top, height, left: leftOffset, width: colWidth, right: undefined },
+                      isPast && { opacity: 0.7 },
+                    ]}
+                  >
+                    <ActivityCard
+                      activity={activity}
+                      log={log}
+                      isNow={isCurrentlyActive}
+                      isOverdue={isOverdue}
+                      height={height}
+                      onPress={() => navigation.navigate('ActivityForm', { activityId: activity.id })}
+                      onQuickComplete={() => quickToggleComplete(activity.id)}
+                      onReschedule={handleReschedule}
+                    />
+                  </View>
+                );
+              })}
+            </View>
           </ScrollView>
         )}
       </View>
+      </GestureDetector>
 
       {/* FAB */}
       <TouchableOpacity
@@ -446,121 +299,48 @@ export function CanvasScreen({ navigation }: Props) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-
-  // Header
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: spacing.screen, paddingTop: 12, paddingBottom: 2,
   },
-  headerTitle: {
-    color: colors.text, ...type.h1,
-  },
-  searchBtn: {
-    width: 44, height: 44, borderRadius: 22,
-    alignItems: 'center', justifyContent: 'center',
-  },
+  headerTitle: { color: colors.text, ...type.h1 },
+  searchBtn: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
   searchIcon: { color: colors.muted, fontSize: 24 },
 
-  // Canvas
   loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   canvasWrapper: { flex: 1 },
   canvas: { flex: 1 },
-  canvasContent: { paddingTop: 4 },
 
-  // Timeline — relative container for absolute positioning
-  timeline: {
-    position: 'relative',
-    width: '100%',
-    height: TOTAL_CANVAS_HEIGHT,
-  },
+  timeline: { position: 'relative', width: '100%', height: TOTAL_CANVAS_HEIGHT },
 
-  // Hour grid
   hourRow: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingLeft: 8,
-    height: 0,
-    overflow: 'visible',
-    zIndex: 1,
+    position: 'absolute', left: 0, right: 0,
+    flexDirection: 'row', alignItems: 'center', paddingLeft: 8,
+    height: 0, overflow: 'visible', zIndex: 1,
   },
   hourLabel: {
     color: colors.muted, ...type.caption,
-    width: HOUR_LABEL_WIDTH - 8,
-    textAlign: 'right',
-    marginRight: 8,
-    marginTop: -14,
+    width: HOUR_LABEL_WIDTH - 8, textAlign: 'right', marginRight: 8, marginTop: -14,
   },
   hourNow: { color: colors.terra, fontWeight: '700' },
   hourLine: { flex: 1, height: 1, backgroundColor: colors.border },
-  hourLineNow: { height: 2, backgroundColor: colors.terra, opacity: 0.8 },
+  hourLinePast: { opacity: 0.5 },
 
-  // Day separator between sections
-  daySeparator: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 6,
-    position: 'absolute',
-    top: -16,
-    left: 0,
-    right: 0,
-    zIndex: 20,
-  },
-  daySeparatorLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: colors.muted,
-    opacity: 0.3,
-  },
-  daySeparatorLabel: {
-    color: colors.muted,
-    fontSize: 11,
-    fontWeight: '600',
-    marginHorizontal: 8,
-  },
-
-  // Current time indicator
   nowIndicator: {
-    position: 'absolute',
-    left: HOUR_LABEL_WIDTH - 4,
-    right: 0,
-    flexDirection: 'row',
-    alignItems: 'center',
-    height: 0,
-    overflow: 'visible',
-    zIndex: 10,
+    position: 'absolute', left: HOUR_LABEL_WIDTH - 4, right: 0,
+    flexDirection: 'row', alignItems: 'center',
+    height: 0, overflow: 'visible', zIndex: 10,
   },
-  nowDot: {
-    width: 10, height: 10, borderRadius: 5,
-    backgroundColor: colors.terra,
-    marginTop: -5,
-    marginLeft: -5,
-  },
-  nowLine: {
-    flex: 1, height: 2,
-    backgroundColor: colors.terra,
-  },
+  nowDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.terra, marginTop: -5, marginLeft: -5 },
+  nowLine: { flex: 1, height: 2, backgroundColor: colors.terra },
 
-  // Empty tap areas (one per hour slot, behind activities)
   emptyTap: {
-    position: 'absolute',
-    left: HOUR_LABEL_WIDTH,
-    right: 12,
-    zIndex: 0,
+    position: 'absolute', left: HOUR_LABEL_WIDTH, right: 12,
+    zIndex: 0, borderBottomWidth: 1, borderBottomColor: colors.border, borderStyle: 'dashed',
   },
 
-  // Activity blocks
-  activityBlock: {
-    position: 'absolute',
-    left: HOUR_LABEL_WIDTH,
-    right: 12,
-    zIndex: 5,
-  },
+  activityBlock: { position: 'absolute', left: HOUR_LABEL_WIDTH, right: 12, zIndex: 5 },
 
-  // FAB
   fab: {
     position: 'absolute', bottom: 88, right: 20,
     width: 48, height: 48, borderRadius: 24,
