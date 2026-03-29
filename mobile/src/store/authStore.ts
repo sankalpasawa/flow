@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
 import { User, DEFAULT_SETTINGS } from '../types';
 import { DEV_USER_ID } from '../lib/db/seed';
+import { DEMO_USER_ID, seedDemoData } from '../lib/db/seedDemo';
 
 // Dev mode: bypass Supabase auth when using placeholder credentials or explicit flag
 const IS_DEV = process.env.EXPO_PUBLIC_DEV_MODE === 'true' ||
@@ -11,6 +12,13 @@ const IS_DEV = process.env.EXPO_PUBLIC_DEV_MODE === 'true' ||
 const DEV_USER: User = {
   id: DEV_USER_ID,
   email: 'sankalp@dayflow.app',
+  subscription_tier: 'PRO',
+  settings: DEFAULT_SETTINGS,
+};
+
+const DEMO_USER: User = {
+  id: DEMO_USER_ID,
+  email: 'demo@dayflow.app',
   subscription_tier: 'PRO',
   settings: DEFAULT_SETTINGS,
 };
@@ -34,10 +42,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   clearError: () => set({ error: null }),
 
   initialize: async () => {
-    // In dev mode, skip Supabase auth entirely
+    // In dev mode, skip Supabase auth entirely — unless user explicitly signed out
     if (IS_DEV) {
-      console.log('[DayFlow] Dev mode — auto-login as', DEV_USER.email);
-      set({ user: DEV_USER, loading: false });
+      const signedOut = typeof localStorage !== 'undefined' && localStorage.getItem('dayflow_signed_out');
+      const savedUserId = typeof localStorage !== 'undefined' && localStorage.getItem('dayflow_active_user');
+      if (!signedOut) {
+        const activeUser = savedUserId === DEMO_USER_ID ? DEMO_USER : DEV_USER;
+        console.log('[DayFlow] Dev mode — auto-login as', activeUser.email);
+        set({ user: activeUser, loading: false });
+        return;
+      }
+      set({ user: null, loading: false });
       return;
     }
 
@@ -70,6 +85,25 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   signIn: async (email, password) => {
     set({ loading: true, error: null });
+    // Demo account — bypass Supabase entirely
+    if (email.trim().toLowerCase() === 'demo@dayflow.app' && password === 'demo1234') {
+      await seedDemoData();
+      if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem('dayflow_signed_out');
+        localStorage.setItem('dayflow_active_user', DEMO_USER_ID);
+      }
+      set({ user: DEMO_USER, loading: false });
+      return;
+    }
+    // Dev sign-in as Sankalp (in case they signed out)
+    if (IS_DEV && email.trim().toLowerCase() === 'sankalp@dayflow.app') {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem('dayflow_signed_out');
+        localStorage.removeItem('dayflow_active_user');
+      }
+      set({ user: DEV_USER, loading: false });
+      return;
+    }
     try {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
@@ -98,6 +132,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   signOut: async () => {
     try {
+      if (IS_DEV) {
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem('dayflow_signed_out', 'true');
+          localStorage.removeItem('dayflow_active_user');
+        }
+        set({ user: null });
+        return;
+      }
       await supabase.auth.signOut();
       set({ user: null });
     } catch (err) {
