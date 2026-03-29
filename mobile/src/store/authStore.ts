@@ -87,7 +87,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ loading: true, error: null });
     // Demo account — bypass Supabase entirely
     if (email.trim().toLowerCase() === 'demo@dayflow.app' && password === 'demo1234') {
-      await seedDemoData();
+      try {
+        await seedDemoData();
+      } catch (e) {
+        console.warn('[DayFlow] Demo seed failed (non-fatal):', e);
+      }
       if (typeof localStorage !== 'undefined') {
         localStorage.removeItem('dayflow_signed_out');
         localStorage.setItem('dayflow_active_user', DEMO_USER_ID);

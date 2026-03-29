@@ -95,7 +95,8 @@ function block(title: string, catId: string, dayOff: number, hour: number, durat
 }
 
 function buildDemoData() {
-  const activities: ReturnType<typeof block | typeof task>[] = [];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const activities: any[] = [];
 
   // ─── 7 days ago ───
   activities.push(
