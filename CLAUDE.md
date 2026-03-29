@@ -3,10 +3,10 @@
 ## On Every Session Start
 1. Read this file and `TODO.md`
 2. Run setup if `node_modules` doesn't exist: `cd mobile && npm install`
-3. Start dev server if not running: `npx expo start --web`
+3. Start dev server if not running: `cd mobile && npx expo start --web`
 4. Open http://localhost:8081 — if data looks stale, clear localStorage: `localStorage.clear(); location.reload()`
 5. Pick the top unchecked item from `TODO.md` and implement it
-6. After each feature: commit, push to main, check the box in `TODO.md`
+6. After each feature: commit, push to `claude/pull-latest-changes-XeutS`, check the box in `TODO.md`
 
 ## New Machine Setup
 ```bash
@@ -39,18 +39,24 @@ npx expo start --web
 | `src/types/index.ts` | All TypeScript types (Activity, ActivityType, Category, etc.) |
 | `src/lib/db/activities.ts` | All CRUD + queries for activities and tasks |
 | `src/lib/db/db.web.ts` | Custom web SQL parser (handles SELECT, INSERT, UPDATE, JOIN, WHERE) |
-| `src/lib/db/seed.ts` | Dev seed data from Sankalp's Any.do export |
+| `src/lib/db/seed.ts` | Dev seed data from Sankalp's Any.do export (user: `dev-user-001`) |
+| `src/lib/db/seedDemo.ts` | Demo account seed — 210 tasks (user: `demo-user-001`) |
 | `src/store/activitiesStore.ts` | Zustand store for activities + tasks |
+| `src/store/authStore.ts` | Auth logic — dev auto-login + demo account bypass |
 | `src/navigation/AppNavigator.tsx` | Tab navigator (Today, Plan, Insights, Settings) |
 | `TODO.md` | Pending features and bugs — **start here for next steps** |
 | `PLAN.md` | Original PRD with sprint plan and architecture |
 | `data/sankalp_anydo_tasks.csv` | Sankalp's raw Any.do task export |
 
-## Dev Mode
+## Dev Mode & Accounts
 - Auth bypassed when `EXPO_PUBLIC_SUPABASE_URL` contains "placeholder"
-- Auto-logs in as `sankalp@dayflow.app`
-- Seed data auto-loads on first visit (check `dayflow_seed_version` in localStorage)
-- After changing seed data: bump `SEED_VERSION` string in seed.ts, then `localStorage.clear(); location.reload()` in browser
+- **Sankalp account** (default auto-login): `sankalp@dayflow.app` — user id `dev-user-001`
+- **Demo account**: `demo@dayflow.app` / `demo1234` — user id `demo-user-001`, 210 tasks from Any.do
+- To switch accounts: Settings → Sign Out → enter demo credentials on login screen
+- After signing out, a `dayflow_signed_out` flag in localStorage prevents auto-relogin
+- Signing back in as `sankalp@dayflow.app` (any password) restores auto-login behaviour
+- Seed version tracked in localStorage: `dayflow_seed_version` (Sankalp), `dayflow_demo_seed_version` (demo)
+- After changing seed data: bump `SEED_VERSION` in the relevant seed file, then `localStorage.clear(); location.reload()`
 
 ## Web DB Gotchas
 The web DB (`db.web.ts`) is a custom in-memory SQL parser, NOT real SQLite. It supports:
@@ -58,10 +64,11 @@ The web DB (`db.web.ts`) is a custom in-memory SQL parser, NOT real SQLite. It s
 - INSERT (with OR IGNORE), UPDATE
 - **Does NOT support**: LIKE, nested subqueries, GROUP BY, HAVING
 - LEFT JOIN bug was fixed: `prefixRow` no longer overwrites base table columns with joined table columns
+- Both user accounts share the same `dayflow_db` localStorage key; rows are partitioned by `user_id`
 
 ## What to Work On
 Read `TODO.md` for the full list. Top priorities:
-1. Plan tab (next-day planning)
-2. Date picker in ActivityForm
-3. Bottom sheet modals (per design spec)
-4. Unit tests for new features
+1. Date picker in ActivityForm
+2. Bottom sheet modals (per design spec)
+3. Unit tests for new features
+4. Settings screen toggles (notifications, mindset prompts, quiet hours)
