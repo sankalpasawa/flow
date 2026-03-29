@@ -114,16 +114,19 @@ export const useActivitiesStore = create<ActivitiesState>((set, get) => ({
             new Date(activity.start_time).getHours(), new Date(activity.start_time).getMinutes()
           ).toISOString() };
       // Remove from carry-forward / someday and add to plan
-      set(s => ({
-        carryForward: s.carryForward.filter(a => a.id !== id),
-        somedayTasks: s.somedayTasks.filter(a => a.id !== id),
-        planActivities: activity.is_scheduled
-          ? [...s.planActivities, updated]
-          : s.planActivities,
-        planTasks: !activity.is_scheduled
-          ? [...s.planTasks, updated]
-          : s.planTasks,
-      }));
+      set(s => {
+        const newPlanActivities = activity.is_scheduled
+          ? [...s.planActivities, updated].sort((a, b) => a.start_time.localeCompare(b.start_time))
+          : s.planActivities;
+        return {
+          carryForward: s.carryForward.filter(a => a.id !== id),
+          somedayTasks: s.somedayTasks.filter(a => a.id !== id),
+          planActivities: newPlanActivities,
+          planTasks: !activity.is_scheduled
+            ? [...s.planTasks, updated]
+            : s.planTasks,
+        };
+      });
     } catch (err) {
       console.error('[DayFlow] Failed to move activity:', err);
     }
@@ -292,7 +295,10 @@ export const useActivitiesStore = create<ActivitiesState>((set, get) => ({
     try {
       const activity = get().activities.find(a => a.id === id)
         || get().untimedTasks.find(a => a.id === id)
-        || get().backlog.find(a => a.id === id);
+        || get().backlog.find(a => a.id === id)
+        || get().planActivities.find(a => a.id === id)
+        || get().planTasks.find(a => a.id === id)
+        || get().carryForward.find(a => a.id === id);
       if (!activity) return;
       const newStatus = activity.status === 'COMPLETED' ? 'PLANNED' : 'COMPLETED';
       const now = new Date().toISOString();
@@ -305,6 +311,9 @@ export const useActivitiesStore = create<ActivitiesState>((set, get) => ({
         activities: updateList(s.activities),
         untimedTasks: updateList(s.untimedTasks),
         backlog: updateList(s.backlog),
+        planActivities: updateList(s.planActivities),
+        planTasks: updateList(s.planTasks),
+        carryForward: updateList(s.carryForward),
       }));
     } catch (err) {
       console.error('[DayFlow] Quick toggle failed:', err);

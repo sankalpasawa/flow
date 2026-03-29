@@ -25,7 +25,7 @@ interface Props {
   navigation: { goBack: () => void; navigate: (screen: string, params?: Record<string, unknown>) => void };
 }
 
-const DURATION_OPTIONS = [15, 30, 45, 60, 90, 120, 180, 240];
+const DURATION_OPTIONS = [0, 15, 30, 45, 60, 90, 120, 180, 240];
 
 const RECURRENCE_OPTIONS: { value: RecurrenceType; label: string; icon: string }[] = [
   { value: 'NONE', label: 'Once', icon: '1️⃣' },
@@ -46,12 +46,20 @@ const ALL_WEEKDAYS: Weekday[] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'
 export function ActivityFormScreen({ route, navigation }: Props) {
   const { activityId, startHour, date, backlog } = route.params ?? {};
   const { user } = useAuthStore();
-  const { activities, addActivity, editActivity } = useActivitiesStore();
-  const existingActivity = activityId ? activities.find((a) => a.id === activityId) : null;
+  const { activities, untimedTasks, backlog: storeBacklog, planActivities, planTasks, carryForward, addActivity, editActivity } = useActivitiesStore();
+  const existingActivity = activityId
+    ? (activities.find(a => a.id === activityId)
+      || untimedTasks.find(a => a.id === activityId)
+      || storeBacklog.find(a => a.id === activityId)
+      || planActivities.find(a => a.id === activityId)
+      || planTasks.find(a => a.id === activityId)
+      || carryForward.find(a => a.id === activityId)
+      || null)
+    : null;
 
   const [title, setTitle] = useState(existingActivity?.title ?? '');
   const [description, setDescription] = useState(existingActivity?.description ?? '');
-  const [duration, setDuration] = useState(existingActivity?.duration_minutes ?? 15);
+  const [duration, setDuration] = useState(existingActivity?.duration_minutes ?? (backlog ? 0 : 15));
   const [isScheduled, setIsScheduled] = useState(
     existingActivity ? existingActivity.is_scheduled : !backlog
   );
@@ -219,18 +227,6 @@ export function ActivityFormScreen({ route, navigation }: Props) {
         />
         <Text style={styles.charCount}>{title.length}/80</Text>
 
-        <Text style={styles.sectionLabel}>NOTES</Text>
-        <TextInput
-          style={[styles.titleInput, styles.descriptionInput]}
-          placeholder="Add details or notes..."
-          placeholderTextColor="#475569"
-          value={description}
-          onChangeText={setDescription}
-          multiline
-          maxLength={500}
-          accessibilityLabel="Activity notes"
-        />
-
         {/* Scheduled toggle */}
         <Text style={styles.sectionLabel}>SCHEDULING</Text>
         <View style={styles.toggleRow}>
@@ -357,7 +353,7 @@ export function ActivityFormScreen({ route, navigation }: Props) {
               accessibilityState={{ selected: duration === d }}
             >
               <Text style={[styles.durationText, duration === d && styles.durationTextSelected]}>
-                {d < 60 ? `${d}m` : `${d / 60}h`}
+                {d === 0 ? 'None' : d < 60 ? `${d}m` : `${d / 60}h`}
               </Text>
             </TouchableOpacity>
           ))}
@@ -456,6 +452,18 @@ export function ActivityFormScreen({ route, navigation }: Props) {
             </TouchableOpacity>
           ) : null}
         </View>
+
+        <Text style={styles.sectionLabel}>NOTES</Text>
+        <TextInput
+          style={[styles.titleInput, styles.descriptionInput]}
+          placeholder="Add details or notes..."
+          placeholderTextColor="#475569"
+          value={description}
+          onChangeText={setDescription}
+          multiline
+          maxLength={500}
+          accessibilityLabel="Activity notes"
+        />
 
         {errorMessage && (
           <Text style={{ color: '#FCA5A5', fontSize: 14, textAlign: 'center', marginTop: 12 }}>{errorMessage}</Text>

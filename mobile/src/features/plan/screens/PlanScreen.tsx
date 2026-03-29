@@ -1,10 +1,10 @@
 import React, { useEffect, useCallback, useRef, useState } from 'react';
 import {
-  View, Text, ScrollView, Pressable, StyleSheet,
+  View, Text, ScrollView, Pressable, TouchableOpacity, StyleSheet,
   SafeAreaView, ActivityIndicator, Animated, LayoutAnimation,
   Platform, UIManager,
 } from 'react-native';
-import { format, addDays } from 'date-fns';
+import { format, addDays, parseISO, isSameDay } from 'date-fns';
 import { useAuthStore } from '../../../store/authStore';
 import { useActivitiesStore } from '../../../store/activitiesStore';
 import { Activity } from '../../../types';
@@ -119,16 +119,35 @@ export function PlanScreen({ navigation }: Props) {
   const allSomedayFlat = somedayGroups.flatMap(g => g.tasks);
   const lastSomedayId = allSomedayFlat.length > 0 ? allSomedayFlat[allSomedayFlat.length - 1].id : null;
 
+  const [calendarView, setCalendarView] = useState(false);
+
   let sectionIndex = 0;
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Plan Tomorrow</Text>
-        <Text style={styles.headerSubtitle}>
-          {format(tomorrow, 'EEEE, MMMM d')}
-          {totalPlanned > 0 ? ` \u2014 ${totalPlanned} planned` : ''}
-        </Text>
+        <View>
+          <Text style={styles.headerTitle}>Plan Tomorrow</Text>
+          <Text style={styles.headerSubtitle}>
+            {format(tomorrow, 'EEEE, MMMM d')}
+            {totalPlanned > 0 ? ` \u2014 ${totalPlanned} planned` : ''}
+          </Text>
+        </View>
+        {/* List / Calendar toggle */}
+        <View style={styles.viewToggle}>
+          <TouchableOpacity
+            style={[styles.viewToggleBtn, !calendarView && styles.viewToggleBtnActive]}
+            onPress={() => setCalendarView(false)}
+          >
+            <Text style={[styles.viewToggleText, !calendarView && styles.viewToggleTextActive]}>List</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.viewToggleBtn, calendarView && styles.viewToggleBtnActive]}
+            onPress={() => setCalendarView(true)}
+          >
+            <Text style={[styles.viewToggleText, calendarView && styles.viewToggleTextActive]}>Hours</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {planLoading ? (
@@ -140,34 +159,47 @@ export function PlanScreen({ navigation }: Props) {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
         >
-          {/* Tomorrow's Plan */}
-          <FadeInSection index={sectionIndex++}>
-            <Section
-              title="Tomorrow's Plan"
-              icon="📋"
-              count={totalPlanned}
-              emptyText="Nothing planned yet \u2014 add items below"
-            >
-              {planActivities.map((a, i) => (
-                <PlanActivityRow
-                  key={a.id}
-                  activity={a}
-                  isLast={i === planActivities.length - 1 && planTasks.length === 0}
-                  onPress={() => navigation.navigate('ActivityDetail', { activityId: a.id })}
-                  onToggle={() => quickToggleComplete(a.id)}
-                />
-              ))}
-              {planTasks.map((t, i) => (
-                <PlanTaskRow
-                  key={t.id}
-                  task={t}
-                  isLast={i === planTasks.length - 1}
-                  onPress={() => navigation.navigate('ActivityDetail', { activityId: t.id })}
-                  onToggle={() => quickToggleComplete(t.id)}
-                />
-              ))}
-            </Section>
-          </FadeInSection>
+          {/* Tomorrow's Plan — List or Calendar */}
+          {calendarView ? (
+            <FadeInSection index={sectionIndex++}>
+              <TomorrowCalendar
+                activities={planActivities}
+                tasks={planTasks}
+                tomorrowStr={tomorrowStr}
+                onSlotPress={(hour) => navigation.navigate('ActivityForm', { startHour: `${hour}:00`, date: tomorrowStr })}
+                onActivityPress={(id) => navigation.navigate('ActivityDetail', { activityId: id })}
+                onToggle={(id) => quickToggleComplete(id)}
+              />
+            </FadeInSection>
+          ) : (
+            <FadeInSection index={sectionIndex++}>
+              <Section
+                title="Tomorrow's Plan"
+                icon="📋"
+                count={totalPlanned}
+                emptyText="Nothing planned yet \u2014 add items below"
+              >
+                {planActivities.map((a, i) => (
+                  <PlanActivityRow
+                    key={a.id}
+                    activity={a}
+                    isLast={i === planActivities.length - 1 && planTasks.length === 0}
+                    onPress={() => navigation.navigate('ActivityDetail', { activityId: a.id })}
+                    onToggle={() => quickToggleComplete(a.id)}
+                  />
+                ))}
+                {planTasks.map((t, i) => (
+                  <PlanTaskRow
+                    key={t.id}
+                    task={t}
+                    isLast={i === planTasks.length - 1}
+                    onPress={() => navigation.navigate('ActivityDetail', { activityId: t.id })}
+                    onToggle={() => quickToggleComplete(t.id)}
+                  />
+                ))}
+              </Section>
+            </FadeInSection>
+          )}
 
           {/* Carry Forward */}
           {carryForward.length > 0 && (
@@ -473,6 +505,101 @@ function SomedayRow({ task, onAdd, onPress, isLast }: {
   );
 }
 
+// ─── Tomorrow Calendar (hourly view) ────────────
+
+function formatHour12(h: number): string {
+  if (h === 0) return '12 AM';
+  if (h < 12) return `${h} AM`;
+  if (h === 12) return '12 PM';
+  return `${h - 12} PM`;
+}
+
+function TomorrowCalendar({ activities, tasks, tomorrowStr, onSlotPress, onActivityPress, onToggle }: {
+  activities: Activity[];
+  tasks: Activity[];
+  tomorrowStr: string;
+  onSlotPress: (hour: number) => void;
+  onActivityPress: (id: string) => void;
+  onToggle: (id: string) => void;
+}) {
+  // Build hour slots 6 AM - 11 PM (skip late night)
+  const slots = [];
+  for (let h = 6; h < 24; h++) {
+    const items = activities.filter(a => {
+      const start = parseISO(a.start_time);
+      return start.getHours() === h;
+    });
+    slots.push({ hour: h, label: formatHour12(h), items });
+  }
+
+  const pendingTasks = tasks.filter(t => t.status !== 'COMPLETED');
+
+  return (
+    <View>
+      {/* Untimed tasks at top */}
+      {pendingTasks.length > 0 && (
+        <View style={calStyles.taskBar}>
+          <Text style={calStyles.taskBarLabel}>Tasks</Text>
+          {pendingTasks.map(t => (
+            <Pressable key={t.id} style={calStyles.taskPill} onPress={() => onActivityPress(t.id)}>
+              <Pressable
+                style={[calStyles.miniCheck, t.status === 'COMPLETED' && calStyles.miniCheckDone]}
+                onPress={() => onToggle(t.id)}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                {t.status === 'COMPLETED' && <Text style={calStyles.miniCheckmark}>✓</Text>}
+              </Pressable>
+              <Text style={calStyles.taskPillText} numberOfLines={1}>{t.title}</Text>
+            </Pressable>
+          ))}
+        </View>
+      )}
+
+      {/* Hourly grid */}
+      {slots.map(slot => {
+        const hasItems = slot.items.length > 0;
+        return (
+          <View key={slot.hour} style={calStyles.hourRow}>
+            <Text style={calStyles.hourLabel}>{slot.label}</Text>
+            <View style={calStyles.hourContent}>
+              <View style={calStyles.hourLine} />
+              {hasItems ? (
+                slot.items.map(a => {
+                  const catColor = getCategoryColor(a.category_id);
+                  const isDone = a.status === 'COMPLETED';
+                  return (
+                    <Pressable
+                      key={a.id}
+                      style={[calStyles.block, { borderLeftColor: catColor.solid, backgroundColor: catColor.light }]}
+                      onPress={() => onActivityPress(a.id)}
+                    >
+                      <Text style={[calStyles.blockTitle, isDone && calStyles.blockTitleDone]} numberOfLines={1}>
+                        {a.title}
+                      </Text>
+                      <Text style={calStyles.blockMeta}>
+                        {formatDuration(a.duration_minutes)}
+                        {a.category?.name ? ` · ${a.category.icon} ${a.category.name}` : ''}
+                      </Text>
+                    </Pressable>
+                  );
+                })
+              ) : (
+                <TouchableOpacity
+                  style={calStyles.emptySlot}
+                  onPress={() => onSlotPress(slot.hour)}
+                  activeOpacity={0.5}
+                >
+                  <Text style={calStyles.emptySlotText}>+</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
 function formatDuration(mins: number): string {
   if (mins < 60) return `${mins}m`;
   const h = Math.floor(mins / 60);
@@ -485,7 +612,8 @@ function formatDuration(mins: number): string {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   header: {
-    paddingHorizontal: spacing.screen, paddingTop: 20, paddingBottom: 12,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: spacing.screen, paddingTop: 16, paddingBottom: 8,
   },
   headerTitle: { color: colors.text, fontSize: 28, fontWeight: '600' },
   headerSubtitle: { color: colors.muted, fontSize: 13, marginTop: 2 },
@@ -613,4 +741,68 @@ const styles = StyleSheet.create({
   ctaText: { color: '#fff', fontSize: 15, fontWeight: '600', letterSpacing: 0.3 },
 
   bottomPadding: { height: 100 },
+
+  // View toggle (List / Hours)
+  viewToggle: {
+    flexDirection: 'row', backgroundColor: colors.surface2,
+    borderRadius: radii.sm, padding: 2,
+  },
+  viewToggleBtn: {
+    paddingHorizontal: 12, paddingVertical: 6,
+    borderRadius: radii.sm - 2,
+  },
+  viewToggleBtnActive: { backgroundColor: colors.surface },
+  viewToggleText: { color: colors.muted, fontSize: 12, fontWeight: '600' },
+  viewToggleTextActive: { color: colors.primary },
+});
+
+// ─── Calendar view styles ───────────────────────
+
+const calStyles = StyleSheet.create({
+  taskBar: {
+    backgroundColor: colors.surface, borderRadius: radii.card,
+    padding: 10, marginBottom: 16,
+    borderWidth: 1, borderColor: colors.border,
+  },
+  taskBarLabel: {
+    color: colors.muted, fontSize: 11, fontWeight: '600',
+    letterSpacing: 0.4, textTransform: 'uppercase', marginBottom: 6,
+  },
+  taskPill: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    paddingVertical: 6,
+    borderBottomWidth: 1, borderBottomColor: colors.border,
+  },
+  taskPillText: { flex: 1, color: colors.text, fontSize: 13 },
+  miniCheck: {
+    width: 18, height: 18, borderRadius: 9,
+    borderWidth: 2, borderColor: colors.border,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  miniCheckDone: { backgroundColor: colors.done, borderColor: colors.done },
+  miniCheckmark: { color: '#fff', fontSize: 9, fontWeight: '800' },
+  hourRow: {
+    flexDirection: 'row', minHeight: 44,
+  },
+  hourLabel: {
+    width: 48, color: colors.muted, fontSize: 11, fontWeight: '500',
+    paddingTop: 2, textAlign: 'right', paddingRight: 8,
+  },
+  hourContent: {
+    flex: 1, paddingBottom: 4,
+  },
+  hourLine: {
+    height: 0.5, backgroundColor: colors.border, marginBottom: 4,
+  },
+  block: {
+    borderLeftWidth: 3, borderRadius: radii.sm,
+    paddingHorizontal: 10, paddingVertical: 8, marginBottom: 4,
+  },
+  blockTitle: { color: colors.text, fontSize: 13, fontWeight: '500' },
+  blockTitleDone: { textDecorationLine: 'line-through', color: colors.muted },
+  blockMeta: { color: colors.text2, fontSize: 11, marginTop: 2 },
+  emptySlot: {
+    paddingVertical: 4, paddingLeft: 4,
+  },
+  emptySlotText: { color: colors.border, fontSize: 14 },
 });

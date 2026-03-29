@@ -9,7 +9,7 @@ import { useAuthStore } from '../../../store/authStore';
 import { getAllActivities } from '../../../lib/db/activities';
 import { getLogsForUser } from '../../../lib/db/logs';
 import { Activity, ExperienceLog } from '../../../types';
-import { colors, radii, shadows, spacing, getCategoryColor } from '../../../theme';
+import { colors, radii, shadows, spacing } from '../../../theme';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -33,15 +33,6 @@ interface CompletionStats {
   rate: number; // 0-1
 }
 
-interface CategoryBreakdown {
-  categoryId: string;
-  name: string;
-  icon: string;
-  count: number;
-  completed: number;
-  fraction: number; // of total
-}
-
 interface DayMoodEnergy {
   date: string;
   dayLabel: string;
@@ -62,28 +53,6 @@ function computeCompletionStats(activities: Activity[], days: number): Completio
   const inProgress = recent.filter(a => a.status === 'IN_PROGRESS').length;
   const planned = recent.filter(a => a.status === 'PLANNED').length;
   return { total, completed, skipped, inProgress, planned, rate: total > 0 ? completed / total : 0 };
-}
-
-function computeCategoryBreakdown(activities: Activity[]): CategoryBreakdown[] {
-  const map = new Map<string, { name: string; icon: string; count: number; completed: number }>();
-  for (const a of activities) {
-    const key = a.category_id;
-    if (!map.has(key)) {
-      map.set(key, {
-        name: a.category?.name ?? 'Other',
-        icon: a.category?.icon ?? '📌',
-        count: 0,
-        completed: 0,
-      });
-    }
-    const entry = map.get(key)!;
-    entry.count++;
-    if (a.status === 'COMPLETED') entry.completed++;
-  }
-  const total = activities.length || 1;
-  return Array.from(map.entries())
-    .map(([categoryId, v]) => ({ categoryId, ...v, fraction: v.count / total }))
-    .sort((a, b) => b.count - a.count);
 }
 
 function computeMoodEnergyTrend(logs: ExperienceLog[], days: number): DayMoodEnergy[] {
@@ -170,7 +139,6 @@ export function InsightsScreen({ navigation }: Props) {
 
   const stats7 = computeCompletionStats(activities, 7);
   const stats30 = computeCompletionStats(activities, 30);
-  const categories = computeCategoryBreakdown(activities);
   const trend = computeMoodEnergyTrend(logs, 7);
   const insight = findInsight(activities, logs);
 
@@ -254,31 +222,6 @@ export function InsightsScreen({ navigation }: Props) {
               </View>
             </FadeIn>
           )}
-
-          {/* Category Breakdown */}
-          <FadeIn index={sectionIdx++}>
-            <Text style={styles.sectionLabel}>By Category</Text>
-            <View style={styles.catBreakdownCard}>
-              {categories.map((cat, i) => {
-                const catColor = getCategoryColor(cat.categoryId);
-                return (
-                  <View key={cat.categoryId} style={[styles.catRow, i === categories.length - 1 && { borderBottomWidth: 0 }]}>
-                    <Text style={styles.catRowIcon}>{cat.icon}</Text>
-                    <View style={styles.catRowInfo}>
-                      <Text style={styles.catRowName}>{cat.name}</Text>
-                      <View style={styles.catBarTrack}>
-                        <View style={[styles.catBarFill, { width: `${cat.fraction * 100}%`, backgroundColor: catColor.solid }]} />
-                      </View>
-                    </View>
-                    <View style={styles.catRowStats}>
-                      <Text style={styles.catRowCount}>{cat.count}</Text>
-                      <Text style={styles.catRowRate}>{cat.count > 0 ? Math.round((cat.completed / cat.count) * 100) : 0}%</Text>
-                    </View>
-                  </View>
-                );
-              })}
-            </View>
-          </FadeIn>
 
           <View style={{ height: 100 }} />
         </ScrollView>
@@ -435,30 +378,4 @@ const styles = StyleSheet.create({
   trendDayLabelToday: { color: colors.primary, fontWeight: '700' },
   trendEmoji: { fontSize: 10 },
 
-  // Category breakdown
-  catBreakdownCard: {
-    backgroundColor: colors.surface, borderRadius: radii.card,
-    overflow: 'hidden', ...shadows.card, marginBottom: 8,
-  },
-  catRow: {
-    flexDirection: 'row', alignItems: 'center', gap: 10,
-    paddingVertical: 12, paddingHorizontal: 14,
-    borderBottomWidth: 1, borderBottomColor: colors.border,
-  },
-  catRowIcon: { fontSize: 18 },
-  catRowInfo: { flex: 1 },
-  catRowName: { color: colors.text, fontSize: 13, fontWeight: '500', marginBottom: 4 },
-  catBarTrack: {
-    height: 4, backgroundColor: colors.border, borderRadius: 2, overflow: 'hidden',
-  },
-  catBarFill: { height: '100%', borderRadius: 2, minWidth: 4 },
-  catRowStats: { alignItems: 'flex-end' },
-  catRowCount: {
-    color: colors.text, fontSize: 14, fontWeight: '600',
-    fontVariant: ['tabular-nums'],
-  },
-  catRowRate: {
-    color: colors.muted, fontSize: 10, fontWeight: '600',
-    fontVariant: ['tabular-nums'],
-  },
 });
