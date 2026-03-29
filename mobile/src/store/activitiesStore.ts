@@ -4,6 +4,7 @@ import { Activity, ExperienceLog } from '../types';
 import {
   getActivitiesForDay, getOverdueActivities, getBacklogActivities,
   getUntimedTasksForDay, getOverdueTasks, getSomedayTasks,
+  getInProgressActivities, getInProgressTasks,
   createActivity, createTask, updateActivity, deleteActivity,
   CreateActivityInput, CreateTaskInput, UpdateActivityInput,
 } from '../lib/db/activities';
@@ -67,17 +68,19 @@ export const useActivitiesStore = create<ActivitiesState>((set, get) => ({
     try {
       const tomorrow = addDays(new Date(), 1);
       const tomorrowStr = format(tomorrow, 'yyyy-MM-dd');
-      const [tomorrowActs, tomorrowTasks, overdueActs, overdueTsks, someday] = await Promise.all([
+      const [tomorrowActs, tomorrowTasks, plannedActs, inProgressActs, plannedTsks, inProgressTsks, someday] = await Promise.all([
         getActivitiesForDay(userId, tomorrowStr),
         getUntimedTasksForDay(userId, tomorrowStr),
         getOverdueActivities(userId, tomorrowStr),
+        getInProgressActivities(userId, tomorrowStr),
         getOverdueTasks(userId, tomorrowStr),
+        getInProgressTasks(userId, tomorrowStr),
         getSomedayTasks(userId),
       ]);
       set({
         planActivities: tomorrowActs,
         planTasks: tomorrowTasks,
-        carryForward: [...overdueActs, ...overdueTsks],
+        carryForward: [...plannedActs, ...inProgressActs, ...plannedTsks, ...inProgressTsks],
         somedayTasks: someday,
         planLoading: false,
       });

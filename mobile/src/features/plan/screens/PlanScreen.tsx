@@ -1,13 +1,19 @@
-import React, { useEffect, useCallback, useRef } from 'react';
+import React, { useEffect, useCallback, useRef, useState } from 'react';
 import {
   View, Text, ScrollView, Pressable, StyleSheet,
-  SafeAreaView, ActivityIndicator, Animated,
+  SafeAreaView, ActivityIndicator, Animated, LayoutAnimation,
+  Platform, UIManager,
 } from 'react-native';
 import { format, addDays } from 'date-fns';
 import { useAuthStore } from '../../../store/authStore';
 import { useActivitiesStore } from '../../../store/activitiesStore';
 import { Activity } from '../../../types';
 import { colors, radii, shadows, spacing, getCategoryColor } from '../../../theme';
+
+// Enable LayoutAnimation on Android
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 interface Props {
   navigation: { navigate: (screen: string, params?: Record<string, unknown>) => void };
@@ -62,6 +68,32 @@ function FadeInSection({ index, children }: { index: number; children: React.Rea
   );
 }
 
+// ─── Category grouping helper ────────────────────
+
+interface CategoryGroup {
+  categoryId: string;
+  categoryName: string;
+  categoryIcon: string;
+  tasks: Activity[];
+}
+
+function groupByCategory(tasks: Activity[]): CategoryGroup[] {
+  const map = new Map<string, Activity[]>();
+  for (const t of tasks) {
+    const key = t.category_id;
+    if (!map.has(key)) map.set(key, []);
+    map.get(key)!.push(t);
+  }
+  return Array.from(map.entries()).map(([categoryId, items]) => ({
+    categoryId,
+    categoryName: items[0].category?.name ?? 'Other',
+    categoryIcon: items[0].category?.icon ?? '📌',
+    tasks: items,
+  }));
+}
+
+// ─── Main screen ─────────────────────────────────
+
 export function PlanScreen({ navigation }: Props) {
   const { user } = useAuthStore();
   const {
@@ -81,6 +113,11 @@ export function PlanScreen({ navigation }: Props) {
   const tomorrowBlockCount = planActivities.length;
   const tomorrowTaskCount = planTasks.filter(t => t.status !== 'COMPLETED').length;
   const totalPlanned = tomorrowBlockCount + tomorrowTaskCount;
+
+  const somedayGroups = groupByCategory(somedayTasks);
+  // Flatten for isLast tracking: last task across all groups
+  const allSomedayFlat = somedayGroups.flatMap(g => g.tasks);
+  const lastSomedayId = allSomedayFlat.length > 0 ? allSomedayFlat[allSomedayFlat.length - 1].id : null;
 
   let sectionIndex = 0;
 
@@ -154,7 +191,7 @@ export function PlanScreen({ navigation }: Props) {
             </FadeInSection>
           )}
 
-          {/* Someday */}
+          {/* Someday — grouped by category */}
           {somedayTasks.length > 0 && (
             <FadeInSection index={sectionIndex++}>
               <Section
@@ -162,14 +199,25 @@ export function PlanScreen({ navigation }: Props) {
                 icon="💭"
                 count={somedayTasks.length}
               >
-                {somedayTasks.map((t, i) => (
-                  <SomedayRow
-                    key={t.id}
-                    task={t}
-                    isLast={i === somedayTasks.length - 1}
-                    onAdd={() => moveToDate(t.id, tomorrowStr)}
-                    onPress={() => navigation.navigate('ActivityDetail', { activityId: t.id })}
-                  />
+                {somedayGroups.map((group, gi) => (
+                  <React.Fragment key={group.categoryId}>
+                    <CategorySubHeader
+                      icon={group.categoryIcon}
+                      name={group.categoryName}
+                      count={group.tasks.length}
+                      categoryId={group.categoryId}
+                      isFirst={gi === 0}
+                    />
+                    {group.tasks.map((t) => (
+                      <SomedayRow
+                        key={t.id}
+                        task={t}
+                        isLast={t.id === lastSomedayId}
+                        onAdd={() => moveToDate(t.id, tomorrowStr)}
+                        onPress={() => navigation.navigate('ActivityDetail', { activityId: t.id })}
+                      />
+                    ))}
+                  </React.Fragment>
                 ))}
               </Section>
             </FadeInSection>
@@ -194,7 +242,7 @@ export function PlanScreen({ navigation }: Props) {
   );
 }
 
-// ─── Section wrapper ─────────────────────────────
+// ─── Collapsible section wrapper ─────────────────
 
 function Section({ title, icon, count, emptyText, children }: {
   title: string;
@@ -203,21 +251,70 @@ function Section({ title, icon, count, emptyText, children }: {
   emptyText?: string;
   children: React.ReactNode;
 }) {
+  const [collapsed, setCollapsed] = useState(false);
+  const chevronRotation = useRef(new Animated.Value(0)).current;
   const hasChildren = React.Children.toArray(children).length > 0;
+
+  const toggle = () => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setCollapsed(prev => !prev);
+    Animated.spring(chevronRotation, {
+      toValue: collapsed ? 0 : 1,
+      useNativeDriver: true,
+      speed: 50,
+      bounciness: 0,
+    }).start();
+  };
+
+  const rotate = chevronRotation.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '-90deg'],
+  });
+
   return (
     <View style={styles.section}>
-      <View style={styles.sectionHeader}>
+      <Pressable
+        style={styles.sectionHeader}
+        onPress={toggle}
+        accessibilityRole="button"
+        accessibilityState={{ expanded: !collapsed }}
+        accessibilityLabel={`${title}, ${count} items`}
+        hitSlop={{ top: 4, bottom: 4 }}
+      >
         <Text style={styles.sectionIcon}>{icon}</Text>
         <Text style={styles.sectionTitle}>{title}</Text>
         <View style={styles.countBadge}>
           <Text style={styles.countText}>{count}</Text>
         </View>
+        <Animated.Text style={[styles.chevron, { transform: [{ rotate }] }]}>
+          ›
+        </Animated.Text>
+      </Pressable>
+      {!collapsed && (
+        <View style={styles.sectionBody}>
+          {hasChildren ? children : (
+            <Text style={styles.emptyText}>{emptyText ?? 'None'}</Text>
+          )}
+        </View>
+      )}
+    </View>
+  );
+}
+
+// ─── Category sub-header inside Someday ──────────
+
+function CategorySubHeader({ icon, name, count, categoryId, isFirst }: {
+  icon: string; name: string; count: number; categoryId: string; isFirst: boolean;
+}) {
+  const catColor = getCategoryColor(categoryId);
+
+  return (
+    <View style={[styles.catSubHeader, !isFirst && styles.catSubHeaderDivider]}>
+      <View style={[styles.catIconCircle, { backgroundColor: catColor.light }]}>
+        <Text style={styles.catSubIcon}>{icon}</Text>
       </View>
-      <View style={styles.sectionBody}>
-        {hasChildren ? children : (
-          <Text style={styles.emptyText}>{emptyText ?? 'None'}</Text>
-        )}
-      </View>
+      <Text style={styles.catSubName}>{name}</Text>
+      <Text style={styles.catSubCount}>{count}</Text>
     </View>
   );
 }
@@ -334,11 +431,9 @@ function CarryForwardRow({ activity, onMoveToTomorrow, onMoveToSomeday, onPress,
 function SomedayRow({ task, onAdd, onPress, isLast }: {
   task: Activity; onAdd: () => void; onPress: () => void; isLast: boolean;
 }) {
-  const catColor = getCategoryColor(task.category_id);
-
   return (
     <Pressable
-      style={[styles.row, { borderLeftColor: catColor.solid }, isLast && styles.rowLast]}
+      style={[styles.row, styles.somedayRow, isLast && styles.rowLast]}
       onPress={onPress}
       accessibilityLabel={task.title}
     >
@@ -363,14 +458,6 @@ function formatDuration(mins: number): string {
 
 // ─── Styles ──────────────────────────────────────
 
-const SECTION_INNER_RADIUS = 12; // inner content radius
-const SECTION_PADDING = 0; // rows go edge-to-edge
-const SECTION_OUTER_RADIUS = SECTION_INNER_RADIUS + SECTION_PADDING; // concentric: 12 + 0 = 12
-// Note: sectionBody uses radii.card (16) since rows have no visible radius —
-// overflow:hidden clips them. The concentric rule applies when inner surfaces
-// have visible rounding. Here the inner surfaces are flat, so outer radius
-// is independent.
-
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   header: {
@@ -383,20 +470,27 @@ const styles = StyleSheet.create({
 
   // Sections
   section: { marginBottom: 24 },
-  sectionHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 10, gap: 8 },
+  sectionHeader: {
+    flexDirection: 'row', alignItems: 'center', marginBottom: 10, gap: 8,
+    minHeight: 40, // adequate tap target
+  },
   sectionIcon: { fontSize: 16 },
   sectionTitle: { color: colors.text, fontSize: 16, fontWeight: '600', flex: 1 },
   countBadge: {
     backgroundColor: colors.primaryBg,
     borderRadius: 10,
-    minWidth: 24, // prevent layout shift on single vs double digit
+    minWidth: 24,
     paddingHorizontal: 8,
     paddingVertical: 2,
     alignItems: 'center',
   },
   countText: {
     color: colors.primary, fontSize: 12, fontWeight: '700',
-    fontVariant: ['tabular-nums'], // prevent layout shift on count changes
+    fontVariant: ['tabular-nums'],
+  },
+  chevron: {
+    color: colors.muted, fontSize: 20, fontWeight: '600',
+    width: 20, textAlign: 'center',
   },
   sectionBody: {
     backgroundColor: colors.surface, borderRadius: radii.card,
@@ -407,6 +501,26 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
   },
 
+  // Category sub-headers inside Someday section
+  catSubHeader: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    paddingHorizontal: 14, paddingVertical: 8,
+    backgroundColor: colors.surface2,
+  },
+  catSubHeaderDivider: {
+    borderTopWidth: 1, borderTopColor: colors.border,
+  },
+  catIconCircle: {
+    width: 24, height: 24, borderRadius: 12,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  catSubIcon: { fontSize: 12 },
+  catSubName: { color: colors.text, fontSize: 12, fontWeight: '600', flex: 1 },
+  catSubCount: {
+    color: colors.muted, fontSize: 11, fontWeight: '600',
+    fontVariant: ['tabular-nums'],
+  },
+
   // Rows
   row: {
     flexDirection: 'row', alignItems: 'center', gap: 10,
@@ -415,17 +529,21 @@ const styles = StyleSheet.create({
     borderLeftWidth: 3,
   },
   rowLast: {
-    borderBottomWidth: 0, // prevent border clipping against rounded container corners
+    borderBottomWidth: 0,
   },
   carryRow: {
     flexWrap: 'wrap',
+  },
+  somedayRow: {
+    borderLeftWidth: 0, // category is shown via sub-header, not left border
+    paddingLeft: 17, // 14 + 3 to match alignment with bordered rows
   },
   rowContent: { flex: 1 },
   rowTitle: { color: colors.text, fontSize: 14, fontWeight: '500' },
   rowTitleDone: { textDecorationLine: 'line-through', color: colors.muted },
   rowMeta: {
     color: colors.text2, fontSize: 11, marginTop: 2,
-    fontVariant: ['tabular-nums'], // stable layout for "3d overdue" etc.
+    fontVariant: ['tabular-nums'],
   },
 
   // Checkbox — 22px visible, hitSlop 11px each side = 44px hit area (WCAG)
@@ -438,7 +556,7 @@ const styles = StyleSheet.create({
   checkmark: { color: '#fff', fontSize: 12, fontWeight: '800' },
   categoryDot: { width: 8, height: 8, borderRadius: 4 },
 
-  // Action buttons — minHeight 32 + hitSlop gives adequate tap target
+  // Action buttons
   actionButtons: { flexDirection: 'row', gap: 6 },
   moveButton: {
     backgroundColor: colors.primaryBg, borderRadius: radii.sm,
@@ -455,7 +573,7 @@ const styles = StyleSheet.create({
   },
   somedayButtonText: { color: colors.text2, fontSize: 11, fontWeight: '600' },
 
-  // CTA — large, tactile button
+  // CTA
   ctaButton: {
     backgroundColor: colors.primary, borderRadius: radii.button,
     paddingVertical: 16, alignItems: 'center', marginTop: 8,

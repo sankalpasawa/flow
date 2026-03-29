@@ -63,6 +63,48 @@ export async function getOverdueActivities(userId: string, beforeDateStr: string
   return rows.map(mapRow);
 }
 
+// Get IN_PROGRESS scheduled activities from before the given date (carry-over)
+export async function getInProgressActivities(userId: string, beforeDateStr: string): Promise<Activity[]> {
+  const db = await getDb();
+  const rows = await db.getAllAsync<Record<string, unknown>>(
+    `SELECT a.*, c.name as cat_name, c.color as cat_color, c.icon as cat_icon
+     FROM activities a
+     LEFT JOIN categories c ON a.category_id = c.id
+     WHERE a.user_id = ? AND date(a.start_time) < ? AND a.status = ? AND a.is_scheduled = ? AND a.deleted = 0
+     ORDER BY a.start_time ASC`,
+    [userId, beforeDateStr, 'IN_PROGRESS', 1]
+  );
+  return rows.map(mapRow);
+}
+
+// Get IN_PROGRESS untimed tasks from past days
+export async function getInProgressTasks(userId: string, beforeDateStr: string): Promise<Activity[]> {
+  const db = await getDb();
+  const rows = await db.getAllAsync<Record<string, unknown>>(
+    `SELECT a.*, c.name as cat_name, c.color as cat_color, c.icon as cat_icon
+     FROM activities a
+     LEFT JOIN categories c ON a.category_id = c.id
+     WHERE a.user_id = ? AND a.activity_type = ? AND a.assigned_date < ? AND a.status = ? AND a.deleted = 0
+     ORDER BY a.assigned_date ASC`,
+    [userId, 'TASK', beforeDateStr, 'IN_PROGRESS']
+  );
+  return rows.map(mapRow);
+}
+
+// Get all non-deleted activities for a user (for analytics)
+export async function getAllActivities(userId: string): Promise<Activity[]> {
+  const db = await getDb();
+  const rows = await db.getAllAsync<Record<string, unknown>>(
+    `SELECT a.*, c.name as cat_name, c.color as cat_color, c.icon as cat_icon
+     FROM activities a
+     LEFT JOIN categories c ON a.category_id = c.id
+     WHERE a.user_id = ? AND a.deleted = 0
+     ORDER BY a.start_time DESC`,
+    [userId]
+  );
+  return rows.map(mapRow);
+}
+
 // Get unscheduled backlog tasks
 export async function getBacklogActivities(userId: string): Promise<Activity[]> {
   const db = await getDb();

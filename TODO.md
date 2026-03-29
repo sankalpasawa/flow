@@ -10,7 +10,7 @@
 ## Medium Priority
 
 - [ ] **Warm theme remaining fixes**: OnboardingScreen, SignInScreen, SignUpScreen got bulk color replacement but may need manual polish (border colors, input focus states).
-- [ ] **Insights tab analytics**: Add completion stats, category donut chart, mood/energy trend line chart (per design spec). Currently only shows Today/Tomorrow/Someday task lists + category drill-down.
+- [x] **Insights tab analytics**: Completion stats (7d/30d), stacked status bar, mood/energy 7-day trend bars, category breakdown with progress bars, AI-generated behavioral insight banner. Category drill-down moved to stack screen.
 - [ ] **Settings screen**: Add toggle switches for notifications, mindset prompts, quiet hours. Currently just a placeholder with sign-out.
 - [ ] **Log insights**: "Your energy peaks on Tuesdays" — analyze logged mood/energy data and surface patterns.
 - [ ] **End-of-day planning nudge**: Push notification at 8-9:30pm when tomorrow has <3 planned activities.

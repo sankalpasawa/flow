@@ -24,6 +24,7 @@ import { SettingsScreen } from '../features/canvas/screens/SettingsScreen';
 import { SearchScreen } from '../features/search/screens/SearchScreen';
 import { BacklogScreen } from '../features/backlog/screens/BacklogScreen';
 import { CategoryListScreen } from '../features/categories/screens/CategoryListScreen';
+import { InsightsScreen } from '../features/insights/screens/InsightsScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -56,7 +57,7 @@ function TabNavigator() {
     >
       <Tab.Screen name="Today" component={CanvasScreen} />
       <Tab.Screen name="Plan" component={PlanScreen} />
-      <Tab.Screen name="Insights" component={CategoryListScreen} />
+      <Tab.Screen name="Insights" component={InsightsScreen} />
       <Tab.Screen name="Settings" component={SettingsScreen} />
     </Tab.Navigator>
   );
@@ -165,6 +166,11 @@ export function AppNavigator() {
               name="Search"
               component={SearchScreen}
               options={{ headerShown: false }}
+            />
+            <Stack.Screen
+              name="CategoryList"
+              component={CategoryListScreen}
+              options={{ title: 'Categories' }}
             />
           </>
         )}
