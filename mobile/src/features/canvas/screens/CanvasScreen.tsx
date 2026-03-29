@@ -2,10 +2,12 @@ import React, { useEffect, useRef, useCallback, useMemo, useState } from 'react'
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
   SafeAreaView, ActivityIndicator, Platform, RefreshControl, useWindowDimensions,
+  NativeSyntheticEvent, NativeScrollEvent,
 } from 'react-native';
-import { format, isSameDay, isWithinInterval, parseISO } from 'date-fns';
+import { format, isSameDay, isWithinInterval, parseISO, addDays, subDays } from 'date-fns';
 import { useAuthStore } from '../../../store/authStore';
 import { useActivitiesStore } from '../../../store/activitiesStore';
+import { getActivitiesForDay } from '../../../lib/db/activities';
 import { DateStrip } from '../components/DateStrip';
 import { ActivityCard } from '../components/ActivityCard';
 import { TaskSection } from '../components/TaskSection';
@@ -95,10 +97,21 @@ export function CanvasScreen({ navigation }: Props) {
   const scrollRef = useRef<ScrollView>(null);
   const { width: windowWidth } = useWindowDimensions();
   const [refreshing, setRefreshing] = useState(false);
+  const [prevDayActivities, setPrevDayActivities] = useState<Activity[]>([]);
+  const [nextDayActivities, setNextDayActivities] = useState<Activity[]>([]);
+  const isResettingScroll = useRef(false);
 
   const load = useCallback(
     async (date: Date) => {
-      if (user) await loadDay(user.id, date);
+      if (!user) return;
+      await loadDay(user.id, date);
+      // Load adjacent days for infinite scroll
+      const [prev, next] = await Promise.all([
+        getActivitiesForDay(user.id, format(subDays(date, 1), 'yyyy-MM-dd')),
+        getActivitiesForDay(user.id, format(addDays(date, 1), 'yyyy-MM-dd')),
+      ]);
+      setPrevDayActivities(prev);
+      setNextDayActivities(next);
     },
     [user, loadDay]
   );
@@ -125,13 +138,20 @@ export function CanvasScreen({ navigation }: Props) {
     document.head.appendChild(style);
   }, []);
 
-  // Auto-scroll to current time
+  // Auto-scroll to center day (today's section) on mount and date change
   useEffect(() => {
-    if (!isSameDay(selectedDate, new Date())) return;
     const timer = setTimeout(() => {
-      const now = new Date();
-      const y = ((now.getHours() - START_HOUR) + now.getMinutes() / 60) * HOUR_HEIGHT - 100;
-      scrollRef.current?.scrollTo({ y: Math.max(0, y), animated: true });
+      isResettingScroll.current = true;
+      const centerOffset = TOTAL_CANVAS_HEIGHT; // skip prev day section
+      if (isSameDay(selectedDate, new Date())) {
+        const now = new Date();
+        const timeOffset = ((now.getHours() - START_HOUR) + now.getMinutes() / 60) * HOUR_HEIGHT - 100;
+        scrollRef.current?.scrollTo({ y: centerOffset + Math.max(0, timeOffset), animated: false });
+      } else {
+        scrollRef.current?.scrollTo({ y: centerOffset, animated: false });
+      }
+      // Allow boundary detection after scroll reset settles
+      setTimeout(() => { isResettingScroll.current = false; }, 200);
     }, 300);
     return () => clearTimeout(timer);
   }, [activities, selectedDate]);
@@ -139,20 +159,41 @@ export function CanvasScreen({ navigation }: Props) {
   const now = new Date();
   const isToday = isSameDay(selectedDate, now);
 
-  // Filter activities for the selected date that have a time
-  const timedActivities = useMemo(() =>
-    activities.filter((a) => {
+  // Boundary detection on scroll
+  const handleScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    if (isResettingScroll.current) return;
+    const scrollY = e.nativeEvent.contentOffset.y;
+    if (scrollY < TOTAL_CANVAS_HEIGHT * 0.3) {
+      isResettingScroll.current = true;
+      setSelectedDate(subDays(selectedDate, 1));
+    } else if (scrollY > TOTAL_CANVAS_HEIGHT * 1.7) {
+      isResettingScroll.current = true;
+      setSelectedDate(addDays(selectedDate, 1));
+    }
+  }, [selectedDate, setSelectedDate]);
+
+  // 3-day window dates
+  const prevDate = useMemo(() => subDays(selectedDate, 1), [selectedDate]);
+  const nextDate = useMemo(() => addDays(selectedDate, 1), [selectedDate]);
+
+  // Filter timed activities for each day
+  const filterTimedForDay = useCallback((acts: Activity[], date: Date) =>
+    acts.filter((a) => {
       const start = parseISO(a.start_time);
-      return isSameDay(start, selectedDate) && start.getHours() >= START_HOUR;
+      return isSameDay(start, date) && start.getHours() >= START_HOUR;
     }),
-    [activities, selectedDate]
+    []
   );
 
-  // Compute overlap layout for side-by-side rendering
-  const overlapLayout = useMemo(
-    () => computeOverlapLayout(timedActivities),
-    [timedActivities]
-  );
+  const timedActivities = useMemo(() => filterTimedForDay(activities, selectedDate), [activities, selectedDate, filterTimedForDay]);
+  const prevTimedActivities = useMemo(() => filterTimedForDay(prevDayActivities, prevDate), [prevDayActivities, prevDate, filterTimedForDay]);
+  const nextTimedActivities = useMemo(() => filterTimedForDay(nextDayActivities, nextDate), [nextDayActivities, nextDate, filterTimedForDay]);
+
+  // Compute overlap layouts for each day
+  const overlapLayout = useMemo(() => computeOverlapLayout(timedActivities), [timedActivities]);
+  const prevOverlapLayout = useMemo(() => computeOverlapLayout(prevTimedActivities), [prevTimedActivities]);
+  const nextOverlapLayout = useMemo(() => computeOverlapLayout(nextTimedActivities), [nextTimedActivities]);
+
   const ACTIVITY_RIGHT_MARGIN = 12;
   const availableWidth = windowWidth - HOUR_LABEL_WIDTH - ACTIVITY_RIGHT_MARGIN;
 
@@ -163,10 +204,8 @@ export function CanvasScreen({ navigation }: Props) {
     return h;
   }, []);
 
-  // Current time indicator position
-  const nowY = isToday
-    ? ((now.getHours() - START_HOUR) + now.getMinutes() / 60) * HOUR_HEIGHT
-    : -1;
+  // Current time indicator position (shown in whichever section is today)
+  const nowY = ((now.getHours() - START_HOUR) + now.getMinutes() / 60) * HOUR_HEIGHT;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -196,7 +235,7 @@ export function CanvasScreen({ navigation }: Props) {
         }}
       />
 
-      {/* Canvas */}
+      {/* Canvas — 3-day infinite scroll */}
       <View nativeID="canvas-wrapper" style={styles.canvasWrapper}>
         {loading && !refreshing ? (
           <View style={styles.loadingContainer}>
@@ -206,8 +245,10 @@ export function CanvasScreen({ navigation }: Props) {
           <ScrollView
             ref={scrollRef}
             style={styles.canvas}
-            contentContainerStyle={[styles.canvasContent, { height: TOTAL_CANVAS_HEIGHT + 100 }]}
+            contentContainerStyle={[styles.canvasContent, { height: TOTAL_CANVAS_HEIGHT * 3 + 100 }]}
             showsVerticalScrollIndicator={false}
+            onScroll={handleScroll}
+            scrollEventThrottle={64}
             refreshControl={
               <RefreshControl
                 refreshing={refreshing}
@@ -215,79 +256,102 @@ export function CanvasScreen({ navigation }: Props) {
               />
             }
           >
-            {/* Timeline container */}
-            <View style={styles.timeline}>
-              {/* Hour grid lines and labels */}
-              {hours.map((h) => {
-                const y = (h - START_HOUR) * HOUR_HEIGHT;
-                const isCurrentHour = isToday && h === now.getHours();
-                return (
-                  <View key={h} style={[styles.hourRow, { top: y }]} pointerEvents="none">
-                    <Text style={[styles.hourLabel, isCurrentHour && styles.hourNow]}>
-                      {formatHour(h)}
-                    </Text>
-                    <View style={[styles.hourLine, isCurrentHour && styles.hourLineNow]} />
-                  </View>
-                );
-              })}
+            {/* Day sections: prev, current, next */}
+            {([
+              { date: prevDate, dayActivities: prevTimedActivities, layout: prevOverlapLayout, key: 'prev' },
+              { date: selectedDate, dayActivities: timedActivities, layout: overlapLayout, key: 'current' },
+              { date: nextDate, dayActivities: nextTimedActivities, layout: nextOverlapLayout, key: 'next' },
+            ] as const).map(({ date: sectionDate, dayActivities: sectionActivities, layout: sectionLayout, key: sectionKey }, sectionIndex) => {
+              const isSectionToday = isSameDay(sectionDate, now);
+              return (
+                <View key={sectionKey} style={{ height: TOTAL_CANVAS_HEIGHT }}>
+                  {/* Day separator */}
+                  {sectionIndex > 0 && (
+                    <View style={styles.daySeparator} pointerEvents="none">
+                      <View style={styles.daySeparatorLine} />
+                      <Text style={styles.daySeparatorLabel}>
+                        {isSectionToday ? 'Today' : format(sectionDate, 'EEE, MMM d')}
+                      </Text>
+                      <View style={styles.daySeparatorLine} />
+                    </View>
+                  )}
 
-              {/* Current time indicator */}
-              {isToday && nowY >= 0 && (
-                <View style={[styles.nowIndicator, { top: nowY }]} pointerEvents="none">
-                  <View style={styles.nowDot} />
-                  <View style={styles.nowLine} />
+                  {/* Timeline container */}
+                  <View style={styles.timeline}>
+                    {/* Hour grid lines and labels */}
+                    {hours.map((h) => {
+                      const y = (h - START_HOUR) * HOUR_HEIGHT;
+                      const isCurrentHour = isSectionToday && h === now.getHours();
+                      return (
+                        <View key={h} style={[styles.hourRow, { top: y }]} pointerEvents="none">
+                          <Text style={[styles.hourLabel, isCurrentHour && styles.hourNow]}>
+                            {formatHour(h)}
+                          </Text>
+                          <View style={[styles.hourLine, isCurrentHour && styles.hourLineNow]} />
+                        </View>
+                      );
+                    })}
+
+                    {/* Current time indicator */}
+                    {isSectionToday && nowY >= 0 && (
+                      <View style={[styles.nowIndicator, { top: nowY }]} pointerEvents="none">
+                        <View style={styles.nowDot} />
+                        <View style={styles.nowLine} />
+                      </View>
+                    )}
+
+                    {/* Empty tap areas for each hour (behind activities) */}
+                    {hours.map((h) => {
+                      const y = (h - START_HOUR) * HOUR_HEIGHT;
+                      return (
+                        <TouchableOpacity
+                          key={`empty-${sectionKey}-${h}`}
+                          style={[styles.emptyTap, { top: y, height: HOUR_HEIGHT }]}
+                          onPress={() => navigation.navigate('ActivityForm', { startHour: `${h}:00`, date: format(sectionDate, 'yyyy-MM-dd') })}
+                          activeOpacity={0.3}
+                        />
+                      );
+                    })}
+
+                    {/* Activity blocks */}
+                    {sectionActivities.map((activity) => {
+                      const { top, height } = getActivityPosition(activity.start_time, activity.duration_minutes);
+                      const log = logs[activity.id];
+                      const actStart = parseISO(activity.start_time);
+                      const actEnd = new Date(actStart.getTime() + activity.duration_minutes * 60000);
+                      const isCurrentlyActive = isSectionToday && isWithinInterval(now, { start: actStart, end: actEnd });
+                      const isPast = isSectionToday && actEnd < now;
+                      const isOverdue = activity.status === 'PLANNED' && actStart < now && !isSameDay(actStart, now);
+
+                      const itemLayout = sectionLayout.get(activity.id);
+                      const colWidth = itemLayout ? availableWidth / itemLayout.totalColumns : availableWidth;
+                      const leftOffset = itemLayout ? HOUR_LABEL_WIDTH + itemLayout.column * colWidth : HOUR_LABEL_WIDTH;
+
+                      return (
+                        <View
+                          key={activity.id}
+                          style={[
+                            styles.activityBlock,
+                            { top, height, left: leftOffset, width: colWidth, right: undefined },
+                            isPast && { opacity: 0.7 },
+                          ]}
+                        >
+                          <ActivityCard
+                            activity={activity}
+                            log={log}
+                            isNow={isCurrentlyActive}
+                            isOverdue={isOverdue}
+                            height={height}
+                            onPress={() => navigation.navigate('ActivityForm', { activityId: activity.id })}
+                            onQuickComplete={() => quickToggleComplete(activity.id)}
+                          />
+                        </View>
+                      );
+                    })}
+                  </View>
                 </View>
-              )}
-
-              {/* Empty tap areas for each hour (behind activities) */}
-              {hours.map((h) => {
-                const y = (h - START_HOUR) * HOUR_HEIGHT;
-                return (
-                  <TouchableOpacity
-                    key={`empty-${h}`}
-                    style={[styles.emptyTap, { top: y, height: HOUR_HEIGHT }]}
-                    onPress={() => navigation.navigate('ActivityForm', { startHour: `${h}:00`, date: format(selectedDate, 'yyyy-MM-dd') })}
-                    activeOpacity={0.3}
-                  />
-                );
-              })}
-
-              {/* Activity blocks */}
-              {timedActivities.map((activity) => {
-                const { top, height } = getActivityPosition(activity.start_time, activity.duration_minutes);
-                const log = logs[activity.id];
-                const actStart = parseISO(activity.start_time);
-                const actEnd = new Date(actStart.getTime() + activity.duration_minutes * 60000);
-                const isCurrentlyActive = isToday && isWithinInterval(now, { start: actStart, end: actEnd });
-                const isPast = isToday && actEnd < now;
-                const isOverdue = activity.status === 'PLANNED' && actStart < now && !isSameDay(actStart, now);
-
-                const layout = overlapLayout.get(activity.id);
-                const colWidth = layout ? availableWidth / layout.totalColumns : availableWidth;
-                const leftOffset = layout ? HOUR_LABEL_WIDTH + layout.column * colWidth : HOUR_LABEL_WIDTH;
-
-                return (
-                  <View
-                    key={activity.id}
-                    style={[
-                      styles.activityBlock,
-                      { top, height, left: leftOffset, width: colWidth, right: undefined },
-                      isPast && { opacity: 0.7 },
-                    ]}
-                  >
-                    <ActivityCard
-                      activity={activity}
-                      log={log}
-                      isNow={isCurrentlyActive}
-                      isOverdue={isOverdue}
-                      height={height}
-                      onPress={() => navigation.navigate('ActivityForm', { activityId: activity.id })}
-                      onQuickComplete={() => quickToggleComplete(activity.id)}
-                    />
-                  </View>
-                );
-              })}
-            </View>
+              );
+            })}
           </ScrollView>
         )}
       </View>
@@ -356,6 +420,31 @@ const styles = StyleSheet.create({
   hourNow: { color: colors.terra, fontWeight: '700' },
   hourLine: { flex: 1, height: 1, backgroundColor: colors.border },
   hourLineNow: { height: 2, backgroundColor: colors.terra, opacity: 0.8 },
+
+  // Day separator between sections
+  daySeparator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    position: 'absolute',
+    top: -16,
+    left: 0,
+    right: 0,
+    zIndex: 20,
+  },
+  daySeparatorLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: colors.muted,
+    opacity: 0.3,
+  },
+  daySeparatorLabel: {
+    color: colors.muted,
+    fontSize: 11,
+    fontWeight: '600',
+    marginHorizontal: 8,
+  },
 
   // Current time indicator
   nowIndicator: {

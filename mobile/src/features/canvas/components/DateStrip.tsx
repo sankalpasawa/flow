@@ -2,6 +2,7 @@ import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet, LayoutAnimation, Platform, UIManager, FlatList } from 'react-native';
 import type { ViewToken } from 'react-native';
 import { format, addDays, subDays, isSameDay, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, addMonths, subMonths } from 'date-fns';
+import * as Haptics from 'expo-haptics';
 import { colors, radii, spacing } from '../../../theme';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -67,6 +68,7 @@ export function DateStrip({ selectedDate, onSelectDate }: Props) {
       const middleIdx = Math.floor(viewableItems.length / 2);
       const centerItem = viewableItems[middleIdx];
       if (centerItem?.item && !isSameDay(centerItem.item as Date, selectedDate)) {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         onSelectDate(centerItem.item as Date);
       }
     },
@@ -101,7 +103,10 @@ export function DateStrip({ selectedDate, onSelectDate }: Props) {
             isSelected && styles.chipSelected,
             isToday && !isSelected && styles.chipToday,
           ]}
-          onPress={() => onSelectDate(item)}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            onSelectDate(item);
+          }}
           accessibilityLabel={format(item, 'EEEE, MMMM d')}
           accessibilityState={{ selected: isSelected }}
         >

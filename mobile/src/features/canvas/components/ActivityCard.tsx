@@ -36,6 +36,7 @@ export function ActivityCard({ activity, log, onPress, onQuickComplete, isNow, i
 
   const scale = useSharedValue(1);
   const translateX = useSharedValue(0);
+  const disappearScale = useSharedValue(1);
   const hasPassedThreshold = useSharedValue(false);
 
   const triggerLightHaptic = useCallback(() => {
@@ -69,8 +70,10 @@ export function ActivityCard({ activity, log, onPress, onQuickComplete, isNow, i
     })
     .onEnd(() => {
       if (translateX.value > SWIPE_THRESHOLD) {
-        // Complete: slide off to the right and fade out
-        translateX.value = withTiming(300, { duration: 250 });
+        // Complete: slide off to the right, then scale down to disappear
+        translateX.value = withTiming(300, { duration: 250 }, () => {
+          disappearScale.value = withTiming(0, { duration: 200 });
+        });
         runOnJS(triggerCompleteHaptic)();
         runOnJS(handleComplete)();
       } else {
@@ -91,12 +94,19 @@ export function ActivityCard({ activity, log, onPress, onQuickComplete, isNow, i
       runOnJS(onPress)();
     });
 
-  const composed = Gesture.Race(panGesture, tapGesture);
+  const longPressGesture = Gesture.LongPress()
+    .minDuration(500)
+    .onStart(() => {
+      runOnJS(triggerCompleteHaptic)();
+      runOnJS(onPress)();
+    });
+
+  const composed = Gesture.Race(panGesture, longPressGesture, tapGesture);
 
   const cardAnimStyle = useAnimatedStyle(() => ({
     transform: [
       { translateX: translateX.value },
-      { scale: scale.value },
+      { scale: scale.value * disappearScale.value },
     ],
     opacity: interpolate(
       translateX.value,

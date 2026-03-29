@@ -36,6 +36,8 @@ function TabNavigator() {
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
+        animationEnabled: true,
+        tabBarHideOnKeyboard: true,
         tabBarShowLabel: true,
         tabBarIcon: ({ focused }) => {
           const icons: Record<string, string> = { Today: '◉', Plan: '◫', Insights: '◈', Settings: '⚙' };
