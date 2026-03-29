@@ -16,6 +16,7 @@ interface Props {
 }
 
 export function ActivityCard({ activity, log, onPress, onQuickComplete, isNow, isOverdue }: Props) {
+  const cat = activity.category;
   const catColor = getCategoryColor(activity.category_id);
   const isDone = activity.status === 'COMPLETED';
   const isSkipped = activity.status === 'SKIPPED';
@@ -31,21 +32,21 @@ export function ActivityCard({ activity, log, onPress, onQuickComplete, isNow, i
       style={[
         styles.card,
         { borderLeftColor: catColor.solid, backgroundColor: catColor.light },
-        isSkipped && { opacity: 0.4 },
         isNow && styles.nowCard,
+        isSkipped && { opacity: 0.4 },
         animStyle,
       ]}
       onPress={onPress}
       onPressIn={() => { scale.value = withSpring(0.97, { damping: 15, stiffness: 200 }); }}
       onPressOut={() => { scale.value = withSpring(1, { damping: 15, stiffness: 200 }); }}
     >
-      <View style={styles.row}>
-        {/* Completion circle */}
+      <View style={styles.topRow}>
+        {/* Circle + Title */}
         <Pressable
           style={[
             styles.circle,
             isDone && { backgroundColor: catColor.solid },
-            !isDone && { borderWidth: 1.5, borderColor: catColor.solid + '40' },
+            !isDone && { borderWidth: 1.5, borderColor: catColor.solid + '50' },
           ]}
           onPress={(e) => { e.stopPropagation?.(); onQuickComplete?.(); }}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -53,20 +54,29 @@ export function ActivityCard({ activity, log, onPress, onQuickComplete, isNow, i
           {isDone && <Text style={styles.check}>✓</Text>}
         </Pressable>
 
-        {/* Title + duration */}
         <View style={styles.content}>
           <Text style={[styles.title, isDone && styles.titleDone]} numberOfLines={1}>
             {activity.title}
           </Text>
-          {durationText ? <Text style={styles.duration}>{durationText}</Text> : null}
+          <View style={styles.metaRow}>
+            {durationText ? <Text style={styles.meta}>{durationText}</Text> : null}
+            {cat && <Text style={[styles.meta, { color: catColor.solid }]}>{cat.icon} {cat.name}</Text>}
+          </View>
         </View>
 
-        {/* Mood dot if logged */}
-        {log && <View style={[styles.moodDot, { backgroundColor: moodColor(log.mood) }]} />}
-
-        {/* Overdue indicator */}
-        {isOverdue && <View style={styles.overdueDot} />}
+        {/* Status indicators */}
+        <View style={styles.indicators}>
+          {log && <View style={[styles.dot, { backgroundColor: moodColor(log.mood) }]} />}
+          {isOverdue && <View style={[styles.dot, { backgroundColor: colors.danger }]} />}
+        </View>
       </View>
+
+      {/* Mindset prompt — subtle italic */}
+      {activity.mindset_prompt && !isDone && (
+        <Text style={styles.mindset} numberOfLines={1}>
+          {activity.mindset_prompt}
+        </Text>
+      )}
     </AnimatedPressable>
   );
 }
@@ -89,7 +99,7 @@ const styles = StyleSheet.create({
     borderLeftWidth: 4,
     borderLeftColor: colors.terra,
   },
-  row: {
+  topRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
@@ -106,14 +116,20 @@ const styles = StyleSheet.create({
   titleDone: {
     textDecorationLine: 'line-through', color: colors.muted,
   },
-  duration: {
-    color: colors.text2, fontSize: 11, marginTop: 1,
+  metaRow: {
+    flexDirection: 'row', gap: 8, marginTop: 2,
   },
-  moodDot: {
-    width: 8, height: 8, borderRadius: 4,
+  meta: {
+    color: colors.text2, fontSize: 11,
   },
-  overdueDot: {
-    width: 6, height: 6, borderRadius: 3,
-    backgroundColor: colors.danger,
+  indicators: {
+    flexDirection: 'row', gap: 4, alignItems: 'center',
+  },
+  dot: {
+    width: 7, height: 7, borderRadius: 4,
+  },
+  mindset: {
+    color: colors.primaryLight, fontSize: 11, fontStyle: 'italic',
+    marginTop: 6, marginLeft: 32, opacity: 0.7,
   },
 });

@@ -17,10 +17,10 @@ interface Props {
 }
 
 function formatHour(h: number): string {
-  if (h === 0) return '12a';
-  if (h < 12) return `${h}a`;
-  if (h === 12) return '12p';
-  return `${h - 12}p`;
+  if (h === 0) return '12 AM';
+  if (h < 12) return `${h} AM`;
+  if (h === 12) return '12 PM';
+  return `${h - 12} PM`;
 }
 
 interface HourSlot {
@@ -210,15 +210,16 @@ const styles = StyleSheet.create({
   },
   hourLabel: {
     color: colors.muted, fontSize: 11, fontWeight: '500',
-    width: 28, opacity: 0.6,
+    width: 42,
   },
-  hourNow: { color: colors.terra, opacity: 1, fontWeight: '700' },
-  hourLine: { flex: 1, height: 0.5, backgroundColor: colors.border, opacity: 0.5 },
+  hourNow: { color: colors.terra, fontWeight: '700' },
+  hourLine: { flex: 1, height: 0.5, backgroundColor: colors.border },
   hourLineNow: { height: 1.5, backgroundColor: colors.terra, opacity: 0.6 },
 
-  // Empty slot — invisible tap target
+  // Empty slot — subtle tap target
   emptyTap: {
-    height: 20, marginLeft: 44, marginRight: 12,
+    height: 28, marginLeft: 54, marginRight: 12,
+    justifyContent: 'center',
   },
 
   // FAB
