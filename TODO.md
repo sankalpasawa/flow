@@ -2,7 +2,7 @@
 
 ## High Priority (Next Session)
 
-- [ ] **Plan Tab**: Next-day planning screen. Show recurring activities auto-populated, backlog tasks from previous days, ability to move tasks to tomorrow/someday/specific date. "Set My Day" CTA.
+- [x] **Plan Tab**: Next-day planning screen. Shows tomorrow's plan, carry-forward overdue items, someday backlog. Move tasks to tomorrow/someday. "Add to Tomorrow" CTA. (Recurring auto-populate deferred — needs instance generation system.)
 - [ ] **Date picker in ActivityForm**: Add ability to pick a specific date for an activity (today/tomorrow/pick date/someday). Currently the form takes date from route params only.
 - [ ] **Activity form as bottom sheet**: Per design spec, creation/editing should use iOS-style bottom sheets with drag handles, not full-screen navigation.
 - [ ] **Unit tests**: Add tests for new features — search, carry-forward, task creation, activity type switching, overdue logic. Existing test infra in `src/__tests__/`.

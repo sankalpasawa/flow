@@ -1,9 +1,9 @@
 import { create } from 'zustand';
-import { format } from 'date-fns';
+import { format, addDays } from 'date-fns';
 import { Activity, ExperienceLog } from '../types';
 import {
   getActivitiesForDay, getOverdueActivities, getBacklogActivities,
-  getUntimedTasksForDay, getOverdueTasks,
+  getUntimedTasksForDay, getOverdueTasks, getSomedayTasks,
   createActivity, createTask, updateActivity, deleteActivity,
   CreateActivityInput, CreateTaskInput, UpdateActivityInput,
 } from '../lib/db/activities';
@@ -20,8 +20,17 @@ interface ActivitiesState {
   selectedDate: Date;
   loading: boolean;
   error: string | null;
+  // Plan tab state
+  planActivities: Activity[];
+  planTasks: Activity[];
+  carryForward: Activity[];
+  somedayTasks: Activity[];
+  planLoading: boolean;
   loadDay: (userId: string, date: Date) => Promise<void>;
   loadBacklog: (userId: string) => Promise<void>;
+  loadPlan: (userId: string) => Promise<void>;
+  moveToDate: (id: string, dateStr: string) => Promise<void>;
+  moveToSomeday: (id: string) => Promise<void>;
   setSelectedDate: (date: Date) => void;
   addActivity: (input: CreateActivityInput) => Promise<Activity>;
   addTask: (input: CreateTaskInput) => Promise<Activity>;
@@ -42,10 +51,97 @@ export const useActivitiesStore = create<ActivitiesState>((set, get) => ({
   selectedDate: new Date(),
   loading: false,
   error: null,
+  // Plan tab state
+  planActivities: [],
+  planTasks: [],
+  carryForward: [],
+  somedayTasks: [],
+  planLoading: false,
 
   clearError: () => set({ error: null }),
 
   setSelectedDate: (date) => set({ selectedDate: date }),
+
+  loadPlan: async (userId) => {
+    set({ planLoading: true });
+    try {
+      const tomorrow = addDays(new Date(), 1);
+      const tomorrowStr = format(tomorrow, 'yyyy-MM-dd');
+      const [tomorrowActs, tomorrowTasks, overdueActs, overdueTsks, someday] = await Promise.all([
+        getActivitiesForDay(userId, tomorrowStr),
+        getUntimedTasksForDay(userId, tomorrowStr),
+        getOverdueActivities(userId, tomorrowStr),
+        getOverdueTasks(userId, tomorrowStr),
+        getSomedayTasks(userId),
+      ]);
+      set({
+        planActivities: tomorrowActs,
+        planTasks: tomorrowTasks,
+        carryForward: [...overdueActs, ...overdueTsks],
+        somedayTasks: someday,
+        planLoading: false,
+      });
+    } catch (err) {
+      console.error('[DayFlow] Failed to load plan:', err);
+      set({ planLoading: false });
+    }
+  },
+
+  moveToDate: async (id, dateStr) => {
+    try {
+      // Find the activity across all plan lists
+      const allPlan = [...get().carryForward, ...get().somedayTasks, ...get().backlog];
+      const activity = allPlan.find(a => a.id === id);
+      if (!activity) return;
+
+      if (activity.activity_type === 'TASK') {
+        await updateActivity(id, { assigned_date: dateStr });
+      } else {
+        // For time blocks, update start_time date portion keeping the same hour
+        const oldStart = new Date(activity.start_time);
+        const [year, month, day] = dateStr.split('-').map(Number);
+        const newStart = new Date(year, month - 1, day, oldStart.getHours(), oldStart.getMinutes());
+        await updateActivity(id, { start_time: newStart.toISOString() });
+      }
+      // Build the updated activity with correct fields for both tasks and time blocks
+      const updated = activity.activity_type === 'TASK'
+        ? { ...activity, assigned_date: dateStr }
+        : { ...activity, assigned_date: dateStr, start_time: new Date(
+            Number(dateStr.split('-')[0]), Number(dateStr.split('-')[1]) - 1, Number(dateStr.split('-')[2]),
+            new Date(activity.start_time).getHours(), new Date(activity.start_time).getMinutes()
+          ).toISOString() };
+      // Remove from carry-forward / someday and add to plan
+      set(s => ({
+        carryForward: s.carryForward.filter(a => a.id !== id),
+        somedayTasks: s.somedayTasks.filter(a => a.id !== id),
+        planActivities: activity.is_scheduled
+          ? [...s.planActivities, updated]
+          : s.planActivities,
+        planTasks: !activity.is_scheduled
+          ? [...s.planTasks, updated]
+          : s.planTasks,
+      }));
+    } catch (err) {
+      console.error('[DayFlow] Failed to move activity:', err);
+    }
+  },
+
+  moveToSomeday: async (id) => {
+    try {
+      await updateActivity(id, { assigned_date: null, is_scheduled: false });
+      const activity = get().carryForward.find(a => a.id === id)
+        || get().planTasks.find(a => a.id === id)
+        || get().planActivities.find(a => a.id === id);
+      set(s => ({
+        carryForward: s.carryForward.filter(a => a.id !== id),
+        planActivities: s.planActivities.filter(a => a.id !== id),
+        planTasks: s.planTasks.filter(a => a.id !== id),
+        somedayTasks: activity ? [{ ...activity, assigned_date: null, is_scheduled: false }, ...s.somedayTasks] : s.somedayTasks,
+      }));
+    } catch (err) {
+      console.error('[DayFlow] Failed to move to someday:', err);
+    }
+  },
 
   loadBacklog: async (userId) => {
     try {

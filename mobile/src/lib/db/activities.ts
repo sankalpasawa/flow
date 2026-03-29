@@ -23,6 +23,7 @@ export interface UpdateActivityInput {
   start_time?: string;
   duration_minutes?: number;
   category_id?: string;
+  assigned_date?: string | null;
   is_scheduled?: boolean;
   mindset_prompt?: string;
   mindset_overridden?: boolean;
@@ -203,6 +204,7 @@ export async function updateActivity(id: string, updates: UpdateActivityInput): 
   if (updates.start_time !== undefined) { fields.push('start_time = ?'); values.push(updates.start_time); }
   if (updates.duration_minutes !== undefined) { fields.push('duration_minutes = ?'); values.push(updates.duration_minutes); }
   if (updates.category_id !== undefined) { fields.push('category_id = ?'); values.push(updates.category_id); }
+  if (updates.assigned_date !== undefined) { fields.push('assigned_date = ?'); values.push(updates.assigned_date); }
   if (updates.is_scheduled !== undefined) { fields.push('is_scheduled = ?'); values.push(updates.is_scheduled ? 1 : 0); }
   if (updates.mindset_prompt !== undefined) { fields.push('mindset_prompt = ?'); values.push(updates.mindset_prompt); }
   if (updates.mindset_overridden !== undefined) { fields.push('mindset_overridden = ?'); values.push(updates.mindset_overridden ? 1 : 0); }

@@ -19,6 +19,7 @@ import { ActivityFormScreen } from '../features/canvas/screens/ActivityFormScree
 import { ActivityDetailScreen } from '../features/canvas/screens/ActivityDetailScreen';
 import { LogFormScreen } from '../features/log/screens/LogFormScreen';
 import { LogHistoryScreen } from '../features/log/screens/LogHistoryScreen';
+import { PlanScreen } from '../features/plan/screens/PlanScreen';
 import { SettingsScreen } from '../features/canvas/screens/SettingsScreen';
 import { SearchScreen } from '../features/search/screens/SearchScreen';
 import { BacklogScreen } from '../features/backlog/screens/BacklogScreen';
@@ -54,7 +55,7 @@ function TabNavigator() {
       })}
     >
       <Tab.Screen name="Today" component={CanvasScreen} />
-      <Tab.Screen name="Plan" component={LogHistoryScreen} />
+      <Tab.Screen name="Plan" component={PlanScreen} />
       <Tab.Screen name="Insights" component={CategoryListScreen} />
       <Tab.Screen name="Settings" component={SettingsScreen} />
     </Tab.Navigator>
