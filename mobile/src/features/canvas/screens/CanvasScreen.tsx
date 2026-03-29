@@ -1,7 +1,7 @@
-import React, { useEffect, useRef, useCallback, useMemo } from 'react';
+import React, { useEffect, useRef, useCallback, useMemo, useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  SafeAreaView, ActivityIndicator, Platform, useWindowDimensions,
+  SafeAreaView, ActivityIndicator, Platform, RefreshControl, useWindowDimensions,
 } from 'react-native';
 import { format, isSameDay, isWithinInterval, parseISO } from 'date-fns';
 import { useAuthStore } from '../../../store/authStore';
@@ -94,13 +94,25 @@ export function CanvasScreen({ navigation }: Props) {
   const { activities, untimedTasks, logs, loading, selectedDate, setSelectedDate, loadDay, quickToggleComplete, addTask } = useActivitiesStore();
   const scrollRef = useRef<ScrollView>(null);
   const { width: windowWidth } = useWindowDimensions();
+  const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(
-    (date: Date) => { if (user) loadDay(user.id, date); },
+    async (date: Date) => {
+      if (user) await loadDay(user.id, date);
+    },
     [user, loadDay]
   );
 
-  useEffect(() => { load(selectedDate); }, [selectedDate]);
+  useEffect(() => { void load(selectedDate); }, [selectedDate, load]);
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await load(selectedDate);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [load, selectedDate]);
 
   // Inject CSS fix for web scroll containment
   useEffect(() => {
@@ -186,7 +198,7 @@ export function CanvasScreen({ navigation }: Props) {
 
       {/* Canvas */}
       <View nativeID="canvas-wrapper" style={styles.canvasWrapper}>
-        {loading ? (
+        {loading && !refreshing ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator color={colors.primary} size="small" />
           </View>
@@ -196,6 +208,12 @@ export function CanvasScreen({ navigation }: Props) {
             style={styles.canvas}
             contentContainerStyle={[styles.canvasContent, { height: TOTAL_CANVAS_HEIGHT + 100 }]}
             showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={handleRefresh}
+              />
+            }
           >
             {/* Timeline container */}
             <View style={styles.timeline}>
