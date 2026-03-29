@@ -89,6 +89,8 @@ The web DB (`db.web.ts`) is a custom in-memory SQL parser, NOT real SQLite. It s
 11. **Horizontal swipe to complete** — swipe right to mark done
 12. **Clean means beautiful, not bare** — keep useful info (category, duration), remove noise (mindset on card, badges)
 13. **Always persist instructions** — every decision goes to CLAUDE.md/TODO.md and gets pushed to git
+14. **Consistent calendar across app** — same HOUR_HEIGHT, colors, block sizing, overlap layout used in Today canvas, Plan Hours view, and any future calendar views. Single source of truth for calendar constants.
+15. **Design system as code** — all UI built from a formal design system (typography scale, spacing grid, colors, shadows, component sizes, animation durations). No hardcoded values in components.
 
 ## What to Work On
 Read `TODO.md` for the full list. Top priorities:

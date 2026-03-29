@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useCallback, useMemo } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  SafeAreaView, ActivityIndicator, Platform,
+  SafeAreaView, ActivityIndicator, Platform, useWindowDimensions,
 } from 'react-native';
 import { format, isSameDay, isWithinInterval, parseISO } from 'date-fns';
 import { useAuthStore } from '../../../store/authStore';
@@ -11,38 +11,89 @@ import { ActivityCard } from '../components/ActivityCard';
 import { TaskSection } from '../components/TaskSection';
 import { Activity } from '../../../types';
 import { colors, shadows, spacing } from '../../../theme';
-
-const HOUR_HEIGHT = 60;
-const HOUR_LABEL_WIDTH = 50;
-const START_HOUR = 6;
-const END_HOUR = 24;
-const MIN_BLOCK_HEIGHT = 30;
-const TOTAL_HEIGHT = (END_HOUR - START_HOUR) * HOUR_HEIGHT;
+import {
+  HOUR_HEIGHT, START_HOUR, END_HOUR, HOUR_LABEL_WIDTH,
+  TOTAL_CANVAS_HEIGHT, getActivityPosition, formatHour,
+} from '../../../lib/calendar';
 
 interface Props {
   navigation: { navigate: (screen: string, params?: Record<string, unknown>) => void };
 }
 
-function formatHour(h: number): string {
-  if (h === 0) return '12 AM';
-  if (h < 12) return `${h} AM`;
-  if (h === 12) return '12 PM';
-  return `${h - 12} PM`;
-}
+/**
+ * Standard calendar overlap algorithm (Google Calendar / Notion Calendar style).
+ * Groups overlapping activities into columns so they render side by side.
+ */
+function computeOverlapLayout(activities: Activity[]): Map<string, { column: number; totalColumns: number }> {
+  const result = new Map<string, { column: number; totalColumns: number }>();
+  if (activities.length === 0) return result;
 
-function getActivityPosition(activity: Activity) {
-  const start = parseISO(activity.start_time);
-  const startHour = start.getHours();
-  const startMinute = start.getMinutes();
-  const top = ((startHour - START_HOUR) + startMinute / 60) * HOUR_HEIGHT;
-  const height = Math.max((activity.duration_minutes / 60) * HOUR_HEIGHT, MIN_BLOCK_HEIGHT);
-  return { top, height };
+  // Parse times once and sort by start, then by duration descending (longer events first)
+  const parsed = activities.map((a) => {
+    const start = parseISO(a.start_time).getTime();
+    const end = start + a.duration_minutes * 60000;
+    return { id: a.id, start, end };
+  });
+  parsed.sort((a, b) => a.start - b.start || (b.end - b.start) - (a.end - a.start));
+
+  // Build overlap groups: connected components where any pair overlaps
+  const groups: (typeof parsed)[] = [];
+  let currentGroup = [parsed[0]];
+  let groupEnd = parsed[0].end;
+
+  for (let i = 1; i < parsed.length; i++) {
+    const item = parsed[i];
+    if (item.start < groupEnd) {
+      // Overlaps with the current group
+      currentGroup.push(item);
+      groupEnd = Math.max(groupEnd, item.end);
+    } else {
+      groups.push(currentGroup);
+      currentGroup = [item];
+      groupEnd = item.end;
+    }
+  }
+  groups.push(currentGroup);
+
+  // Assign columns within each group using a greedy approach
+  for (const group of groups) {
+    const columns: number[] = []; // columns[i] = end time of the last activity in column i
+    const assignments = new Map<string, number>();
+
+    for (const item of group) {
+      // Find the first column where this activity fits (no overlap)
+      let placed = false;
+      for (let c = 0; c < columns.length; c++) {
+        if (item.start >= columns[c]) {
+          columns[c] = item.end;
+          assignments.set(item.id, c);
+          placed = true;
+          break;
+        }
+      }
+      if (!placed) {
+        assignments.set(item.id, columns.length);
+        columns.push(item.end);
+      }
+    }
+
+    const totalColumns = columns.length;
+    for (const item of group) {
+      result.set(item.id, {
+        column: assignments.get(item.id)!,
+        totalColumns,
+      });
+    }
+  }
+
+  return result;
 }
 
 export function CanvasScreen({ navigation }: Props) {
   const { user } = useAuthStore();
   const { activities, untimedTasks, logs, loading, selectedDate, setSelectedDate, loadDay, quickToggleComplete, addTask } = useActivitiesStore();
   const scrollRef = useRef<ScrollView>(null);
+  const { width: windowWidth } = useWindowDimensions();
 
   const load = useCallback(
     (date: Date) => { if (user) loadDay(user.id, date); },
@@ -84,6 +135,14 @@ export function CanvasScreen({ navigation }: Props) {
     }),
     [activities, selectedDate]
   );
+
+  // Compute overlap layout for side-by-side rendering
+  const overlapLayout = useMemo(
+    () => computeOverlapLayout(timedActivities),
+    [timedActivities]
+  );
+  const ACTIVITY_RIGHT_MARGIN = 12;
+  const availableWidth = windowWidth - HOUR_LABEL_WIDTH - ACTIVITY_RIGHT_MARGIN;
 
   // Build hour labels
   const hours = useMemo(() => {
@@ -135,7 +194,7 @@ export function CanvasScreen({ navigation }: Props) {
           <ScrollView
             ref={scrollRef}
             style={styles.canvas}
-            contentContainerStyle={[styles.canvasContent, { height: TOTAL_HEIGHT + 100 }]}
+            contentContainerStyle={[styles.canvasContent, { height: TOTAL_CANVAS_HEIGHT + 100 }]}
             showsVerticalScrollIndicator={false}
           >
             {/* Timeline container */}
@@ -177,7 +236,7 @@ export function CanvasScreen({ navigation }: Props) {
 
               {/* Activity blocks */}
               {timedActivities.map((activity) => {
-                const { top, height } = getActivityPosition(activity);
+                const { top, height } = getActivityPosition(activity.start_time, activity.duration_minutes);
                 const log = logs[activity.id];
                 const actStart = parseISO(activity.start_time);
                 const actEnd = new Date(actStart.getTime() + activity.duration_minutes * 60000);
@@ -185,12 +244,16 @@ export function CanvasScreen({ navigation }: Props) {
                 const isPast = isToday && actEnd < now;
                 const isOverdue = activity.status === 'PLANNED' && actStart < now && !isSameDay(actStart, now);
 
+                const layout = overlapLayout.get(activity.id);
+                const colWidth = layout ? availableWidth / layout.totalColumns : availableWidth;
+                const leftOffset = layout ? HOUR_LABEL_WIDTH + layout.column * colWidth : HOUR_LABEL_WIDTH;
+
                 return (
                   <View
                     key={activity.id}
                     style={[
                       styles.activityBlock,
-                      { top, height },
+                      { top, height, left: leftOffset, width: colWidth, right: undefined },
                       isPast && { opacity: 0.7 },
                     ]}
                   >
@@ -250,7 +313,7 @@ const styles = StyleSheet.create({
   timeline: {
     position: 'relative',
     width: '100%',
-    height: TOTAL_HEIGHT,
+    height: TOTAL_CANVAS_HEIGHT,
   },
 
   // Hour grid

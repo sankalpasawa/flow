@@ -9,6 +9,7 @@ import { useAuthStore } from '../../../store/authStore';
 import { useActivitiesStore } from '../../../store/activitiesStore';
 import { Activity, Goal } from '../../../types';
 import { colors, radii, shadows, spacing, getCategoryColor } from '../../../theme';
+import { START_HOUR, END_HOUR, formatHour } from '../../../lib/calendar';
 import { GoalSection } from '../../goals/components/GoalSection';
 import { GoalSuggestionCard } from '../../goals/components/GoalSuggestionCard';
 import { useGoalsStore } from '../../../store/goalsStore';
@@ -538,13 +539,6 @@ function SomedayRow({ task, onAdd, onPress, isLast }: {
 
 // ─── Tomorrow Calendar (hourly view) ────────────
 
-function formatHour12(h: number): string {
-  if (h === 0) return '12 AM';
-  if (h < 12) return `${h} AM`;
-  if (h === 12) return '12 PM';
-  return `${h - 12} PM`;
-}
-
 function TomorrowCalendar({ activities, tasks, tomorrowStr, onSlotPress, onActivityPress, onToggle }: {
   activities: Activity[];
   tasks: Activity[];
@@ -553,14 +547,14 @@ function TomorrowCalendar({ activities, tasks, tomorrowStr, onSlotPress, onActiv
   onActivityPress: (id: string) => void;
   onToggle: (id: string) => void;
 }) {
-  // Build hour slots 6 AM - 11 PM (skip late night)
+  // Build hour slots using shared calendar constants
   const slots = [];
-  for (let h = 6; h < 24; h++) {
+  for (let h = START_HOUR; h < END_HOUR; h++) {
     const items = activities.filter(a => {
       const start = parseISO(a.start_time);
       return start.getHours() === h;
     });
-    slots.push({ hour: h, label: formatHour12(h), items });
+    slots.push({ hour: h, label: formatHour(h), items });
   }
 
   const pendingTasks = tasks.filter(t => t.status !== 'COMPLETED');

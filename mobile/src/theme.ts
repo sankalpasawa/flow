@@ -132,3 +132,31 @@ export const typography = {
   label: { fontSize: 12, fontWeight: '600' as const, letterSpacing: 0.4 },
   caption: { fontSize: 11, fontWeight: '500' as const, letterSpacing: 0.3 },
 } as const;
+
+export const type = {
+  h1: { fontSize: 28, fontWeight: '700' as const, letterSpacing: -0.6 },
+  h2: { fontSize: 22, fontWeight: '700' as const, letterSpacing: -0.3 },
+  h3: { fontSize: 18, fontWeight: '600' as const },
+  body: { fontSize: 16, fontWeight: '600' as const },
+  bodyRegular: { fontSize: 15, fontWeight: '400' as const, lineHeight: 22 },
+  small: { fontSize: 13, fontWeight: '400' as const, lineHeight: 18 },
+  caption: { fontSize: 12, fontWeight: '600' as const },
+  micro: { fontSize: 11, fontWeight: '500' as const },
+  label: { fontSize: 12, fontWeight: '600' as const, letterSpacing: 0.4 },
+} as const;
+
+export const motion = {
+  fast: 150,
+  normal: 250,
+  slow: 400,
+  spring: { damping: 15, stiffness: 200 },
+} as const;
+
+export const sizes = {
+  touchTarget: 44,
+  iconButton: 40,
+  chip: { height: 36, paddingH: 12 },
+  card: { paddingV: 12, paddingH: 14, radius: 14, borderLeft: 2 },
+  fab: { size: 48, radius: 24 },
+  tabBar: { height: 80, paddingBottom: 24 },
+} as const;
