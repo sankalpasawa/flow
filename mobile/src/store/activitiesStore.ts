@@ -186,14 +186,10 @@ export const useActivitiesStore = create<ActivitiesState>((set, get) => ({
       const allTasks = [...overdueTsks, ...dayTasks];
 
       // Move timed tasks onto the hourly canvas instead of the overhead section
+      // Only tasks explicitly scheduled (is_scheduled=true) go on the canvas.
+      // Someday tasks (assigned_date=null) and untimed tasks stay in overhead.
       const isTimedTask = (t: Activity): boolean => {
-        if (t.is_scheduled) return true;
-        if (t.duration_minutes > 0) {
-          const h = new Date(t.start_time).getHours();
-          const m = new Date(t.start_time).getMinutes();
-          return h !== 0 || m !== 0;
-        }
-        return false;
+        return t.is_scheduled === true;
       };
       const timedTasks = allTasks.filter(isTimedTask);
       const untimed = allTasks.filter(t => !isTimedTask(t));
