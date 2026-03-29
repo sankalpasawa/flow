@@ -24,12 +24,14 @@ npx expo start --web
 - **State**: Zustand stores (`src/store/`)
 - **Design**: Warm minimal theme — cream bg (#FAF7F2), forest green primary (#2D4A3E). Theme tokens in `src/theme.ts`
 - **Backend**: Supabase (placeholder creds for dev, auto-bypassed via dev mode in authStore)
+- **Goals feature**: Long-term goals with progress tracking, category-based grouping, and target dates. Lives in `src/features/goals/`.
 
 ## Key Concepts
 - **Two activity types**: `TIME_BLOCK` (hourly canvas slots) and `TASK` (checklist items)
-- **Tasks without time** appear at the top of Today screen
+- **Tasks without time** appear at the top of Today screen (collapsible section)
 - **Tasks with time** appear in their hour slot on the canvas
 - **Carry-forward**: Incomplete tasks/activities from past days show on today with "Overdue" badge
+- **Goals**: Long-term objectives with progress tracking (0-100%), target dates, and category grouping. Accessible from Insights tab.
 - **Seed data**: Sankalp's real Any.do tasks. Dev mode auto-seeds on first load. Bump `SEED_VERSION` in `src/lib/db/seed.ts` to force re-seed.
 
 ## Important Files
@@ -44,6 +46,7 @@ npx expo start --web
 | `src/store/activitiesStore.ts` | Zustand store for activities + tasks |
 | `src/store/authStore.ts` | Auth logic — dev auto-login + demo account bypass |
 | `src/navigation/AppNavigator.tsx` | Tab navigator (Today, Plan, Insights, Settings) |
+| `src/features/goals/screens/GoalFormScreen.tsx` | Goal creation form (accordion sections, date picker, category) |
 | `TODO.md` | Pending features and bugs — **start here for next steps** |
 | `PLAN.md` | Original PRD with sprint plan and architecture |
 | `data/sankalp_anydo_tasks.csv` | Sankalp's raw Any.do task export |
@@ -68,7 +71,12 @@ The web DB (`db.web.ts`) is a custom in-memory SQL parser, NOT real SQLite. It s
 
 ## What to Work On
 Read `TODO.md` for the full list. Top priorities:
-1. Date picker in ActivityForm
-2. Bottom sheet modals (per design spec)
-3. Unit tests for new features
-4. Settings screen toggles (notifications, mindset prompts, quiet hours)
+1. Goals feature follow-up (seed goals data, AI-powered goal suggestions, goal editing)
+2. Unit tests for new features
+3. Settings screen toggles (notifications, mindset prompts, quiet hours)
+4. Warm theme polish for remaining screens
+
+## Running on Device
+- Run `npx expo start` from `mobile/` directory
+- Scan the QR code with iPhone camera to open in Expo Go
+- Web: `npx expo start --web` then open http://localhost:8081

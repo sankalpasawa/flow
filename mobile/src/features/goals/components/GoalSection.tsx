@@ -129,8 +129,6 @@ export function GoalSection({ goals, navigation }: Props) {
 
   const activeGoals = goals.filter(g => g.is_active);
 
-  if (activeGoals.length === 0) return null;
-
   const toggle = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setCollapsed(prev => !prev);
@@ -168,9 +166,13 @@ export function GoalSection({ goals, navigation }: Props) {
       </Pressable>
       {!collapsed && (
         <View style={styles.sectionBody}>
-          {activeGoals.map((g, i) => (
-            <GoalRow key={g.id} goal={g} isLast={i === activeGoals.length - 1} />
-          ))}
+          {activeGoals.length === 0 ? (
+            <Text style={styles.emptyText}>Set a goal to track your progress</Text>
+          ) : (
+            activeGoals.map((g, i) => (
+              <GoalRow key={g.id} goal={g} isLast={i === activeGoals.length - 1} />
+            ))
+          )}
           <Pressable
             style={styles.addLink}
             onPress={() => navigation.navigate('GoalForm')}
@@ -231,5 +233,12 @@ const styles = StyleSheet.create({
     color: colors.primary,
     fontSize: 13,
     fontWeight: '600',
+  },
+  emptyText: {
+    color: colors.muted,
+    fontSize: 13,
+    padding: 16,
+    textAlign: 'center',
+    fontStyle: 'italic',
   },
 });

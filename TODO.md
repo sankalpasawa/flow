@@ -8,6 +8,13 @@
 - [x] **Activity form as bottom sheet**: Per design spec, creation/editing should use iOS-style bottom sheets with drag handles, not full-screen navigation.
 - [ ] **Unit tests**: Add tests for new features — search, carry-forward, task creation, activity type switching, overdue logic. Existing test infra in `src/__tests__/`.
 
+## Goals Feature Follow-up
+
+- [ ] **Seed goals data**: Add sample goals to seed.ts and seedDemo.ts so new installs show example goals
+- [ ] **AI-powered goal suggestions**: Use Claude to suggest goals based on user's activity patterns
+- [ ] **Goal editing**: Edit existing goals (currently only creation is supported)
+- [ ] **Goal-activity linking**: Associate daily tasks/time blocks with long-term goals for progress tracking
+
 ## Medium Priority
 
 - [ ] **Warm theme remaining fixes**: OnboardingScreen, SignInScreen, SignUpScreen got bulk color replacement but may need manual polish (border colors, input focus states).

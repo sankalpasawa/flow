@@ -298,18 +298,17 @@ function buildActivities(): { activities: SeedActivity[]; logs: SeedLog[] } {
 
   // ─── Day-assigned tasks (untimed) — appear at top of Today ───
   const todayDate = new Date().toISOString().split('T')[0];
-  const yesterdayDate = new Date(Date.now() - 86400000).toISOString().split('T')[0];
   const now = nowISO();
 
   activities.push(
-    // Today's tasks
-    { id: uuid(), activity_type: 'TASK', title: 'Rent', start_time: now, duration_minutes: 15, category_id: 'sys-personal', assigned_date: todayDate, is_scheduled: false, status: 'PLANNED', priority: 'HIGH', recurrence_type: 'NONE', mindset_prompt: null, actual_start: null, actual_end: null },
-    { id: uuid(), activity_type: 'TASK', title: 'Clean badminton racket', start_time: now, duration_minutes: 15, category_id: 'cust-chores', assigned_date: todayDate, is_scheduled: false, status: 'PLANNED', priority: 'LOW', recurrence_type: 'NONE', mindset_prompt: null, actual_start: null, actual_end: null },
+    // Today's tasks — only "Anand meeting follow up" assigned to today; rest go to someday
+    { id: uuid(), activity_type: 'TASK', title: 'Rent', start_time: now, duration_minutes: 15, category_id: 'sys-personal', assigned_date: null, is_scheduled: false, status: 'PLANNED', priority: 'HIGH', recurrence_type: 'NONE', mindset_prompt: null, actual_start: null, actual_end: null },
+    { id: uuid(), activity_type: 'TASK', title: 'Clean badminton racket', start_time: now, duration_minutes: 15, category_id: 'cust-chores', assigned_date: null, is_scheduled: false, status: 'PLANNED', priority: 'LOW', recurrence_type: 'NONE', mindset_prompt: null, actual_start: null, actual_end: null },
     { id: uuid(), activity_type: 'TASK', title: 'Anand meeting follow up', start_time: now, duration_minutes: 30, category_id: 'sys-personal', assigned_date: todayDate, is_scheduled: false, status: 'PLANNED', priority: 'HIGH', recurrence_type: 'NONE', mindset_prompt: null, actual_start: null, actual_end: null },
-    { id: uuid(), activity_type: 'TASK', title: 'password for google doc', start_time: now, duration_minutes: 5, category_id: 'sys-personal', assigned_date: todayDate, is_scheduled: false, status: 'COMPLETED', priority: 'MEDIUM', recurrence_type: 'NONE', mindset_prompt: null, actual_start: null, actual_end: now },
-    // Yesterday's overdue task (should carry forward)
-    { id: uuid(), activity_type: 'TASK', title: 'Shriraj wallet', start_time: now, duration_minutes: 15, category_id: 'sys-personal', assigned_date: yesterdayDate, is_scheduled: false, status: 'PLANNED', priority: 'MEDIUM', recurrence_type: 'NONE', mindset_prompt: null, actual_start: null, actual_end: null },
-    { id: uuid(), activity_type: 'TASK', title: 'Photo on ig about shreyaa', start_time: now, duration_minutes: 20, category_id: 'sys-personal', assigned_date: yesterdayDate, is_scheduled: false, status: 'PLANNED', priority: 'LOW', recurrence_type: 'NONE', mindset_prompt: null, actual_start: null, actual_end: null },
+    { id: uuid(), activity_type: 'TASK', title: 'password for google doc', start_time: now, duration_minutes: 5, category_id: 'sys-personal', assigned_date: null, is_scheduled: false, status: 'COMPLETED', priority: 'MEDIUM', recurrence_type: 'NONE', mindset_prompt: null, actual_start: null, actual_end: now },
+    // Previously day-assigned tasks — moved to someday bucket
+    { id: uuid(), activity_type: 'TASK', title: 'Shriraj wallet', start_time: now, duration_minutes: 15, category_id: 'sys-personal', assigned_date: null, is_scheduled: false, status: 'PLANNED', priority: 'MEDIUM', recurrence_type: 'NONE', mindset_prompt: null, actual_start: null, actual_end: null },
+    { id: uuid(), activity_type: 'TASK', title: 'Photo on ig about shreyaa', start_time: now, duration_minutes: 20, category_id: 'sys-personal', assigned_date: null, is_scheduled: false, status: 'PLANNED', priority: 'LOW', recurrence_type: 'NONE', mindset_prompt: null, actual_start: null, actual_end: null },
   );
 
   // ─── Backlog (Someday) — unscheduled tasks from Any.do ───
@@ -375,7 +374,7 @@ export async function seedDummyData(): Promise<void> {
   if (typeof localStorage === 'undefined') return;
 
   // Check if already seeded with latest version (bump to re-seed)
-  const SEED_VERSION = '8';
+  const SEED_VERSION = '9';
   if (localStorage.getItem('dayflow_seed_version') === SEED_VERSION) return;
 
   // Write directly to localStorage, bypassing the web DB's SQL parser

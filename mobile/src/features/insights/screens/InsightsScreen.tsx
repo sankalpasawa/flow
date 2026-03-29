@@ -165,13 +165,6 @@ export function InsightsScreen({ navigation }: Props) {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Insights</Text>
-        <Pressable
-          style={styles.catBtn}
-          onPress={() => navigation.navigate('CategoryList' as any)}
-          accessibilityLabel="View categories"
-        >
-          <Text style={styles.catBtnText}>Categories</Text>
-        </Pressable>
       </View>
 
       {loading ? (
