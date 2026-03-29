@@ -4,7 +4,7 @@
 export const colors = {
   bg: '#FAF7F2',
   surface: '#FFFFFF',
-  surface2: '#F4F0EA',
+  surface2: '#F2EDE5',
   text: '#1A1A1A',
   text2: '#4B4642',
   muted: '#746E69',
@@ -13,20 +13,20 @@ export const colors = {
 
   // Primary (Deep Work green)
   primary: '#2D4A3E',
-  primaryLight: '#3D6454',
+  primaryLight: '#35573F',
   primaryBg: '#E3ECE6',
 
   // Category palette
-  terra: '#C4795B',
-  terraLight: '#F0DDD5',
-  sage: '#7B9E87',
-  sageLight: '#DFF0E6',
-  slate: '#4A6B8A',
-  slateLight: '#D5E5F5',
-  mauve: '#8B6B8A',
-  mauveLight: '#EDE0ED',
-  amber: '#B8860B',
-  amberLight: '#F5EAC8',
+  terra: '#B5634A',
+  terraLight: '#EEDDD4',
+  sage: '#5A8C6A',
+  sageLight: '#D4EADB',
+  slate: '#3D5F80',
+  slateLight: '#CBDCEE',
+  mauve: '#7D5A7C',
+  mauveLight: '#E4D4E4',
+  amber: '#A67B0A',
+  amberLight: '#EFE2BC',
 
   // Status
   done: '#2D4A3E',
@@ -87,32 +87,39 @@ export const radii = {
 
 export const shadows = {
   xs: {
-    shadowColor: '#000',
+    shadowColor: '#1A1A1A',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.04,
     shadowRadius: 2,
     elevation: 1,
   },
-  card: {
-    shadowColor: '#2D4A3E',
+  sm: {
+    shadowColor: '#1A1A1A',
     shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  card: {
+    shadowColor: '#1A1A1A',
+    shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.08,
     shadowRadius: 8,
     elevation: 3,
   },
   fab: {
-    shadowColor: '#2D4A3E',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
+    shadowColor: '#1A1A1A',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.15,
     shadowRadius: 16,
     elevation: 8,
   },
   modal: {
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 20 },
-    shadowOpacity: 0.2,
-    shadowRadius: 24,
-    elevation: 20,
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 20,
+    elevation: 16,
   },
 } as const;
 

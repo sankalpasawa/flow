@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, LayoutAnimation, Platform, UIManager } from 'react-native';
+import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, LayoutAnimation, Platform, UIManager, FlatList } from 'react-native';
+import type { ViewToken } from 'react-native';
 import { format, addDays, subDays, isSameDay, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, addMonths, subMonths } from 'date-fns';
 import { colors, radii, spacing } from '../../../theme';
 
@@ -7,17 +8,75 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
+const CHIP_WIDTH = 52;
+const CHIP_HEIGHT = 60;
+const TOTAL_DAYS = 21;
+const TODAY_INDEX = 7; // 7 past days, today at index 7, then 13 future
+
 interface Props {
   selectedDate: Date;
   onSelectDate: (date: Date) => void;
 }
 
+function buildDates(anchorDate: Date): Date[] {
+  return Array.from({ length: TOTAL_DAYS }, (_, i) => addDays(anchorDate, i - TODAY_INDEX));
+}
+
+const getItemLayout = (_data: unknown, index: number) => ({
+  length: CHIP_WIDTH,
+  offset: CHIP_WIDTH * index,
+  index,
+});
+
 export function DateStrip({ selectedDate, onSelectDate }: Props) {
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [calendarMonth, setCalendarMonth] = useState(selectedDate);
+  const flatListRef = useRef<FlatList<Date>>(null);
+  const hasScrolledRef = useRef(false);
+  const isUserScrollingRef = useRef(false);
 
-  // 7 days centered on selected
-  const dates = Array.from({ length: 7 }, (_, i) => addDays(selectedDate, i - 3));
+  const dates = useMemo(() => buildDates(selectedDate), [selectedDate]);
+
+  // Find the index of selectedDate in the list (should be TODAY_INDEX when freshly built)
+  const selectedIndex = useMemo(() => {
+    const idx = dates.findIndex((d) => isSameDay(d, selectedDate));
+    return idx >= 0 ? idx : TODAY_INDEX;
+  }, [dates, selectedDate]);
+
+  // Auto-scroll to center the selected date on mount and when selection changes
+  useEffect(() => {
+    if (flatListRef.current) {
+      // Small delay to ensure layout is ready
+      const timer = setTimeout(() => {
+        flatListRef.current?.scrollToIndex({
+          index: selectedIndex,
+          animated: hasScrolledRef.current,
+          viewPosition: 0.5, // center in viewport
+        });
+        hasScrolledRef.current = true;
+      }, hasScrolledRef.current ? 0 : 100);
+      return () => clearTimeout(timer);
+    }
+  }, [selectedIndex]);
+
+  const onViewableItemsChanged = useCallback(
+    ({ viewableItems }: { viewableItems: Array<ViewToken> }) => {
+      if (!isUserScrollingRef.current || viewableItems.length === 0) return;
+
+      // Pick the item closest to the center of visible items
+      const middleIdx = Math.floor(viewableItems.length / 2);
+      const centerItem = viewableItems[middleIdx];
+      if (centerItem?.item && !isSameDay(centerItem.item as Date, selectedDate)) {
+        onSelectDate(centerItem.item as Date);
+      }
+    },
+    [selectedDate, onSelectDate],
+  );
+
+  const viewabilityConfig = useRef({
+    itemVisiblePercentThreshold: 50,
+    minimumViewTime: 100,
+  }).current;
 
   function toggleCalendar() {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -31,6 +90,47 @@ export function DateStrip({ selectedDate, onSelectDate }: Props) {
     setCalendarOpen(false);
   }
 
+  const renderDateChip = useCallback(
+    ({ item }: { item: Date }) => {
+      const isSelected = isSameDay(item, selectedDate);
+      const isToday = isSameDay(item, new Date());
+      return (
+        <TouchableOpacity
+          style={[
+            styles.chip,
+            isSelected && styles.chipSelected,
+            isToday && !isSelected && styles.chipToday,
+          ]}
+          onPress={() => onSelectDate(item)}
+          accessibilityLabel={format(item, 'EEEE, MMMM d')}
+          accessibilityState={{ selected: isSelected }}
+        >
+          <Text
+            style={[
+              styles.dayName,
+              isSelected && styles.textSelected,
+              isToday && !isSelected && styles.dayNameToday,
+            ]}
+          >
+            {format(item, 'EEE')}
+          </Text>
+          <Text
+            style={[
+              styles.dayNum,
+              isSelected && styles.textSelected,
+              isToday && !isSelected && styles.dayNumToday,
+            ]}
+          >
+            {format(item, 'd')}
+          </Text>
+        </TouchableOpacity>
+      );
+    },
+    [selectedDate, onSelectDate],
+  );
+
+  const keyExtractor = useCallback((item: Date) => item.toISOString(), []);
+
   // Calendar grid
   const monthStart = startOfMonth(calendarMonth);
   const monthEnd = endOfMonth(calendarMonth);
@@ -40,50 +140,29 @@ export function DateStrip({ selectedDate, onSelectDate }: Props) {
 
   return (
     <View>
-      {/* Week strip */}
+      {/* Swipeable date strip */}
       <View style={styles.wrapper}>
-        <TouchableOpacity
-          onPress={() => onSelectDate(subDays(selectedDate, 1))}
-          style={styles.arrow}
-          accessibilityLabel="Previous day"
-        >
-          <Text style={styles.arrowText}>‹</Text>
-        </TouchableOpacity>
-
-        <View style={styles.daysRow}>
-          {dates.map((date) => {
-            const isSelected = isSameDay(date, selectedDate);
-            const isToday = isSameDay(date, new Date());
-            return (
-              <TouchableOpacity
-                key={date.toISOString()}
-                style={[
-                  styles.chip,
-                  isSelected && styles.chipSelected,
-                  isToday && !isSelected && styles.chipToday,
-                ]}
-                onPress={() => onSelectDate(date)}
-                accessibilityLabel={format(date, 'EEEE, MMMM d')}
-                accessibilityState={{ selected: isSelected }}
-              >
-                <Text style={[styles.dayName, isSelected && styles.textSelected, isToday && !isSelected && styles.dayNameToday]}>
-                  {format(date, 'EEE')}
-                </Text>
-                <Text style={[styles.dayNum, isSelected && styles.textSelected, isToday && !isSelected && styles.dayNumToday]}>
-                  {format(date, 'd')}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-
-        <TouchableOpacity
-          onPress={() => onSelectDate(addDays(selectedDate, 1))}
-          style={styles.arrow}
-          accessibilityLabel="Next day"
-        >
-          <Text style={styles.arrowText}>›</Text>
-        </TouchableOpacity>
+        <FlatList
+          ref={flatListRef}
+          data={dates}
+          renderItem={renderDateChip}
+          keyExtractor={keyExtractor}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          snapToInterval={CHIP_WIDTH}
+          decelerationRate="fast"
+          pagingEnabled={false}
+          getItemLayout={getItemLayout}
+          onViewableItemsChanged={onViewableItemsChanged}
+          viewabilityConfig={viewabilityConfig}
+          onScrollBeginDrag={() => { isUserScrollingRef.current = true; }}
+          onMomentumScrollEnd={() => { isUserScrollingRef.current = false; }}
+          contentContainerStyle={styles.listContent}
+          onScrollToIndexFailed={() => {
+            // Fallback: scroll to beginning if index fails
+            flatListRef.current?.scrollToOffset({ offset: 0, animated: false });
+          }}
+        />
       </View>
 
       {/* Expand/collapse toggle */}
@@ -150,25 +229,13 @@ export function DateStrip({ selectedDate, onSelectDate }: Props) {
 
 const styles = StyleSheet.create({
   wrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
     paddingVertical: 4,
-    paddingHorizontal: 4,
   },
-  arrow: {
-    width: 28, height: 52,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  arrowText: {
-    fontSize: 20, fontWeight: '500', color: colors.muted,
-  },
-  daysRow: {
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'space-evenly',
+  listContent: {
+    paddingHorizontal: spacing.sm,
   },
   chip: {
-    width: 48, height: 60,
+    width: CHIP_WIDTH, height: CHIP_HEIGHT,
     alignItems: 'center', justifyContent: 'center',
     borderRadius: radii.sm,
   },

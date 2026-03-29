@@ -227,21 +227,6 @@ export function LogFormScreen({ route, navigation }: Props) {
         ))}
       </View>
 
-      <Text style={styles.sectionLabel}>WOULD YOU REPEAT? <Text style={styles.optional}>(optional)</Text></Text>
-      <View style={styles.chipRow}>
-        {WOULD_REPEAT.map((opt) => (
-          <TouchableOpacity
-            key={opt.value}
-            style={[styles.chip, wouldRepeat === opt.value && styles.chipSelected]}
-            onPress={() => setWouldRepeat(wouldRepeat === opt.value ? null : opt.value)}
-            accessibilityLabel={opt.label}
-            accessibilityState={{ selected: wouldRepeat === opt.value }}
-          >
-            <Text style={[styles.chipText, wouldRepeat === opt.value && styles.chipTextSelected]}>{opt.label}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-
       <Text style={styles.sectionLabel}>REFLECTION <Text style={styles.optional}>(optional)</Text></Text>
       <TextInput
         style={styles.reflectionInput}

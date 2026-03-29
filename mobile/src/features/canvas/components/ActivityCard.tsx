@@ -13,9 +13,10 @@ interface Props {
   onQuickComplete?: () => void;
   isNow: boolean;
   isOverdue?: boolean;
+  height?: number;
 }
 
-export function ActivityCard({ activity, log, onPress, onQuickComplete, isNow, isOverdue }: Props) {
+export function ActivityCard({ activity, log, onPress, onQuickComplete, isNow, isOverdue, height }: Props) {
   const cat = activity.category;
   const catColor = getCategoryColor(activity.category_id);
   const isDone = activity.status === 'COMPLETED';
@@ -27,11 +28,14 @@ export function ActivityCard({ activity, log, onPress, onQuickComplete, isNow, i
   const duration = activity.duration_minutes;
   const durationText = duration === 0 ? '' : duration < 60 ? `${duration}m` : `${Math.floor(duration / 60)}h${duration % 60 ? ` ${duration % 60}m` : ''}`;
 
+  const compact = height !== undefined && height < 40;
+
   return (
     <AnimatedPressable
       style={[
         styles.card,
         { borderLeftColor: catColor.solid, backgroundColor: catColor.light },
+        height !== undefined && { height, paddingVertical: compact ? 2 : 6 },
         isNow && styles.nowCard,
         isSkipped && { opacity: 0.4 },
         animStyle,
@@ -41,27 +45,16 @@ export function ActivityCard({ activity, log, onPress, onQuickComplete, isNow, i
       onPressOut={() => { scale.value = withSpring(1, { damping: 15, stiffness: 200 }); }}
     >
       <View style={styles.topRow}>
-        {/* Circle + Title */}
-        <Pressable
-          style={[
-            styles.circle,
-            isDone && { backgroundColor: catColor.solid },
-            !isDone && { borderWidth: 1.5, borderColor: catColor.solid + '50' },
-          ]}
-          onPress={(e) => { e.stopPropagation?.(); onQuickComplete?.(); }}
-          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-        >
-          {isDone && <Text style={styles.check}>✓</Text>}
-        </Pressable>
-
         <View style={styles.content}>
-          <Text style={[styles.title, isDone && styles.titleDone]} numberOfLines={1}>
+          <Text style={[styles.title, compact && styles.titleCompact, isDone && styles.titleDone]} numberOfLines={1}>
             {activity.title}
           </Text>
-          <View style={styles.metaRow}>
-            {durationText ? <Text style={styles.meta}>{durationText}</Text> : null}
-            {cat && <Text style={[styles.meta, { color: catColor.solid }]}>{cat.icon} {cat.name}</Text>}
-          </View>
+          {!compact && (
+            <View style={styles.metaRow}>
+              {durationText ? <Text style={styles.meta}>{durationText}</Text> : null}
+              {cat && <Text style={[styles.meta, { color: catColor.solid }]}>{cat.icon} {cat.name}</Text>}
+            </View>
+          )}
         </View>
 
         {/* Status indicators */}
@@ -84,12 +77,12 @@ const styles = StyleSheet.create({
   card: {
     borderLeftWidth: 2,
     borderRadius: 14,
-    paddingVertical: 12,
+    paddingVertical: 6,
     paddingHorizontal: 14,
-    marginBottom: 8,
-    marginHorizontal: 12,
     borderWidth: 0.5,
     borderColor: colors.border,
+    overflow: 'hidden',
+    justifyContent: 'center',
   },
   nowCard: {
     borderLeftWidth: 4,
@@ -100,14 +93,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
   },
-  circle: {
-    width: 26, height: 26, borderRadius: 13,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  check: { color: '#fff', fontSize: 13, fontWeight: '700' },
   content: { flex: 1 },
   title: {
     color: colors.text, fontSize: 16, fontWeight: '600',
+  },
+  titleCompact: {
+    fontSize: 13,
   },
   titleDone: {
     textDecorationLine: 'line-through', color: colors.muted,

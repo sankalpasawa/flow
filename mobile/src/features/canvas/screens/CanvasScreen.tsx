@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useCallback } from 'react';
+import React, { useEffect, useRef, useCallback, useMemo } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
   SafeAreaView, ActivityIndicator, Platform,
@@ -12,6 +12,13 @@ import { TaskSection } from '../components/TaskSection';
 import { Activity } from '../../../types';
 import { colors, shadows, spacing } from '../../../theme';
 
+const HOUR_HEIGHT = 60;
+const HOUR_LABEL_WIDTH = 50;
+const START_HOUR = 6;
+const END_HOUR = 24;
+const MIN_BLOCK_HEIGHT = 30;
+const TOTAL_HEIGHT = (END_HOUR - START_HOUR) * HOUR_HEIGHT;
+
 interface Props {
   navigation: { navigate: (screen: string, params?: Record<string, unknown>) => void };
 }
@@ -23,22 +30,13 @@ function formatHour(h: number): string {
   return `${h - 12} PM`;
 }
 
-interface HourSlot {
-  hour: string;
-  hourNum: number;
-  items: Activity[];
-}
-
-function buildHourSlots(activities: Activity[], date: Date): HourSlot[] {
-  const slots: HourSlot[] = [];
-  for (let h = 6; h < 24; h++) {
-    const items = activities.filter((a) => {
-      const start = parseISO(a.start_time);
-      return start.getHours() === h && isSameDay(start, date);
-    });
-    slots.push({ hour: formatHour(h), hourNum: h, items });
-  }
-  return slots;
+function getActivityPosition(activity: Activity) {
+  const start = parseISO(activity.start_time);
+  const startHour = start.getHours();
+  const startMinute = start.getMinutes();
+  const top = ((startHour - START_HOUR) + startMinute / 60) * HOUR_HEIGHT;
+  const height = Math.max((activity.duration_minutes / 60) * HOUR_HEIGHT, MIN_BLOCK_HEIGHT);
+  return { top, height };
 }
 
 export function CanvasScreen({ navigation }: Props) {
@@ -64,18 +62,40 @@ export function CanvasScreen({ navigation }: Props) {
     document.head.appendChild(style);
   }, []);
 
-  // Auto-scroll to current hour
+  // Auto-scroll to current time
   useEffect(() => {
-    if (!isSameDay(selectedDate, new Date()) || activities.length === 0) return;
+    if (!isSameDay(selectedDate, new Date())) return;
     const timer = setTimeout(() => {
-      scrollRef.current?.scrollTo({ y: Math.max(0, (new Date().getHours() - 1) * 52), animated: true });
+      const now = new Date();
+      const y = ((now.getHours() - START_HOUR) + now.getMinutes() / 60) * HOUR_HEIGHT - 100;
+      scrollRef.current?.scrollTo({ y: Math.max(0, y), animated: true });
     }, 300);
     return () => clearTimeout(timer);
-  }, [activities]);
+  }, [activities, selectedDate]);
 
-  const slots = buildHourSlots(activities, selectedDate);
   const now = new Date();
   const isToday = isSameDay(selectedDate, now);
+
+  // Filter activities for the selected date that have a time
+  const timedActivities = useMemo(() =>
+    activities.filter((a) => {
+      const start = parseISO(a.start_time);
+      return isSameDay(start, selectedDate) && start.getHours() >= START_HOUR;
+    }),
+    [activities, selectedDate]
+  );
+
+  // Build hour labels
+  const hours = useMemo(() => {
+    const h: number[] = [];
+    for (let i = START_HOUR; i < END_HOUR; i++) h.push(i);
+    return h;
+  }, []);
+
+  // Current time indicator position
+  const nowY = isToday
+    ? ((now.getHours() - START_HOUR) + now.getMinutes() / 60) * HOUR_HEIGHT
+    : -1;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -99,7 +119,7 @@ export function CanvasScreen({ navigation }: Props) {
         tasks={untimedTasks}
         todayStr={format(new Date(), 'yyyy-MM-dd')}
         onToggle={(id) => quickToggleComplete(id)}
-        onPress={(id) => navigation.navigate('ActivityDetail', { activityId: id })}
+        onPress={(id) => navigation.navigate('ActivityForm', { activityId: id })}
         onQuickAdd={(title) => {
           if (user) addTask({ user_id: user.id, title, assigned_date: format(selectedDate, 'yyyy-MM-dd') });
         }}
@@ -115,56 +135,78 @@ export function CanvasScreen({ navigation }: Props) {
           <ScrollView
             ref={scrollRef}
             style={styles.canvas}
-            contentContainerStyle={styles.canvasContent}
+            contentContainerStyle={[styles.canvasContent, { height: TOTAL_HEIGHT + 100 }]}
             showsVerticalScrollIndicator={false}
           >
-            {slots.map((slot) => {
-              const isCurrentHour = isToday && slot.hourNum === now.getHours();
-              const isPast = isToday && slot.hourNum < now.getHours();
-              const hasItems = slot.items.length > 0;
-
-              return (
-                <View key={slot.hourNum} style={styles.hourBlock}>
-                  {/* Hour row */}
-                  <View style={styles.hourRow}>
+            {/* Timeline container */}
+            <View style={styles.timeline}>
+              {/* Hour grid lines and labels */}
+              {hours.map((h) => {
+                const y = (h - START_HOUR) * HOUR_HEIGHT;
+                const isCurrentHour = isToday && h === now.getHours();
+                return (
+                  <View key={h} style={[styles.hourRow, { top: y }]} pointerEvents="none">
                     <Text style={[styles.hourLabel, isCurrentHour && styles.hourNow]}>
-                      {slot.hour}
+                      {formatHour(h)}
                     </Text>
-                    {isCurrentHour && <View style={styles.nowDot} />}
                     <View style={[styles.hourLine, isCurrentHour && styles.hourLineNow]} />
                   </View>
+                );
+              })}
 
-                  {/* Cards or empty tap area */}
-                  {hasItems ? (
-                    slot.items.map((activity) => {
-                      const log = logs[activity.id];
-                      const actStart = parseISO(activity.start_time);
-                      const actEnd = new Date(actStart.getTime() + activity.duration_minutes * 60000);
-                      const isCurrentlyActive = isWithinInterval(now, { start: actStart, end: actEnd }) && isToday;
-                      const isOverdue = activity.status === 'PLANNED' && actStart < now && !isSameDay(actStart, now);
-                      return (
-                        <View key={activity.id} style={isPast ? { opacity: 0.7 } : undefined}>
-                          <ActivityCard
-                            activity={activity}
-                            log={log}
-                            isNow={isCurrentlyActive}
-                            isOverdue={isOverdue}
-                            onPress={() => navigation.navigate('ActivityDetail', { activityId: activity.id })}
-                            onQuickComplete={() => quickToggleComplete(activity.id)}
-                          />
-                        </View>
-                      );
-                    })
-                  ) : (
-                    <TouchableOpacity
-                      style={styles.emptyTap}
-                      onPress={() => navigation.navigate('ActivityForm', { startHour: `${slot.hourNum}:00`, date: format(selectedDate, 'yyyy-MM-dd') })}
-                      activeOpacity={0.3}
-                    />
-                  )}
+              {/* Current time indicator */}
+              {isToday && nowY >= 0 && (
+                <View style={[styles.nowIndicator, { top: nowY }]} pointerEvents="none">
+                  <View style={styles.nowDot} />
+                  <View style={styles.nowLine} />
                 </View>
-              );
-            })}
+              )}
+
+              {/* Empty tap areas for each hour (behind activities) */}
+              {hours.map((h) => {
+                const y = (h - START_HOUR) * HOUR_HEIGHT;
+                return (
+                  <TouchableOpacity
+                    key={`empty-${h}`}
+                    style={[styles.emptyTap, { top: y, height: HOUR_HEIGHT }]}
+                    onPress={() => navigation.navigate('ActivityForm', { startHour: `${h}:00`, date: format(selectedDate, 'yyyy-MM-dd') })}
+                    activeOpacity={0.3}
+                  />
+                );
+              })}
+
+              {/* Activity blocks */}
+              {timedActivities.map((activity) => {
+                const { top, height } = getActivityPosition(activity);
+                const log = logs[activity.id];
+                const actStart = parseISO(activity.start_time);
+                const actEnd = new Date(actStart.getTime() + activity.duration_minutes * 60000);
+                const isCurrentlyActive = isToday && isWithinInterval(now, { start: actStart, end: actEnd });
+                const isPast = isToday && actEnd < now;
+                const isOverdue = activity.status === 'PLANNED' && actStart < now && !isSameDay(actStart, now);
+
+                return (
+                  <View
+                    key={activity.id}
+                    style={[
+                      styles.activityBlock,
+                      { top, height },
+                      isPast && { opacity: 0.7 },
+                    ]}
+                  >
+                    <ActivityCard
+                      activity={activity}
+                      log={log}
+                      isNow={isCurrentlyActive}
+                      isOverdue={isOverdue}
+                      height={height}
+                      onPress={() => navigation.navigate('ActivityForm', { activityId: activity.id })}
+                      onQuickComplete={() => quickToggleComplete(activity.id)}
+                    />
+                  </View>
+                );
+              })}
+            </View>
           </ScrollView>
         )}
       </View>
@@ -184,7 +226,7 @@ export function CanvasScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
 
-  // Header — minimal
+  // Header
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: spacing.screen, paddingTop: 12, paddingBottom: 2,
@@ -202,29 +244,74 @@ const styles = StyleSheet.create({
   loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   canvasWrapper: { flex: 1 },
   canvas: { flex: 1 },
-  canvasContent: { paddingBottom: 100, paddingTop: 4 },
+  canvasContent: { paddingTop: 4 },
 
-  // Hour blocks
-  hourBlock: { minHeight: 44 },
+  // Timeline — relative container for absolute positioning
+  timeline: {
+    position: 'relative',
+    width: '100%',
+    height: TOTAL_HEIGHT,
+  },
+
+  // Hour grid
   hourRow: {
-    flexDirection: 'row', alignItems: 'center',
-    paddingLeft: 16, paddingRight: 12,
-    height: 24,
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingLeft: 8,
+    height: 0,
+    overflow: 'visible',
+    zIndex: 1,
   },
   hourLabel: {
-    color: colors.muted, fontSize: 12, fontWeight: '600',
-    width: 42,
+    color: colors.muted, fontSize: 11, fontWeight: '600',
+    width: HOUR_LABEL_WIDTH - 8,
+    textAlign: 'right',
+    marginRight: 8,
+    marginTop: -14,
   },
   hourNow: { color: colors.terra, fontWeight: '700' },
   hourLine: { flex: 1, height: 1, backgroundColor: colors.border },
   hourLineNow: { height: 2, backgroundColor: colors.terra, opacity: 0.8 },
-  nowDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.terra, marginRight: 4 },
 
-  // Empty slot — subtle dotted line tap target
+  // Current time indicator
+  nowIndicator: {
+    position: 'absolute',
+    left: HOUR_LABEL_WIDTH - 4,
+    right: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 0,
+    overflow: 'visible',
+    zIndex: 10,
+  },
+  nowDot: {
+    width: 10, height: 10, borderRadius: 5,
+    backgroundColor: colors.terra,
+    marginTop: -5,
+    marginLeft: -5,
+  },
+  nowLine: {
+    flex: 1, height: 2,
+    backgroundColor: colors.terra,
+  },
+
+  // Empty tap areas (one per hour slot, behind activities)
   emptyTap: {
-    height: 32, marginLeft: 54, marginRight: 12,
-    borderBottomWidth: 1, borderBottomColor: colors.border, borderStyle: 'dashed',
-    opacity: 0.3,
+    position: 'absolute',
+    left: HOUR_LABEL_WIDTH,
+    right: 12,
+    zIndex: 0,
+  },
+
+  // Activity blocks
+  activityBlock: {
+    position: 'absolute',
+    left: HOUR_LABEL_WIDTH,
+    right: 12,
+    zIndex: 5,
   },
 
   // FAB

@@ -198,7 +198,7 @@ export function PlanScreen({ navigation }: Props) {
                 tasks={planTasks}
                 tomorrowStr={tomorrowStr}
                 onSlotPress={(hour) => navigation.navigate('ActivityForm', { startHour: `${hour}:00`, date: tomorrowStr })}
-                onActivityPress={(id) => navigation.navigate('ActivityDetail', { activityId: id })}
+                onActivityPress={(id) => navigation.navigate('ActivityForm', { activityId: id })}
                 onToggle={(id) => quickToggleComplete(id)}
               />
             </FadeInSection>
@@ -215,7 +215,7 @@ export function PlanScreen({ navigation }: Props) {
                     key={a.id}
                     activity={a}
                     isLast={i === planActivities.length - 1 && planTasks.length === 0}
-                    onPress={() => navigation.navigate('ActivityDetail', { activityId: a.id })}
+                    onPress={() => navigation.navigate('ActivityForm', { activityId: a.id })}
                     onToggle={() => quickToggleComplete(a.id)}
                   />
                 ))}
@@ -224,7 +224,7 @@ export function PlanScreen({ navigation }: Props) {
                     key={t.id}
                     task={t}
                     isLast={i === planTasks.length - 1}
-                    onPress={() => navigation.navigate('ActivityDetail', { activityId: t.id })}
+                    onPress={() => navigation.navigate('ActivityForm', { activityId: t.id })}
                     onToggle={() => quickToggleComplete(t.id)}
                   />
                 ))}
@@ -247,7 +247,7 @@ export function PlanScreen({ navigation }: Props) {
                     isLast={i === carryForward.length - 1}
                     onMoveToTomorrow={() => moveToDate(a.id, tomorrowStr)}
                     onMoveToSomeday={() => moveToSomeday(a.id)}
-                    onPress={() => navigation.navigate('ActivityDetail', { activityId: a.id })}
+                    onPress={() => navigation.navigate('ActivityForm', { activityId: a.id })}
                   />
                 ))}
               </Section>
@@ -279,7 +279,7 @@ export function PlanScreen({ navigation }: Props) {
                         task={t}
                         isLast={t.id === lastSomedayId}
                         onAdd={() => moveToDate(t.id, tomorrowStr)}
-                        onPress={() => navigation.navigate('ActivityDetail', { activityId: t.id })}
+                        onPress={() => navigation.navigate('ActivityForm', { activityId: t.id })}
                       />
                     ))}
                   </CollapsibleCategoryGroup>
