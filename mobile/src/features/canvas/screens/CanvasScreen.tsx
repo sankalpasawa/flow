@@ -153,7 +153,18 @@ export function CanvasScreen({ navigation }: Props) {
     [user, loadDay]
   );
 
-  useEffect(() => { void load(selectedDate); }, [selectedDate, load]);
+  // Load data when selectedDate changes — but skip if it was a scroll-driven change
+  // (scroll-driven changes just update the header, data is already loaded for 3 days)
+  const lastLoadedDate = useRef(selectedDate);
+  useEffect(() => {
+    // Only reload if the date jumped more than 1 day (e.g. tap on date strip, not scroll)
+    const diff = Math.abs(selectedDate.getTime() - lastLoadedDate.current.getTime());
+    const isScrollDriven = diff <= 86400000 * 1.5; // within ~1.5 days = scroll
+    if (!isScrollDriven || !lastLoadedDate.current) {
+      void load(selectedDate);
+    }
+    lastLoadedDate.current = selectedDate;
+  }, [selectedDate, load]);
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -210,69 +221,32 @@ export function CanvasScreen({ navigation }: Props) {
   const now = new Date();
   const isToday = isSameDay(selectedDate, now);
 
-  // Debounce timer ref for boundary detection
-  const boundaryDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(() => {
-    return () => { if (boundaryDebounce.current) clearTimeout(boundaryDebounce.current); };
-  }, []);
+  // Track which day the user is visually looking at based on scroll position.
+  // Update the date strip lazily — no scroll reset, no data reload, no jank.
+  const displayedDateRef = useRef(selectedDate);
 
-  // Boundary detection on scroll — debounced + deferred to avoid mid-scroll jank.
-  // Instead of calling setSelectedDate (which triggers loading spinner + full re-render),
-  // we: (1) reset scroll to center, (2) shift the 3-day data window using pre-loaded data,
-  // (3) defer the actual date update via InteractionManager so the frame stays smooth.
   const handleScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
     if (isResettingScroll.current) return;
     const scrollY = e.nativeEvent.contentOffset.y;
 
-    const crossedTop = scrollY < TOTAL_CANVAS_HEIGHT * 0.3;
-    const crossedBottom = scrollY > TOTAL_CANVAS_HEIGHT * 1.7;
-
-    if (!crossedTop && !crossedBottom) {
-      // Clear any pending boundary transition if user scrolled back to safe zone
-      if (boundaryDebounce.current) {
-        clearTimeout(boundaryDebounce.current);
-        boundaryDebounce.current = null;
-      }
-      return;
+    // Determine which day section is most visible
+    let dayOffset = 0;
+    if (scrollY < TOTAL_CANVAS_HEIGHT * 0.5) {
+      dayOffset = -1; // viewing previous day
+    } else if (scrollY > TOTAL_CANVAS_HEIGHT * 1.5) {
+      dayOffset = 1; // viewing next day
     }
 
-    // Already have a pending transition — don't stack another
-    if (boundaryDebounce.current) return;
+    const visibleDate = dayOffset === -1 ? subDays(selectedDate, 1)
+      : dayOffset === 1 ? addDays(selectedDate, 1)
+      : selectedDate;
 
-    boundaryDebounce.current = setTimeout(() => {
-      boundaryDebounce.current = null;
-      isResettingScroll.current = true;
-
-      const direction = crossedTop ? -1 : 1;
-      const newDate = direction === -1 ? subDays(selectedDate, 1) : addDays(selectedDate, 1);
-
-      // 1. Immediately reset scroll to center so there's no visible jump
-      const centerOffset = TOTAL_CANVAS_HEIGHT;
-      scrollRef.current?.scrollTo({ y: centerOffset, animated: false });
-
-      // 2. Defer the date/data update until after the scroll reset paints
-      InteractionManager.runAfterInteractions(() => {
-        // Shift the 3-day window: reuse already-loaded data for the overlap
-        if (direction === -1) {
-          // Scrolled to previous day — prev becomes center, center becomes next
-          setNextDayActivities([...activities]);
-        } else {
-          // Scrolled to next day — next becomes center, center becomes prev
-          setPrevDayActivities([...activities]);
-        }
-        setSelectedDate(newDate);
-        // Load with seamless flag to skip showing the loading spinner
-        void load(newDate, true);
-
-        // Re-enable boundary detection after the transition settles
-        requestAnimationFrame(() => {
-          setTimeout(() => {
-            isResettingScroll.current = false;
-          }, 150);
-        });
-      });
-    }, 100); // 100ms debounce — lets fast flick scrolls settle before committing
-  }, [selectedDate, setSelectedDate, activities, load]);
+    // Only update date strip if the visible day actually changed
+    if (!isSameDay(visibleDate, displayedDateRef.current)) {
+      displayedDateRef.current = visibleDate;
+      setSelectedDate(visibleDate);
+    }
+  }, [selectedDate, setSelectedDate]);
 
   // 3-day window dates
   const prevDate = useMemo(() => subDays(selectedDate, 1), [selectedDate]);
