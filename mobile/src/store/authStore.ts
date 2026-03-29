@@ -12,14 +12,12 @@ const IS_DEV = process.env.EXPO_PUBLIC_DEV_MODE === 'true' ||
 const DEV_USER: User = {
   id: DEV_USER_ID,
   email: 'sankalp@dayflow.app',
-  subscription_tier: 'PRO',
   settings: DEFAULT_SETTINGS,
 };
 
 const DEMO_USER: User = {
   id: DEMO_USER_ID,
   email: 'demo@dayflow.app',
-  subscription_tier: 'PRO',
   settings: DEFAULT_SETTINGS,
 };
 
@@ -164,7 +162,6 @@ async function fetchOrCreateUser(id: string, email: string): Promise<User> {
     // Create on first sign in
     const newUser = {
       id, email,
-      subscription_tier: 'FREE' as const,
       settings: DEFAULT_SETTINGS,
     };
     await supabase.from('users').upsert(newUser);

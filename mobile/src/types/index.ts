@@ -7,7 +7,6 @@ export type RecurrenceType =
   | 'BIMONTHLY' | 'QUARTERLY' | 'BIANNUAL' | 'YEARLY';
 export type WouldRepeat = 'YES' | 'NO' | 'MAYBE';
 export type LogPhase = 'BEFORE' | 'DURING' | 'AFTER';
-export type SubscriptionTier = 'FREE' | 'PRO';
 
 export interface Category {
   id: string;
@@ -78,7 +77,6 @@ export interface UserSettings {
 export interface User {
   id: string;
   email: string;
-  subscription_tier: SubscriptionTier;
   settings: UserSettings;
 }
 
@@ -98,7 +96,6 @@ export const DEFAULT_SETTINGS: UserSettings = {
   timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
 };
 
-export const FREE_TIER_LOG_LIMIT = 5;
 export const AI_DAILY_CALL_LIMIT = 20;
 
 export type GoalMetricType = 'TIME' | 'SESSIONS';

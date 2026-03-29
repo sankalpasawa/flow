@@ -88,14 +88,3 @@ export function isEditWindowOpen(activityEndTime: Date): boolean {
   return activityEndTime > twentyFourHoursAgo;
 }
 
-// Count today's logs for freemium gate
-export async function countTodayLogs(userId: string): Promise<number> {
-  const db = await getDb();
-  const today = new Date().toISOString().split('T')[0];
-  const result = await db.getFirstAsync<{ count: number }>(
-    `SELECT COUNT(*) as count FROM experience_logs
-     WHERE user_id = ? AND date(logged_at) = ? AND deleted = 0`,
-    [userId, today]
-  );
-  return result?.count ?? 0;
-}

@@ -31,7 +31,7 @@
 - [ ] **Codex review integration**: Use codex to review code on each change.
 - [ ] **Calendar sync**: Google Calendar, Apple Calendar integration (deferred to post-PMF per PRD).
 - [ ] **Activity overlap validation**: Prevent scheduling two activities at the same time.
-- [ ] **Freemium gate**: 5 logs/day limit for free tier, unlimited for Pro ($10/mo).
+- [x] **Freemium gate removed**: All features are free. Removed subscription_tier from User type, FREE_TIER_LOG_LIMIT, and daily log gate from LogFormScreen.
 - [ ] **PostHog analytics**: Add event tracking for key user actions.
 
 ## Technical Context

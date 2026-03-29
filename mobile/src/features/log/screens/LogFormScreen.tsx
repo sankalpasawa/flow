@@ -7,8 +7,8 @@ import { colors, radii, spacing } from '../../../theme';
 import { parseISO, addMinutes } from 'date-fns';
 import { useAuthStore } from '../../../store/authStore';
 import { useActivitiesStore } from '../../../store/activitiesStore';
-import { FREE_TIER_LOG_LIMIT, WouldRepeat, LogPhase } from '../../../types';
-import { isEditWindowOpen, countTodayLogs } from '../../../lib/db/logs';
+import { WouldRepeat, LogPhase } from '../../../types';
+import { isEditWindowOpen } from '../../../lib/db/logs';
 
 interface Props {
   route: { params?: { activityId?: string; editMode?: boolean } };
@@ -59,19 +59,7 @@ export function LogFormScreen({ route, navigation }: Props) {
   const [saving, setSaving] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const fadeAnim = useState(new Animated.Value(0))[0];
-  const [freemiumBlocked, setFreemiumBlocked] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!user || editMode) return;
-    countTodayLogs(user.id).then((count) => {
-      if (user.subscription_tier !== 'PRO' && count >= FREE_TIER_LOG_LIMIT) {
-        setFreemiumBlocked(true);
-      }
-    }).catch((err) => {
-      console.error('[DayFlow] Failed to check daily log count:', err);
-    });
-  }, [user, editMode]);
 
   if (!activity) {
     return (
@@ -97,27 +85,6 @@ export function LogFormScreen({ route, navigation }: Props) {
           <Text style={styles.closedBody}>Logs can be edited up to 24 hours after an activity ends.</Text>
           <TouchableOpacity style={styles.doneButton} onPress={navigation.goBack}>
             <Text style={styles.doneButtonText}>Got It</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    );
-  }
-
-  if (freemiumBlocked) {
-    return (
-      <View style={styles.container}>
-        <View style={styles.closedWindow}>
-          <Text style={styles.closedEmoji}>⭐</Text>
-          <Text style={styles.closedTitle}>Daily limit reached</Text>
-          <Text style={styles.closedBody}>
-            Free plan includes {FREE_TIER_LOG_LIMIT} logs per day.{'\n'}
-            Upgrade to Pro for unlimited logging.
-          </Text>
-          <TouchableOpacity style={styles.upgradeButton} onPress={navigation.goBack}>
-            <Text style={styles.upgradeButtonText}>Upgrade to Pro — $10/mo</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.skipButton} onPress={navigation.goBack}>
-            <Text style={styles.skipText}>Maybe later</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -310,11 +277,6 @@ const styles = StyleSheet.create({
     paddingVertical: 14, paddingHorizontal: 32, minHeight: 44,
   },
   doneButtonText: { color: colors.text2, fontSize: 16, fontWeight: '600' },
-  upgradeButton: {
-    backgroundColor: colors.primary, borderRadius: radii.sm,
-    paddingVertical: 14, paddingHorizontal: 24, minHeight: 44, marginBottom: 12,
-  },
-  upgradeButtonText: { color: '#fff', fontSize: 15, fontWeight: '700' },
   skipButton: { minHeight: 44, justifyContent: 'center' },
   skipText: { color: colors.muted, fontSize: 14 },
 });
