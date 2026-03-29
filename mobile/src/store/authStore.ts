@@ -3,8 +3,9 @@ import { supabase } from '../lib/supabase';
 import { User, DEFAULT_SETTINGS } from '../types';
 import { DEV_USER_ID } from '../lib/db/seed';
 
-// Dev mode: bypass Supabase auth when using placeholder credentials
-const IS_DEV = !process.env.EXPO_PUBLIC_SUPABASE_URL ||
+// Dev mode: bypass Supabase auth when using placeholder credentials or explicit flag
+const IS_DEV = process.env.EXPO_PUBLIC_DEV_MODE === 'true' ||
+  !process.env.EXPO_PUBLIC_SUPABASE_URL ||
   process.env.EXPO_PUBLIC_SUPABASE_URL.includes('placeholder');
 
 const DEV_USER: User = {
