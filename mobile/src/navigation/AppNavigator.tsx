@@ -37,7 +37,10 @@ function TabNavigator() {
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarShowLabel: true,
-        tabBarIcon: () => null,
+        tabBarIcon: ({ focused }) => {
+          const icons: Record<string, string> = { Today: '◉', Plan: '◫', Insights: '◈', Settings: '⚙' };
+          return <Text style={{ fontSize: 18, color: focused ? '#2D4A3E' : '#C4BFB8' }}>{icons[route.name] ?? '•'}</Text>;
+        },
         tabBarStyle: {
           backgroundColor: '#FFFFFF',
           borderTopColor: '#F0EAE0',

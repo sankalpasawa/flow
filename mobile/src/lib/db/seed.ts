@@ -396,19 +396,26 @@ function buildGoals(): SeedGoal[] {
 }
 
 export async function seedDummyData(): Promise<void> {
-  const SEED_VERSION = '12';
+  const SEED_VERSION = '13';
   const isWeb = typeof localStorage !== 'undefined';
 
   // Check if already seeded
   if (isWeb) {
     if (localStorage.getItem('dayflow_seed_version') === SEED_VERSION) return;
   } else {
-    // On native, check via AsyncStorage
+    // On native, check via a flag in the DB itself (AsyncStorage may not be ready)
     try {
-      const AsyncStorage = require('@react-native-async-storage/async-storage').default;
-      const ver = await AsyncStorage.getItem('dayflow_seed_version');
-      if (ver === SEED_VERSION) return;
-    } catch {}
+      const db = await getDb();
+      // Use a simple table to track seed version
+      await db.execAsync('CREATE TABLE IF NOT EXISTS app_meta (key TEXT PRIMARY KEY, value TEXT)');
+      const row = await db.getFirstAsync<{ value: string }>('SELECT value FROM app_meta WHERE key = ?', ['seed_version']);
+      if (row?.value === SEED_VERSION) {
+        console.log('[DayFlow] Seed already at version', SEED_VERSION);
+        return;
+      }
+    } catch (err) {
+      console.log('[DayFlow] Seed version check failed, will re-seed:', err);
+    }
   }
 
   const { activities, logs } = buildActivities();
@@ -491,9 +498,9 @@ export async function seedDummyData(): Promise<void> {
           [g.id, g.user_id, g.title, g.metric_type, g.target_value, g.frequency, g.category_id, g.specific_days, g.is_active, g.created_at, g.updated_at]
         );
       }
-      const AsyncStorage = require('@react-native-async-storage/async-storage').default;
-      await AsyncStorage.setItem('dayflow_seed_version', SEED_VERSION);
-      await AsyncStorage.setItem('dayflow_onboarded', 'true');
+      // Store seed version in DB (reliable, no AsyncStorage dependency)
+      await db.runAsync('INSERT OR REPLACE INTO app_meta (key, value) VALUES (?, ?)', ['seed_version', SEED_VERSION]);
+      await db.runAsync('INSERT OR REPLACE INTO app_meta (key, value) VALUES (?, ?)', ['onboarded', 'true']);
     } catch (err) {
       console.error('[DayFlow] Native seed failed:', err);
     }
