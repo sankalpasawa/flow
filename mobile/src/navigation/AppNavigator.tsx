@@ -3,6 +3,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Text, View, ActivityIndicator } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useAuthStore } from '../store/authStore';
 import { seedSystemCategories } from '../lib/db/categories';
 import { seedDummyData } from '../lib/db/seed';
@@ -132,6 +133,7 @@ export function AppNavigator() {
   }
 
   return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerStyle: { backgroundColor: '#FAF7F2' }, headerTintColor: '#1A1A1A', headerShadowVisible: false }}>
         {!user ? (
@@ -197,5 +199,6 @@ export function AppNavigator() {
         )}
       </Stack.Navigator>
     </NavigationContainer>
+    </GestureHandlerRootView>
   );
 }
