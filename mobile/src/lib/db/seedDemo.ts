@@ -5,7 +5,7 @@ import { generateId, nowISO } from './db';
 import { SYSTEM_CATEGORIES } from '../../features/categories/systemCategories';
 
 export const DEMO_USER_ID = 'demo-user-001';
-const SEED_VERSION = '1';
+const SEED_VERSION = '2';
 
 const CUSTOM_CATEGORIES = [
   { id: 'cust-social', name: 'Social', color: '#14B8A6', icon: '👥', sort_order: 8 },
@@ -478,6 +478,8 @@ export async function seedDemoData(): Promise<void> {
   const activityRows = activities.map(a => ({
     ...a,
     user_id: DEMO_USER_ID,
+    is_scheduled: a.is_scheduled ? 1 : 0,
+    mindset_overridden: 0,
     created_at: seedNow,
     updated_at: seedNow,
     synced: 0,
