@@ -25,6 +25,7 @@ import { SearchScreen } from '../features/search/screens/SearchScreen';
 import { BacklogScreen } from '../features/backlog/screens/BacklogScreen';
 import { CategoryListScreen } from '../features/categories/screens/CategoryListScreen';
 import { InsightsScreen } from '../features/insights/screens/InsightsScreen';
+import { GoalFormScreen } from '../features/goals/screens/GoalFormScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -159,6 +160,15 @@ export function AppNavigator() {
             <Stack.Screen
               name="ActivityForm"
               component={ActivityFormScreen}
+              options={{
+                presentation: 'transparentModal',
+                headerShown: false,
+                animation: 'slide_from_bottom',
+              }}
+            />
+            <Stack.Screen
+              name="GoalForm"
+              component={GoalFormScreen}
               options={{
                 presentation: 'transparentModal',
                 headerShown: false,

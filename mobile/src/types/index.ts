@@ -99,3 +99,21 @@ export const DEFAULT_SETTINGS: UserSettings = {
 
 export const FREE_TIER_LOG_LIMIT = 5;
 export const AI_DAILY_CALL_LIMIT = 20;
+
+export type GoalMetricType = 'TIME' | 'SESSIONS';
+export type GoalFrequency = 'DAILY' | 'WEEKLY';
+
+export interface Goal {
+  id: string;
+  user_id: string;
+  title: string;
+  metric_type: GoalMetricType;
+  target_value: number;
+  frequency: GoalFrequency;
+  category_id: string;
+  specific_days: Weekday[];
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  category?: Category;
+}

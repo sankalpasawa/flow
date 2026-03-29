@@ -7,8 +7,11 @@ import {
 import { format, addDays, parseISO, isSameDay } from 'date-fns';
 import { useAuthStore } from '../../../store/authStore';
 import { useActivitiesStore } from '../../../store/activitiesStore';
-import { Activity } from '../../../types';
+import { Activity, Goal } from '../../../types';
 import { colors, radii, shadows, spacing, getCategoryColor } from '../../../theme';
+import { GoalSection } from '../../goals/components/GoalSection';
+import { GoalSuggestionCard } from '../../goals/components/GoalSuggestionCard';
+import { useGoalsStore } from '../../../store/goalsStore';
 
 // Enable LayoutAnimation on Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -121,6 +124,22 @@ export function PlanScreen({ navigation }: Props) {
 
   const [calendarView, setCalendarView] = useState(false);
 
+  const { goals, loadGoals, getGoalProgress } = useGoalsStore();
+
+  useEffect(() => { if (user) loadGoals(user.id); }, [user]);
+
+  const [goalsWithProgress, setGoalsWithProgress] = useState<Array<Goal & { current_value: number }>>([]);
+
+  useEffect(() => {
+    if (!user || goals.length === 0) { setGoalsWithProgress([]); return; }
+    Promise.all(goals.map(async (g) => {
+      const progress = await getGoalProgress(g.id, user.id);
+      return { ...g, current_value: progress?.current_value ?? 0 };
+    })).then(setGoalsWithProgress);
+  }, [goals, user]);
+
+  const behindGoal = goalsWithProgress.find(g => g.is_active && g.current_value < g.target_value) ?? null;
+
   let sectionIndex = 0;
 
   return (
@@ -159,6 +178,20 @@ export function PlanScreen({ navigation }: Props) {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
         >
+          {/* Goals Section */}
+          {goalsWithProgress.length > 0 && (
+            <FadeInSection index={sectionIndex++}>
+              <GoalSection goals={goalsWithProgress} navigation={navigation} />
+            </FadeInSection>
+          )}
+
+          {/* Goal Suggestion — behind on a goal */}
+          {behindGoal && (
+            <FadeInSection index={sectionIndex++}>
+              <GoalSuggestionCard goal={behindGoal} navigation={navigation} />
+            </FadeInSection>
+          )}
+
           {/* Tomorrow's Plan — List or Calendar */}
           {calendarView ? (
             <FadeInSection index={sectionIndex++}>

@@ -8,8 +8,9 @@ import { format, subDays, isSameDay, parseISO } from 'date-fns';
 import { useAuthStore } from '../../../store/authStore';
 import { getAllActivities } from '../../../lib/db/activities';
 import { getLogsForUser } from '../../../lib/db/logs';
-import { Activity, ExperienceLog } from '../../../types';
-import { colors, radii, shadows, spacing } from '../../../theme';
+import { Activity, ExperienceLog, Goal } from '../../../types';
+import { colors, radii, shadows, spacing, getCategoryColor } from '../../../theme';
+import { useGoalsStore } from '../../../store/goalsStore';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -142,6 +143,22 @@ export function InsightsScreen({ navigation }: Props) {
   const trend = computeMoodEnergyTrend(logs, 7);
   const insight = findInsight(activities, logs);
 
+  const { goals, loadGoals, getGoalProgress } = useGoalsStore();
+
+  useEffect(() => { if (user) loadGoals(user.id); }, [user]);
+
+  const [goalsWithProgress, setGoalsWithProgress] = useState<Array<Goal & { current_value: number }>>([]);
+
+  useEffect(() => {
+    if (!user || goals.length === 0) { setGoalsWithProgress([]); return; }
+    Promise.all(goals.map(async (g) => {
+      const progress = await getGoalProgress(g.id, user.id);
+      return { ...g, current_value: progress?.current_value ?? 0 };
+    })).then(setGoalsWithProgress);
+  }, [goals, user]);
+
+  const activeGoals = goalsWithProgress.filter(g => g.is_active);
+
   let sectionIdx = 0;
 
   return (
@@ -174,6 +191,59 @@ export function InsightsScreen({ navigation }: Props) {
             <FadeIn index={sectionIdx++}>
               <View style={styles.insightBanner}>
                 <Text style={styles.insightText}>💡 {insight}</Text>
+              </View>
+            </FadeIn>
+          )}
+
+          {/* Goals This Week */}
+          {activeGoals.length > 0 && (
+            <FadeIn index={sectionIdx++}>
+              <Text style={styles.sectionLabel}>Goals This Week</Text>
+              <View style={styles.goalsWeekCard}>
+                {activeGoals.map((goal, i) => {
+                  const pct = goal.target_value > 0 ? Math.min(1, goal.current_value / goal.target_value) : 0;
+                  const isDone = goal.current_value >= goal.target_value;
+                  const catColor = getCategoryColor(goal.category_id);
+                  const icon = goal.category?.icon ?? '\uD83C\uDFAF';
+                  const remaining = Math.max(0, goal.target_value - goal.current_value);
+                  let statusText: string;
+                  if (isDone) {
+                    statusText = '\u2713 Complete';
+                  } else if (goal.metric_type === 'TIME') {
+                    statusText = remaining >= 60
+                      ? `${Math.floor(remaining / 60)}h ${remaining % 60 > 0 ? `${remaining % 60}m` : ''} left`
+                      : `${remaining}m left`;
+                  } else {
+                    statusText = `${remaining} session${remaining !== 1 ? 's' : ''} left`;
+                  }
+                  return (
+                    <View
+                      key={goal.id}
+                      style={[
+                        styles.goalWeekRow,
+                        i < activeGoals.length - 1 && styles.goalWeekRowBorder,
+                      ]}
+                    >
+                      <View style={styles.goalWeekHeader}>
+                        <View style={[styles.goalWeekIcon, { backgroundColor: catColor.light }]}>
+                          <Text style={styles.goalWeekIconText}>{icon}</Text>
+                        </View>
+                        <Text style={styles.goalWeekTitle} numberOfLines={1}>{goal.title}</Text>
+                        <Text style={[styles.goalWeekStatus, isDone && styles.goalWeekStatusDone]}>
+                          {statusText}
+                        </Text>
+                      </View>
+                      <View style={styles.goalWeekBarTrack}>
+                        <View
+                          style={[
+                            styles.goalWeekBarFill,
+                            { width: `${Math.round(pct * 100)}%`, backgroundColor: catColor.solid },
+                          ]}
+                        />
+                      </View>
+                    </View>
+                  );
+                })}
               </View>
             </FadeIn>
           )}
@@ -378,4 +448,56 @@ const styles = StyleSheet.create({
   trendDayLabelToday: { color: colors.primary, fontWeight: '700' },
   trendEmoji: { fontSize: 10 },
 
+  // Goals This Week
+  goalsWeekCard: {
+    backgroundColor: colors.surface,
+    borderRadius: radii.card,
+    padding: 14,
+    marginBottom: 24,
+    ...shadows.card,
+  },
+  goalWeekRow: {
+    paddingVertical: 10,
+  },
+  goalWeekRowBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  goalWeekHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 6,
+  },
+  goalWeekIcon: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  goalWeekIconText: { fontSize: 12 },
+  goalWeekTitle: {
+    color: colors.text,
+    fontSize: 13,
+    fontWeight: '500',
+    flex: 1,
+  },
+  goalWeekStatus: {
+    color: colors.text2,
+    fontSize: 11,
+    fontWeight: '500',
+    fontVariant: ['tabular-nums'],
+  },
+  goalWeekStatusDone: { color: colors.done },
+  goalWeekBarTrack: {
+    height: 6,
+    backgroundColor: colors.border,
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  goalWeekBarFill: {
+    height: '100%',
+    borderRadius: 3,
+  },
 });

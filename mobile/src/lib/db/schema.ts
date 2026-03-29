@@ -63,6 +63,24 @@ export const CREATE_TABLES_SQL = `
   CREATE INDEX IF NOT EXISTS idx_logs_activity
     ON experience_logs(activity_id);
 
+  CREATE TABLE IF NOT EXISTS goals (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    title TEXT NOT NULL,
+    metric_type TEXT NOT NULL DEFAULT 'TIME',
+    target_value INTEGER NOT NULL,
+    frequency TEXT NOT NULL DEFAULT 'DAILY',
+    category_id TEXT NOT NULL,
+    specific_days TEXT,
+    is_active INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY (category_id) REFERENCES categories(id)
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_goals_user
+    ON goals(user_id, is_active);
+
   CREATE TABLE IF NOT EXISTS sync_queue (
     id TEXT PRIMARY KEY,
     table_name TEXT NOT NULL,
