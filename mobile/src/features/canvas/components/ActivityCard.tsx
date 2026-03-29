@@ -1,7 +1,10 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Pressable } from 'react-native';
+import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import { colors, getCategoryColor, shadows, radii } from '../../../theme';
 import { Activity, ExperienceLog } from '../../../types';
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 interface Props {
   activity: Activity;
@@ -23,17 +26,24 @@ export function ActivityCard({ activity, log, onPress, onQuickComplete, isNow, i
   const subtasksDone = activity.subtasks.filter(s => s.done).length;
   const subtasksTotal = activity.subtasks.length;
 
+  const scale = useSharedValue(1);
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
   return (
-    <TouchableOpacity
+    <AnimatedPressable
       style={[
         styles.card,
         { backgroundColor: catColor.light, borderLeftColor: catColor.solid },
         isOverdue && styles.overdueCard,
         isSkipped && { opacity: 0.5 },
         shadows.card,
+        animatedStyle,
       ]}
       onPress={onPress}
-      activeOpacity={0.85}
+      onPressIn={() => { scale.value = withSpring(0.98, { damping: 15, stiffness: 200 }); }}
+      onPressOut={() => { scale.value = withSpring(1, { damping: 15, stiffness: 200 }); }}
       accessibilityLabel={`${activity.title}, ${activity.status}`}
     >
       {isNow && <View style={styles.nowDot} />}
@@ -113,7 +123,7 @@ export function ActivityCard({ activity, log, onPress, onQuickComplete, isNow, i
           <Text style={styles.overdueBadgeText}>Overdue</Text>
         </View>
       )}
-    </TouchableOpacity>
+    </AnimatedPressable>
   );
 }
 
@@ -152,7 +162,7 @@ const styles = StyleSheet.create({
   },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
   content: { flex: 1, marginRight: 12 },
-  title: { color: colors.text, fontSize: 14, fontWeight: '600', marginBottom: 3 },
+  title: { color: colors.text, fontSize: 15, fontWeight: '600', lineHeight: 20, marginBottom: 3 },
   titleDone: { textDecorationLine: 'line-through', color: colors.muted },
   meta: { color: colors.text2, fontSize: 11, marginBottom: 6 },
   recurrence: { color: colors.primary },
@@ -162,7 +172,7 @@ const styles = StyleSheet.create({
   },
   categoryPillText: { fontSize: 10, fontWeight: '500', letterSpacing: 0.3 },
   statusCircle: {
-    width: 24, height: 24, borderRadius: 12,
+    width: 28, height: 28, borderRadius: 14,
     alignItems: 'center', justifyContent: 'center',
   },
   checkmark: { color: '#fff', fontSize: 12, fontWeight: '800' },

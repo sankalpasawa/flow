@@ -184,6 +184,21 @@ export const useActivitiesStore = create<ActivitiesState>((set, get) => ({
       // Merge: overdue first, then today's activities
       const acts = [...overdueActs, ...dayActs];
       const allTasks = [...overdueTsks, ...dayTasks];
+
+      // Move timed tasks onto the hourly canvas instead of the overhead section
+      const isTimedTask = (t: Activity): boolean => {
+        if (t.is_scheduled) return true;
+        if (t.duration_minutes > 0) {
+          const h = new Date(t.start_time).getHours();
+          const m = new Date(t.start_time).getMinutes();
+          return h !== 0 || m !== 0;
+        }
+        return false;
+      };
+      const timedTasks = allTasks.filter(isTimedTask);
+      const untimed = allTasks.filter(t => !isTimedTask(t));
+      acts.push(...timedTasks);
+
       const logsMap: Record<string, ExperienceLog> = {};
       await Promise.all(acts.map(async (a) => {
         try {
@@ -193,7 +208,7 @@ export const useActivitiesStore = create<ActivitiesState>((set, get) => ({
           console.error(`[DayFlow] Failed to load log for activity ${a.id}:`, err);
         }
       }));
-      set({ activities: acts, untimedTasks: allTasks, logs: logsMap, loading: false });
+      set({ activities: acts, untimedTasks: untimed, logs: logsMap, loading: false });
     } catch (err) {
       console.error('[DayFlow] Failed to load activities:', err);
       set({ error: 'Could not load your activities. Pull down to retry.', loading: false });

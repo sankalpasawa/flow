@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Dimensions } from 'react-native';
+import Animated, { FadeIn } from 'react-native-reanimated';
 import { colors, radii, shadows, spacing } from '../../../theme';
 import { Activity } from '../../../types';
 import { TaskItem } from './TaskItem';
@@ -89,24 +90,26 @@ export function TaskSection({ tasks, onToggle, onPress, onQuickAdd, todayStr }: 
 
       {/* Expanded: show all tasks in scrollable area — 60% of screen */}
       {expanded && (
-        <ScrollView
-          style={{ maxHeight: Dimensions.get('window').height * 0.6 }}
-          showsVerticalScrollIndicator={false}
-          nestedScrollEnabled
-        >
-          {allTasks.map((task) => {
-            const isOverdue = task.assigned_date !== null && task.assigned_date < todayStr && task.status === 'PLANNED';
-            return (
-              <TaskItem
-                key={task.id}
-                task={task}
-                onPress={() => onPress(task.id)}
-                onToggle={() => onToggle(task.id)}
-                isOverdue={isOverdue}
-              />
-            );
-          })}
-        </ScrollView>
+        <Animated.View entering={FadeIn.duration(200)}>
+          <ScrollView
+            style={{ maxHeight: Dimensions.get('window').height * 0.6 }}
+            showsVerticalScrollIndicator={false}
+            nestedScrollEnabled
+          >
+            {allTasks.map((task) => {
+              const isOverdue = task.assigned_date !== null && task.assigned_date < todayStr && task.status === 'PLANNED';
+              return (
+                <TaskItem
+                  key={task.id}
+                  task={task}
+                  onPress={() => onPress(task.id)}
+                  onToggle={() => onToggle(task.id)}
+                  isOverdue={isOverdue}
+                />
+              );
+            })}
+          </ScrollView>
+        </Animated.View>
       )}
 
       {/* Quick add — only when expanded */}

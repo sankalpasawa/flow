@@ -8,7 +8,7 @@ export const colors = {
   text: '#1A1A1A',
   text2: '#5A5550',
   muted: '#9A9490',
-  border: '#EDE8E1',
+  border: '#F0EAE0',
   shadow: 'rgba(45,74,62,0.10)',
 
   // Primary (Deep Work green)
@@ -69,8 +69,8 @@ export const spacing = {
   sm: 8,
   md: 12,
   lg: 16,
-  xl: 20,
-  xxl: 24,
+  xl: 24,
+  xxl: 32,
   screen: 24, // horizontal page padding
 } as const;
 
@@ -86,6 +86,13 @@ export const radii = {
 } as const;
 
 export const shadows = {
+  xs: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 2,
+    elevation: 1,
+  },
   card: {
     shadowColor: '#2D4A3E',
     shadowOffset: { width: 0, height: 2 },
@@ -100,4 +107,21 @@ export const shadows = {
     shadowRadius: 16,
     elevation: 8,
   },
+  modal: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 20 },
+    shadowOpacity: 0.2,
+    shadowRadius: 24,
+    elevation: 20,
+  },
+} as const;
+
+export const typography = {
+  displayLarge: { fontSize: 32, fontWeight: '700' as const, letterSpacing: -0.5 },
+  headline: { fontSize: 24, fontWeight: '700' as const, letterSpacing: -0.3 },
+  title: { fontSize: 18, fontWeight: '600' as const },
+  body: { fontSize: 15, fontWeight: '400' as const, lineHeight: 22 },
+  bodySmall: { fontSize: 13, fontWeight: '400' as const, lineHeight: 18 },
+  label: { fontSize: 12, fontWeight: '600' as const, letterSpacing: 0.4 },
+  caption: { fontSize: 11, fontWeight: '500' as const, letterSpacing: 0.3 },
 } as const;

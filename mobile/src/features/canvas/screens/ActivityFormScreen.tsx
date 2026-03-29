@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator,
-  Modal,
+  Modal, Animated,
 } from 'react-native';
 import { format, parseISO, addMinutes, addDays, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay } from 'date-fns';
 import { useAuthStore } from '../../../store/authStore';
@@ -91,6 +91,19 @@ export function ActivityFormScreen({ route, navigation }: Props) {
   const [categories, setCategories] = useState<Category[]>(SYSTEM_CATEGORIES);
   const [saving, setSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [showMore, setShowMore] = useState(false);
+  const chevronAnim = useRef(new Animated.Value(0)).current;
+
+  function toggleMore() {
+    setShowMore(prev => {
+      Animated.timing(chevronAnim, {
+        toValue: prev ? 0 : 1,
+        duration: 200,
+        useNativeDriver: true,
+      }).start();
+      return !prev;
+    });
+  }
 
   useEffect(() => {
     if (user) getCategories(user.id).then(setCategories).catch((err) => {
@@ -377,93 +390,123 @@ export function ActivityFormScreen({ route, navigation }: Props) {
           </View>
         </ScrollView>
 
-        <Text style={styles.sectionLabel}>FREQUENCY</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.hScroll}>
-          <View style={styles.hRow}>
-            {RECURRENCE_OPTIONS.map((opt) => (
-              <TouchableOpacity
-                key={opt.value}
-                style={[styles.recurrenceChip, recurrence === opt.value && styles.recurrenceChipSelected]}
-                onPress={() => setRecurrence(opt.value)}
-                accessibilityLabel={`${opt.label} frequency`}
-                accessibilityState={{ selected: recurrence === opt.value }}
-              >
-                <Text style={styles.recurrenceIcon}>{opt.icon}</Text>
-                <Text style={[styles.recurrenceText, recurrence === opt.value && styles.recurrenceTextSelected]}>
-                  {opt.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </ScrollView>
+        {/* More options accordion */}
+        <TouchableOpacity
+          style={styles.moreToggle}
+          onPress={toggleMore}
+          activeOpacity={0.7}
+          accessibilityLabel={showMore ? 'Hide more options' : 'Show more options'}
+          accessibilityRole="button"
+        >
+          <Text style={styles.moreToggleText}>More options</Text>
+          <Animated.Text
+            style={[
+              styles.moreToggleChevron,
+              {
+                transform: [{
+                  rotate: chevronAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: ['0deg', '90deg'],
+                  }),
+                }],
+              },
+            ]}
+          >
+            ›
+          </Animated.Text>
+        </TouchableOpacity>
 
-        {/* Day picker for weekly recurrences */}
-        {showDayPicker && (
+        {showMore && (
           <>
-            <Text style={styles.sectionLabel}>REPEAT ON</Text>
-            <View style={styles.dayPickerRow}>
-              {ALL_WEEKDAYS.map((day) => (
+            <Text style={styles.sectionLabel}>FREQUENCY</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.hScroll}>
+              <View style={styles.hRow}>
+                {RECURRENCE_OPTIONS.map((opt) => (
+                  <TouchableOpacity
+                    key={opt.value}
+                    style={[styles.recurrenceChip, recurrence === opt.value && styles.recurrenceChipSelected]}
+                    onPress={() => setRecurrence(opt.value)}
+                    accessibilityLabel={`${opt.label} frequency`}
+                    accessibilityState={{ selected: recurrence === opt.value }}
+                  >
+                    <Text style={styles.recurrenceIcon}>{opt.icon}</Text>
+                    <Text style={[styles.recurrenceText, recurrence === opt.value && styles.recurrenceTextSelected]}>
+                      {opt.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </ScrollView>
+
+            {/* Day picker for weekly recurrences */}
+            {showDayPicker && (
+              <>
+                <Text style={styles.sectionLabel}>REPEAT ON</Text>
+                <View style={styles.dayPickerRow}>
+                  {ALL_WEEKDAYS.map((day) => (
+                    <TouchableOpacity
+                      key={day}
+                      style={[styles.dayChip, recurrenceDays.includes(day) && styles.dayChipSelected]}
+                      onPress={() => toggleDay(day)}
+                      accessibilityLabel={day}
+                      accessibilityState={{ selected: recurrenceDays.includes(day) }}
+                    >
+                      <Text style={[styles.dayText, recurrenceDays.includes(day) && styles.dayTextSelected]}>
+                        {day}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </>
+            )}
+
+            {/* Subtasks */}
+            <Text style={styles.sectionLabel}>SUBTASKS</Text>
+            {subtasks.map((st) => (
+              <View key={st.id} style={styles.subtaskItem}>
                 <TouchableOpacity
-                  key={day}
-                  style={[styles.dayChip, recurrenceDays.includes(day) && styles.dayChipSelected]}
-                  onPress={() => toggleDay(day)}
-                  accessibilityLabel={day}
-                  accessibilityState={{ selected: recurrenceDays.includes(day) }}
+                  style={[styles.subtaskCheckbox, st.done && styles.subtaskCheckboxDone]}
+                  onPress={() => toggleSubtask(st.id)}
                 >
-                  <Text style={[styles.dayText, recurrenceDays.includes(day) && styles.dayTextSelected]}>
-                    {day}
-                  </Text>
+                  {st.done && <Text style={styles.subtaskCheckmark}>✓</Text>}
                 </TouchableOpacity>
-              ))}
+                <Text style={[styles.subtaskTitle, st.done && styles.subtaskTitleDone]}>{st.title}</Text>
+                <TouchableOpacity onPress={() => removeSubtask(st.id)} style={styles.subtaskRemove}>
+                  <Text style={styles.subtaskRemoveText}>✕</Text>
+                </TouchableOpacity>
+              </View>
+            ))}
+            <View style={styles.subtaskAddRow}>
+              <TextInput
+                style={styles.subtaskInput}
+                placeholder="Add a subtask..."
+                placeholderTextColor="#475569"
+                value={newSubtask}
+                onChangeText={setNewSubtask}
+                onSubmitEditing={addSubtask}
+                returnKeyType="done"
+                maxLength={80}
+              />
+              {newSubtask.trim() ? (
+                <TouchableOpacity style={styles.subtaskAddBtn} onPress={addSubtask}>
+                  <Text style={styles.subtaskAddBtnText}>+</Text>
+                </TouchableOpacity>
+              ) : null}
             </View>
+
+            <Text style={styles.sectionLabel}>NOTES</Text>
+            <TextInput
+              style={[styles.titleInput, styles.descriptionInput]}
+              placeholder="Add details or notes..."
+              placeholderTextColor="#475569"
+              value={description}
+              onChangeText={setDescription}
+              multiline
+              maxLength={500}
+              accessibilityLabel="Activity notes"
+            />
           </>
         )}
-
-        {/* Subtasks */}
-        <Text style={styles.sectionLabel}>SUBTASKS</Text>
-        {subtasks.map((st) => (
-          <View key={st.id} style={styles.subtaskItem}>
-            <TouchableOpacity
-              style={[styles.subtaskCheckbox, st.done && styles.subtaskCheckboxDone]}
-              onPress={() => toggleSubtask(st.id)}
-            >
-              {st.done && <Text style={styles.subtaskCheckmark}>✓</Text>}
-            </TouchableOpacity>
-            <Text style={[styles.subtaskTitle, st.done && styles.subtaskTitleDone]}>{st.title}</Text>
-            <TouchableOpacity onPress={() => removeSubtask(st.id)} style={styles.subtaskRemove}>
-              <Text style={styles.subtaskRemoveText}>✕</Text>
-            </TouchableOpacity>
-          </View>
-        ))}
-        <View style={styles.subtaskAddRow}>
-          <TextInput
-            style={styles.subtaskInput}
-            placeholder="Add a subtask..."
-            placeholderTextColor="#475569"
-            value={newSubtask}
-            onChangeText={setNewSubtask}
-            onSubmitEditing={addSubtask}
-            returnKeyType="done"
-            maxLength={80}
-          />
-          {newSubtask.trim() ? (
-            <TouchableOpacity style={styles.subtaskAddBtn} onPress={addSubtask}>
-              <Text style={styles.subtaskAddBtnText}>+</Text>
-            </TouchableOpacity>
-          ) : null}
-        </View>
-
-        <Text style={styles.sectionLabel}>NOTES</Text>
-        <TextInput
-          style={[styles.titleInput, styles.descriptionInput]}
-          placeholder="Add details or notes..."
-          placeholderTextColor="#475569"
-          value={description}
-          onChangeText={setDescription}
-          multiline
-          maxLength={500}
-          accessibilityLabel="Activity notes"
-        />
 
         {errorMessage && (
           <Text style={{ color: '#FCA5A5', fontSize: 14, textAlign: 'center', marginTop: 12 }}>{errorMessage}</Text>
@@ -599,6 +642,13 @@ const styles = StyleSheet.create({
   },
   saveButtonDisabled: { opacity: 0.6 },
   saveButtonText: { color: '#fff', fontSize: 15, fontWeight: '600', letterSpacing: 0.3 },
+  moreToggle: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    marginTop: 24, paddingVertical: 12, paddingHorizontal: 4,
+    borderTopWidth: 1, borderTopColor: colors.border,
+  },
+  moreToggleText: { color: colors.text2, fontSize: 14, fontWeight: '600' },
+  moreToggleChevron: { color: colors.muted, fontSize: 20, fontWeight: '600' },
 
   // Date picker chips
   dateChipRow: { flexDirection: 'row', gap: 8 },
