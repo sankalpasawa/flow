@@ -1,11 +1,17 @@
 # DayFlow — Claude Instructions
 
-## What is this?
-DayFlow is a mobile-first productivity app (React Native / Expo) that combines hourly time blocking with task management. Built for Sankalp Asawa. Repo: `sankalpasawa/flow`.
+## On Every Session Start
+1. Read this file and `TODO.md`
+2. Run setup if `node_modules` doesn't exist: `cd mobile && npm install`
+3. Start dev server if not running: `npx expo start --web`
+4. Open http://localhost:8081 — if data looks stale, clear localStorage: `localStorage.clear(); location.reload()`
+5. Pick the top unchecked item from `TODO.md` and implement it
+6. After each feature: commit, push to main, check the box in `TODO.md`
 
-## Quick Start
+## New Machine Setup
 ```bash
-cd mobile
+git clone https://github.com/sankalpasawa/flow.git
+cd flow/mobile
 npm install
 npx expo start --web
 # Open http://localhost:8081
