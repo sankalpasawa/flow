@@ -4,6 +4,7 @@ import {
   KeyboardAvoidingView, Platform, ActivityIndicator,
 } from 'react-native';
 import { useAuthStore } from '../../../store/authStore';
+import { colors, radii, spacing } from '../../../theme';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 type Props = { navigation: NativeStackNavigationProp<Record<string, object>, 'SignIn'> };
@@ -40,7 +41,7 @@ export function SignInScreen({ navigation }: Props) {
         <TextInput
           style={styles.input}
           placeholder="Email"
-          placeholderTextColor="#5A5550"
+          placeholderTextColor={colors.text2}
           value={email}
           onChangeText={setEmail}
           autoCapitalize="none"
@@ -51,7 +52,7 @@ export function SignInScreen({ navigation }: Props) {
         <TextInput
           style={styles.input}
           placeholder="Password"
-          placeholderTextColor="#5A5550"
+          placeholderTextColor={colors.text2}
           value={password}
           onChangeText={setPassword}
           secureTextEntry
@@ -86,23 +87,23 @@ export function SignInScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FAF7F2' },
-  inner: { flex: 1, justifyContent: 'center', paddingHorizontal: 24 },
-  logo: { fontSize: 36, fontWeight: '800', color: '#2D4A3E', textAlign: 'center', marginBottom: 8 },
-  subtitle: { fontSize: 16, color: '#5A5550', textAlign: 'center', marginBottom: 40 },
-  errorBox: { backgroundColor: '#450A0A', borderRadius: 8, padding: 12, marginBottom: 16 },
+  container: { flex: 1, backgroundColor: colors.bg },
+  inner: { flex: 1, justifyContent: 'center', paddingHorizontal: spacing.xl },
+  logo: { fontSize: 36, fontWeight: '800', color: colors.primary, textAlign: 'center', marginBottom: 8 },
+  subtitle: { fontSize: 16, color: colors.text2, textAlign: 'center', marginBottom: 40 },
+  errorBox: { backgroundColor: '#450A0A', borderRadius: radii.sm, padding: 12, marginBottom: 16 },
   errorText: { color: '#FCA5A5', fontSize: 14 },
   input: {
-    backgroundColor: '#FFFFFF', borderRadius: 10, paddingHorizontal: 16,
-    paddingVertical: 14, color: '#1A1A1A', fontSize: 16,
+    backgroundColor: colors.surface, borderRadius: radii.sm, paddingHorizontal: spacing.lg,
+    paddingVertical: 14, color: colors.text, fontSize: 16,
     marginBottom: 12, minHeight: 44,
   },
   button: {
-    backgroundColor: '#2D4A3E', borderRadius: 10, paddingVertical: 16,
+    backgroundColor: colors.primary, borderRadius: radii.sm, paddingVertical: 16,
     alignItems: 'center', marginTop: 8, minHeight: 44,
   },
   buttonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
   linkButton: { marginTop: 20, alignItems: 'center', minHeight: 44, justifyContent: 'center' },
-  linkText: { color: '#5A5550', fontSize: 14 },
-  linkBold: { color: '#2D4A3E', fontWeight: '600' },
+  linkText: { color: colors.text2, fontSize: 14 },
+  linkBold: { color: colors.primary, fontWeight: '600' },
 });

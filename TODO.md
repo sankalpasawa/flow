@@ -6,18 +6,18 @@
 - [x] **Demo account seed**: `demo@dayflow.app` / `demo1234` — 210 tasks from Any.do export. Sign out from Settings to switch accounts. Both users share `dayflow_db` localStorage, partitioned by `user_id`.
 - [x] **Date picker in ActivityForm**: Add ability to pick a specific date for an activity (today/tomorrow/pick date/someday). Currently the form takes date from route params only.
 - [x] **Activity form as bottom sheet**: Per design spec, creation/editing should use iOS-style bottom sheets with drag handles, not full-screen navigation.
-- [ ] **Unit tests**: Add tests for new features — search, carry-forward, task creation, activity type switching, overdue logic. Existing test infra in `src/__tests__/`.
+- [x] **Unit tests**: Add tests for new features — search, carry-forward, task creation, activity type switching, overdue logic. Existing test infra in `src/__tests__/`.
 
 ## Goals Feature Follow-up
 
-- [ ] **Seed goals data**: Add sample goals to seed.ts and seedDemo.ts so new installs show example goals
-- [ ] **AI-powered goal suggestions**: Use Claude to suggest goals based on user's activity patterns
-- [ ] **Goal editing**: Edit existing goals (currently only creation is supported)
-- [ ] **Goal-activity linking**: Associate daily tasks/time blocks with long-term goals for progress tracking
+- [x] **Seed goals data**: Add sample goals to seed.ts and seedDemo.ts so new installs show example goals
+- [x] **AI-powered goal suggestions**: Pattern-based goal suggestions in Insights tab, analyzes 14-day activity history
+- [x] **Goal editing**: Edit existing goals via GoalEditScreen (wired in navigation)
+- [x] **Goal-activity linking**: goal_id field on Activity; goal picker in ActivityFormScreen
 
 ## Medium Priority
 
-- [ ] **Warm theme remaining fixes**: OnboardingScreen, SignInScreen, SignUpScreen got bulk color replacement but may need manual polish (border colors, input focus states).
+- [x] **Warm theme remaining fixes**: OnboardingScreen, SignInScreen, SignUpScreen now use theme tokens (colors, radii, spacing) instead of hardcoded hex values.
 - [x] **Insights tab analytics**: Completion stats (7d/30d), stacked status bar, mood/energy 7-day trend bars, category breakdown with progress bars, AI-generated behavioral insight banner. Category drill-down moved to stack screen.
 - [ ] **Settings screen**: Add toggle switches for notifications, mindset prompts, quiet hours. Currently just a placeholder with sign-out.
 - [ ] **Log insights**: "Your energy peaks on Tuesdays" — analyze logged mood/energy data and surface patterns.
@@ -50,6 +50,6 @@
 
 ## Bugs Known
 
-- [ ] DateStrip may not scroll to today on initial load (web-only, SectionList scrollToLocation doesn't work in react-native-web)
+- [x] DateStrip may not scroll to today on initial load — fixed by using scrollToOffset on web instead of scrollToIndex
 - [x] `assigned_date` not yet wired into ActivityFormScreen — tasks get assigned_date from route param but no date picker UI
-- [ ] SettingsScreen/LogFormScreen colors may need manual polish after bulk sed replacement
+- [x] SettingsScreen/LogFormScreen colors polished — LogFormScreen now uses theme tokens (colors, radii, spacing)

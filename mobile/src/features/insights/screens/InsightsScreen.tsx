@@ -111,6 +111,66 @@ function findInsight(activities: Activity[], logs: ExperienceLog[]): string | nu
   return null;
 }
 
+interface GoalSuggestion {
+  categoryId: string;
+  categoryName: string;
+  icon: string;
+  metric_type: 'TIME' | 'SESSIONS';
+  target_value: number;
+  frequency: 'DAILY' | 'WEEKLY';
+  reason: string;
+}
+
+function suggestGoals(activities: Activity[], existingGoalCategoryIds: string[]): GoalSuggestion[] {
+  const suggestions: GoalSuggestion[] = [];
+  const cutoff = subDays(new Date(), 14);
+
+  // Count category usage over last 14 days
+  const catUsage: Record<string, { count: number; totalMinutes: number; name: string; icon: string }> = {};
+  for (const a of activities) {
+    if (!a.start_time || new Date(a.start_time) < cutoff) continue;
+    if (!a.category) continue;
+    const id = a.category_id;
+    if (!catUsage[id]) catUsage[id] = { count: 0, totalMinutes: 0, name: a.category.name, icon: a.category.icon };
+    catUsage[id].count += 1;
+    catUsage[id].totalMinutes += a.duration_minutes;
+  }
+
+  for (const [catId, usage] of Object.entries(catUsage)) {
+    if (existingGoalCategoryIds.includes(catId)) continue;
+    const avgPerWeek = (usage.count / 2); // 14 days = ~2 weeks
+
+    if (usage.totalMinutes >= 120 && avgPerWeek >= 3) {
+      // Heavy time user — suggest daily time goal
+      const dailyAvg = Math.round(usage.totalMinutes / 14 / 15) * 15; // round to 15m
+      suggestions.push({
+        categoryId: catId,
+        categoryName: usage.name,
+        icon: usage.icon,
+        metric_type: 'TIME',
+        target_value: Math.min(Math.max(dailyAvg, 15), 180),
+        frequency: 'DAILY',
+        reason: `You average ${Math.round(usage.totalMinutes / 14)}m of ${usage.name} per day`,
+      });
+    } else if (avgPerWeek >= 2) {
+      // Regular sessions — suggest weekly sessions goal
+      suggestions.push({
+        categoryId: catId,
+        categoryName: usage.name,
+        icon: usage.icon,
+        metric_type: 'SESSIONS',
+        target_value: Math.min(Math.round(avgPerWeek), 7),
+        frequency: 'WEEKLY',
+        reason: `You do ${usage.name} about ${Math.round(avgPerWeek)}x per week`,
+      });
+    }
+
+    if (suggestions.length >= 3) break;
+  }
+
+  return suggestions;
+}
+
 // ─── Main screen ─────────────────────────────────
 
 export function InsightsScreen({ navigation }: Props) {
@@ -158,6 +218,8 @@ export function InsightsScreen({ navigation }: Props) {
   }, [goals, user]);
 
   const activeGoals = goalsWithProgress.filter(g => g.is_active);
+  const existingGoalCategoryIds = activeGoals.map(g => g.category_id);
+  const goalSuggestions = suggestGoals(activities, existingGoalCategoryIds);
 
   let sectionIdx = 0;
 
@@ -234,6 +296,42 @@ export function InsightsScreen({ navigation }: Props) {
                           ]}
                         />
                       </View>
+                    </View>
+                  );
+                })}
+              </View>
+            </FadeIn>
+          )}
+
+          {/* Goal Suggestions */}
+          {goalSuggestions.length > 0 && (
+            <FadeIn index={sectionIdx++}>
+              <Text style={styles.sectionLabel}>Suggested Goals</Text>
+              <View style={styles.suggestionsCard}>
+                {goalSuggestions.map((s, i) => {
+                  const catColor = getCategoryColor(s.categoryId);
+                  return (
+                    <View
+                      key={s.categoryId}
+                      style={[styles.suggestionRow, i < goalSuggestions.length - 1 && styles.suggestionRowBorder]}
+                    >
+                      <View style={[styles.suggestionIcon, { backgroundColor: catColor.light }]}>
+                        <Text style={styles.suggestionIconText}>{s.icon}</Text>
+                      </View>
+                      <View style={styles.suggestionBody}>
+                        <Text style={styles.suggestionTitle}>
+                          {s.metric_type === 'TIME'
+                            ? `${s.target_value >= 60 ? `${Math.floor(s.target_value / 60)}h${s.target_value % 60 > 0 ? ` ${s.target_value % 60}m` : ''}` : `${s.target_value}m`} of ${s.categoryName} ${s.frequency === 'DAILY' ? 'daily' : 'per week'}`
+                            : `${s.target_value} ${s.categoryName} session${s.target_value !== 1 ? 's' : ''} per week`}
+                        </Text>
+                        <Text style={styles.suggestionReason}>{s.reason}</Text>
+                      </View>
+                      <TouchableOpacity
+                        style={[styles.suggestionAddBtn, { backgroundColor: catColor.light }]}
+                        onPress={() => navigation.navigate('GoalForm')}
+                      >
+                        <Text style={[styles.suggestionAddBtnText, { color: catColor.solid }]}>+ Add</Text>
+                      </TouchableOpacity>
                     </View>
                   );
                 })}
@@ -492,5 +590,56 @@ const styles = StyleSheet.create({
   goalWeekBarFill: {
     height: '100%',
     borderRadius: 3,
+  },
+
+  // Goal suggestions
+  suggestionsCard: {
+    backgroundColor: colors.surface,
+    borderRadius: radii.card,
+    padding: 14,
+    marginBottom: 24,
+    ...shadows.card,
+  },
+  suggestionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 10,
+  },
+  suggestionRowBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  suggestionIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  suggestionIconText: { fontSize: 18 },
+  suggestionBody: { flex: 1 },
+  suggestionTitle: {
+    color: colors.text,
+    fontSize: 13,
+    fontWeight: '600',
+    lineHeight: 18,
+  },
+  suggestionReason: {
+    color: colors.muted,
+    fontSize: 11,
+    marginTop: 2,
+    lineHeight: 16,
+  },
+  suggestionAddBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: radii.pill,
+    flexShrink: 0,
+  },
+  suggestionAddBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
   },
 });

@@ -3,6 +3,7 @@ import {
   View, Text, TouchableOpacity, StyleSheet, ScrollView,
   TextInput, ActivityIndicator, Animated,
 } from 'react-native';
+import { colors, radii, spacing } from '../../../theme';
 import { parseISO, addMinutes } from 'date-fns';
 import { useAuthStore } from '../../../store/authStore';
 import { useActivitiesStore } from '../../../store/activitiesStore';
@@ -231,7 +232,7 @@ export function LogFormScreen({ route, navigation }: Props) {
       <TextInput
         style={styles.reflectionInput}
         placeholder="How did it go?"
-        placeholderTextColor="#9A9490"
+        placeholderTextColor={colors.muted}
         value={reflection}
         onChangeText={(t) => setReflection(t.slice(0, 5000))}
         multiline
@@ -242,7 +243,7 @@ export function LogFormScreen({ route, navigation }: Props) {
       <Text style={styles.charCount}>{reflection.length}/5000</Text>
 
       {errorMessage && (
-        <Text style={{ color: '#FCA5A5', fontSize: 14, textAlign: 'center', marginTop: 12 }}>{errorMessage}</Text>
+        <Text style={{ color: colors.danger, fontSize: 14, textAlign: 'center', marginTop: 12 }}>{errorMessage}</Text>
       )}
 
       <TouchableOpacity
@@ -259,61 +260,61 @@ export function LogFormScreen({ route, navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FAF7F2' },
-  content: { padding: 20, paddingBottom: 48 },
-  activityTitle: { color: '#1A1A1A', fontSize: 20, fontWeight: '700', marginBottom: 24, lineHeight: 26 },
-  sectionLabel: { color: '#9A9490', fontSize: 11, fontWeight: '700', letterSpacing: 1, marginBottom: 10, marginTop: 20 },
-  optional: { color: '#EDE8E1', fontWeight: '400' },
+  container: { flex: 1, backgroundColor: colors.bg },
+  content: { padding: spacing.xl, paddingBottom: 48 },
+  activityTitle: { color: colors.text, fontSize: 20, fontWeight: '700', marginBottom: 24, lineHeight: 26 },
+  sectionLabel: { color: colors.muted, fontSize: 11, fontWeight: '700', letterSpacing: 1, marginBottom: 10, marginTop: 20 },
+  optional: { color: colors.border, fontWeight: '400' },
   scaleRow: { flexDirection: 'row', justifyContent: 'space-between' },
   scaleItem: {
-    alignItems: 'center', flex: 1, paddingVertical: 10, borderRadius: 10,
-    backgroundColor: '#FFFFFF', marginHorizontal: 3, minHeight: 64,
+    alignItems: 'center', flex: 1, paddingVertical: 10, borderRadius: radii.sm,
+    backgroundColor: colors.surface, marginHorizontal: 3, minHeight: 64,
   },
-  scaleItemSelected: { backgroundColor: '#EBF2EE' },
+  scaleItemSelected: { backgroundColor: colors.primaryBg },
   scaleEmoji: { fontSize: 24, marginBottom: 4 },
-  scaleLabel2: { color: '#9A9490', fontSize: 10, fontWeight: '500' },
-  scaleLabelSelected: { color: '#2D4A3E' },
-  chipRow: { flexDirection: 'row', gap: 8 },
+  scaleLabel2: { color: colors.muted, fontSize: 10, fontWeight: '500' },
+  scaleLabelSelected: { color: colors.primary },
+  chipRow: { flexDirection: 'row', gap: spacing.sm },
   chip: {
-    flex: 1, backgroundColor: '#FFFFFF', borderRadius: 10,
+    flex: 1, backgroundColor: colors.surface, borderRadius: radii.sm,
     paddingVertical: 12, alignItems: 'center', minHeight: 44,
   },
-  chipSelected: { backgroundColor: '#EBF2EE' },
-  chipText: { color: '#9A9490', fontSize: 13, fontWeight: '600' },
-  chipTextSelected: { color: '#2D4A3E' },
+  chipSelected: { backgroundColor: colors.primaryBg },
+  chipText: { color: colors.muted, fontSize: 13, fontWeight: '600' },
+  chipTextSelected: { color: colors.primary },
   reflectionInput: {
-    backgroundColor: '#FFFFFF', borderRadius: 10,
-    padding: 14, color: '#1A1A1A', fontSize: 15,
+    backgroundColor: colors.surface, borderRadius: radii.sm,
+    padding: 14, color: colors.text, fontSize: 15,
     minHeight: 100,
   },
-  charCount: { color: '#EDE8E1', fontSize: 11, textAlign: 'right', marginTop: 4 },
+  charCount: { color: colors.border, fontSize: 11, textAlign: 'right', marginTop: 4 },
   submitButton: {
-    backgroundColor: '#2D4A3E', borderRadius: 12,
+    backgroundColor: colors.primary, borderRadius: radii.md,
     paddingVertical: 16, alignItems: 'center', marginTop: 24, minHeight: 44,
   },
   submitDisabled: { opacity: 0.4 },
   submitText: { color: '#fff', fontSize: 17, fontWeight: '700' },
   successOverlay: {
-    flex: 1, backgroundColor: '#FAF7F2',
+    flex: 1, backgroundColor: colors.bg,
     alignItems: 'center', justifyContent: 'center',
   },
   successEmoji: { fontSize: 64, marginBottom: 16 },
-  successTitle: { color: '#1A1A1A', fontSize: 28, fontWeight: '800', marginBottom: 8 },
-  successBody: { color: '#9A9490', fontSize: 16 },
+  successTitle: { color: colors.text, fontSize: 28, fontWeight: '800', marginBottom: 8 },
+  successBody: { color: colors.muted, fontSize: 16 },
   closedWindow: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 },
   closedEmoji: { fontSize: 48, marginBottom: 16 },
-  closedTitle: { color: '#1A1A1A', fontSize: 22, fontWeight: '700', marginBottom: 8 },
-  closedBody: { color: '#9A9490', fontSize: 15, textAlign: 'center', lineHeight: 22, marginBottom: 24 },
+  closedTitle: { color: colors.text, fontSize: 22, fontWeight: '700', marginBottom: 8 },
+  closedBody: { color: colors.muted, fontSize: 15, textAlign: 'center', lineHeight: 22, marginBottom: 24 },
   doneButton: {
-    backgroundColor: '#FFFFFF', borderRadius: 10,
+    backgroundColor: colors.surface, borderRadius: radii.sm,
     paddingVertical: 14, paddingHorizontal: 32, minHeight: 44,
   },
-  doneButtonText: { color: '#5A5550', fontSize: 16, fontWeight: '600' },
+  doneButtonText: { color: colors.text2, fontSize: 16, fontWeight: '600' },
   upgradeButton: {
-    backgroundColor: '#2D4A3E', borderRadius: 10,
+    backgroundColor: colors.primary, borderRadius: radii.sm,
     paddingVertical: 14, paddingHorizontal: 24, minHeight: 44, marginBottom: 12,
   },
   upgradeButtonText: { color: '#fff', fontSize: 15, fontWeight: '700' },
   skipButton: { minHeight: 44, justifyContent: 'center' },
-  skipText: { color: '#9A9490', fontSize: 14 },
+  skipText: { color: colors.muted, fontSize: 14 },
 });

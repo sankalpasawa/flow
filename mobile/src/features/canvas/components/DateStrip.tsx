@@ -49,11 +49,19 @@ export function DateStrip({ selectedDate, onSelectDate }: Props) {
     if (flatListRef.current) {
       // Small delay to ensure layout is ready
       const timer = setTimeout(() => {
-        flatListRef.current?.scrollToIndex({
-          index: selectedIndex,
-          animated: hasScrolledRef.current,
-          viewPosition: 0.5, // center in viewport
-        });
+        if (Platform.OS === 'web') {
+          // scrollToIndex doesn't work reliably on web; use scrollToOffset instead
+          flatListRef.current?.scrollToOffset({
+            offset: Math.max(0, selectedIndex * CHIP_WIDTH),
+            animated: hasScrolledRef.current,
+          });
+        } else {
+          flatListRef.current?.scrollToIndex({
+            index: selectedIndex,
+            animated: hasScrolledRef.current,
+            viewPosition: 0.5, // center in viewport
+          });
+        }
         hasScrolledRef.current = true;
       }, hasScrolledRef.current ? 0 : 100);
       return () => clearTimeout(timer);

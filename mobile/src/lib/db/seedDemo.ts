@@ -5,7 +5,7 @@ import { generateId, nowISO } from './db';
 import { SYSTEM_CATEGORIES } from '../../features/categories/systemCategories';
 
 export const DEMO_USER_ID = 'demo-user-001';
-const SEED_VERSION = '2';
+const SEED_VERSION = '3';
 
 const CUSTOM_CATEGORIES = [
   { id: 'cust-social', name: 'Social', color: '#14B8A6', icon: '👥', sort_order: 8 },
@@ -457,11 +457,37 @@ function buildDemoData() {
   return activities;
 }
 
+interface SeedGoal {
+  id: string;
+  user_id: string;
+  title: string;
+  metric_type: string;
+  target_value: number;
+  frequency: string;
+  category_id: string;
+  specific_days: string | null;
+  is_active: number;
+  created_at: string;
+  updated_at: string;
+}
+
+function buildGoals(): SeedGoal[] {
+  const ts = nowISO();
+  return [
+    { id: uuid(), user_id: DEMO_USER_ID, title: 'Read every day', metric_type: 'TIME', target_value: 30, frequency: 'DAILY', category_id: 'sys-learning', specific_days: null, is_active: 1, created_at: ts, updated_at: ts },
+    { id: uuid(), user_id: DEMO_USER_ID, title: 'Exercise 4x a week', metric_type: 'SESSIONS', target_value: 4, frequency: 'WEEKLY', category_id: 'sys-health', specific_days: null, is_active: 1, created_at: ts, updated_at: ts },
+    { id: uuid(), user_id: DEMO_USER_ID, title: 'Deep work sessions', metric_type: 'TIME', target_value: 120, frequency: 'DAILY', category_id: 'sys-deep-work', specific_days: null, is_active: 1, created_at: ts, updated_at: ts },
+    { id: uuid(), user_id: DEMO_USER_ID, title: 'Family time weekly', metric_type: 'SESSIONS', target_value: 3, frequency: 'WEEKLY', category_id: 'cust-family', specific_days: null, is_active: 1, created_at: ts, updated_at: ts },
+    { id: uuid(), user_id: DEMO_USER_ID, title: 'Personal growth', metric_type: 'TIME', target_value: 60, frequency: 'WEEKLY', category_id: 'sys-personal', specific_days: null, is_active: 1, created_at: ts, updated_at: ts },
+  ];
+}
+
 export async function seedDemoData(): Promise<void> {
   if (typeof localStorage === 'undefined') return;
   if (localStorage.getItem('dayflow_demo_seed_version') === SEED_VERSION) return;
 
   const activities = buildDemoData();
+  const goals = buildGoals();
   const seedNow = nowISO();
 
   const categoryRows = [
@@ -488,11 +514,12 @@ export async function seedDemoData(): Promise<void> {
 
   // Merge with existing DB (may already have Sankalp's data)
   const existing = localStorage.getItem('dayflow_db');
-  const db = existing ? JSON.parse(existing) : { categories: [], activities: [], experience_logs: [] };
+  const db = existing ? JSON.parse(existing) : { categories: [], activities: [], experience_logs: [], goals: [] };
 
-  // Remove old demo activities, keep Sankalp's
+  // Remove old demo activities and goals, keep Sankalp's
   const filteredActs = (db.activities || []).filter((a: { user_id: string }) => a.user_id !== DEMO_USER_ID);
   const filteredCats = (db.categories || []).filter((c: { user_id: string; is_system: number }) => c.user_id !== DEMO_USER_ID || c.is_system);
+  const filteredGoals = (db.goals || []).filter((g: { user_id: string }) => g.user_id !== DEMO_USER_ID);
 
   db.categories = [...filteredCats, ...CUSTOM_CATEGORIES.map(c => ({
     id: c.id, user_id: DEMO_USER_ID, name: c.name, color: c.color,
@@ -505,10 +532,11 @@ export async function seedDemoData(): Promise<void> {
     }
   }
   db.activities = [...filteredActs, ...activityRows];
+  db.goals = [...filteredGoals, ...goals];
 
   localStorage.setItem('dayflow_db', JSON.stringify(db));
   localStorage.setItem('dayflow_demo_seed_version', SEED_VERSION);
   localStorage.setItem('dayflow_onboarded', 'true');
 
-  console.log(`[DayFlow] Demo seeded: ${activityRows.length} activities for demo@dayflow.app`);
+  console.log(`[DayFlow] Demo seeded: ${activityRows.length} activities, ${goals.length} goals for demo@dayflow.app`);
 }

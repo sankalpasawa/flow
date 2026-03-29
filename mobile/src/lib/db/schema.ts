@@ -36,11 +36,13 @@ export const CREATE_TABLES_SQL = `
     priority TEXT NOT NULL DEFAULT 'MEDIUM',
     actual_start TEXT,
     actual_end TEXT,
+    goal_id TEXT,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL,
     synced INTEGER NOT NULL DEFAULT 0,
     deleted INTEGER NOT NULL DEFAULT 0,
-    FOREIGN KEY (category_id) REFERENCES categories(id)
+    FOREIGN KEY (category_id) REFERENCES categories(id),
+    FOREIGN KEY (goal_id) REFERENCES goals(id)
   );
 
   CREATE INDEX IF NOT EXISTS idx_activities_user_start

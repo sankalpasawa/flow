@@ -15,6 +15,7 @@ export interface CreateActivityInput {
   recurrence_type?: RecurrenceType;
   recurrence_days?: Weekday[];
   subtasks?: Subtask[];
+  goal_id?: string | null;
 }
 
 export interface UpdateActivityInput {
@@ -34,6 +35,7 @@ export interface UpdateActivityInput {
   priority?: ActivityPriority;
   actual_start?: string | null;
   actual_end?: string | null;
+  goal_id?: string | null;
 }
 
 export async function getActivitiesForDay(userId: string, dateStr: string): Promise<Activity[]> {
@@ -169,6 +171,7 @@ export interface CreateTaskInput {
   description?: string;
   subtasks?: Subtask[];
   priority?: ActivityPriority;
+  goal_id?: string | null;
 }
 
 export async function createTask(input: CreateTaskInput): Promise<Activity> {
@@ -182,13 +185,13 @@ export async function createTask(input: CreateTaskInput): Promise<Activity> {
     `INSERT INTO activities
       (id, user_id, activity_type, title, description, start_time, duration_minutes, category_id,
        assigned_date, is_scheduled, mindset_prompt, mindset_overridden, recurrence_type, recurrence_days,
-       subtasks, status, priority, actual_start, actual_end, created_at, updated_at, synced, deleted)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, 0, ?, NULL, ?, ?, ?, NULL, NULL, ?, ?, 0, 0)`,
+       subtasks, status, priority, actual_start, actual_end, goal_id, created_at, updated_at, synced, deleted)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, 0, ?, NULL, ?, ?, ?, NULL, NULL, ?, ?, ?, 0, 0)`,
     [
       id, input.user_id, 'TASK', input.title, input.description ?? null,
       now, 0, input.category_id ?? 'sys-personal',
       assignedDate, 0, 'NONE', subtasks,
-      'PLANNED', input.priority ?? 'MEDIUM', now, now,
+      'PLANNED', input.priority ?? 'MEDIUM', input.goal_id ?? null, now, now,
     ]
   );
   return getActivity(id) as Promise<Activity>;
@@ -223,13 +226,13 @@ export async function createActivity(input: CreateActivityInput): Promise<Activi
     `INSERT INTO activities
       (id, user_id, activity_type, title, description, start_time, duration_minutes, category_id,
        assigned_date, is_scheduled, mindset_prompt, mindset_overridden, recurrence_type, recurrence_days,
-       subtasks, status, priority, actual_start, actual_end, created_at, updated_at, synced, deleted)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, 0, ?, ?, ?, ?, ?, NULL, NULL, ?, ?, 0, 0)`,
+       subtasks, status, priority, actual_start, actual_end, goal_id, created_at, updated_at, synced, deleted)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, 0, ?, ?, ?, ?, ?, NULL, NULL, ?, ?, ?, 0, 0)`,
     [
       id, input.user_id, actType, input.title, input.description ?? null,
       input.start_time, input.duration_minutes, input.category_id,
       assignedDate, isScheduled, input.recurrence_type ?? 'NONE', recurrenceDays, subtasks,
-      'PLANNED', input.priority ?? 'MEDIUM', now, now,
+      'PLANNED', input.priority ?? 'MEDIUM', input.goal_id ?? null, now, now,
     ]
   );
   return getActivity(id) as Promise<Activity>;
@@ -257,6 +260,7 @@ export async function updateActivity(id: string, updates: UpdateActivityInput): 
   if (updates.priority !== undefined) { fields.push('priority = ?'); values.push(updates.priority); }
   if (updates.actual_start !== undefined) { fields.push('actual_start = ?'); values.push(updates.actual_start); }
   if (updates.actual_end !== undefined) { fields.push('actual_end = ?'); values.push(updates.actual_end); }
+  if (updates.goal_id !== undefined) { fields.push('goal_id = ?'); values.push(updates.goal_id); }
 
   values.push(id);
   await db.runAsync(
@@ -342,6 +346,7 @@ function mapRow(row: Record<string, unknown>): Activity {
     priority: (row.priority as ActivityPriority) ?? 'MEDIUM',
     actual_start: (row.actual_start as string) ?? null,
     actual_end: (row.actual_end as string) ?? null,
+    goal_id: (row.goal_id as string) ?? null,
     created_at: row.created_at as string,
     updated_at: row.updated_at as string,
     category: row.cat_name ? {

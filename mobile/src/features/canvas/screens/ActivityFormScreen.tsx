@@ -7,8 +7,9 @@ import {
 import { format, parseISO, addMinutes, addDays, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay } from 'date-fns';
 import { useAuthStore } from '../../../store/authStore';
 import { useActivitiesStore } from '../../../store/activitiesStore';
+import { useGoalsStore } from '../../../store/goalsStore';
 import { getCategories } from '../../../lib/db/categories';
-import { Category, RecurrenceType, Weekday, Subtask } from '../../../types';
+import { Category, RecurrenceType, Weekday, Subtask, Goal } from '../../../types';
 import { SYSTEM_CATEGORIES } from '../../categories/systemCategories';
 import { generateId } from '../../../lib/db/db';
 import { colors, radii, spacing } from '../../../theme';
@@ -18,6 +19,9 @@ interface RouteParams {
   startHour?: string;
   date?: string;
   backlog?: boolean;
+  goal_id?: string;
+  category_id?: string;
+  duration_minutes?: number;
 }
 
 interface Props {
@@ -39,9 +43,10 @@ const REPEAT_OPTIONS: { value: RecurrenceType; label: string }[] = [
 ];
 
 export function ActivityFormScreen({ route, navigation }: Props) {
-  const { activityId, startHour, date, backlog } = route.params ?? {};
+  const { activityId, startHour, date, backlog, goal_id: routeGoalId, category_id: routeCategoryId, duration_minutes: routeDuration } = route.params ?? {};
   const { user } = useAuthStore();
   const { activities, untimedTasks, backlog: storeBacklog, planActivities, planTasks, carryForward, addActivity, editActivity, removeActivity } = useActivitiesStore();
+  const { goals, loadGoals } = useGoalsStore();
   const existingActivity = activityId
     ? (activities.find(a => a.id === activityId)
       || untimedTasks.find(a => a.id === activityId)
@@ -54,7 +59,7 @@ export function ActivityFormScreen({ route, navigation }: Props) {
 
   const [title, setTitle] = useState(existingActivity?.title ?? '');
   const [description, setDescription] = useState(existingActivity?.description ?? '');
-  const [duration, setDuration] = useState(existingActivity?.duration_minutes ?? (backlog ? 0 : 15));
+  const [duration, setDuration] = useState(existingActivity?.duration_minutes ?? routeDuration ?? (backlog ? 0 : 15));
   const [customDuration, setCustomDuration] = useState('');
   const [showCustomDuration, setShowCustomDuration] = useState(false);
   const [isScheduled] = useState(
@@ -87,7 +92,9 @@ export function ActivityFormScreen({ route, navigation }: Props) {
     const dt = new Date(`${initialDate}T${initialHour.toString().padStart(2, '0')}:${initialMinute.toString().padStart(2, '0')}:00`);
     return dt.toISOString();
   });
-  const [categoryId, setCategoryId] = useState(existingActivity?.category_id ?? SYSTEM_CATEGORIES[0].id);
+  const [categoryId, setCategoryId] = useState(existingActivity?.category_id ?? routeCategoryId ?? SYSTEM_CATEGORIES[0].id);
+  const [goalId, setGoalId] = useState<string | null>(existingActivity?.goal_id ?? routeGoalId ?? null);
+  const [showGoalPicker, setShowGoalPicker] = useState(false);
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [recurrence, setRecurrence] = useState<RecurrenceType>(existingActivity?.recurrence_type ?? 'NONE');
   const [recurrenceDays, setRecurrenceDays] = useState<Weekday[]>(existingActivity?.recurrence_days ?? []);
@@ -105,9 +112,14 @@ export function ActivityFormScreen({ route, navigation }: Props) {
   const minuteScrollRef = useRef<FlatList>(null);
 
   useEffect(() => {
-    if (user) getCategories(user.id).then(setCategories).catch((err) => {
-      console.error('[DayFlow] Failed to load categories:', err);
-    });
+    if (user) {
+      getCategories(user.id).then(setCategories).catch((err) => {
+        console.error('[DayFlow] Failed to load categories:', err);
+      });
+      loadGoals(user.id).catch((err) => {
+        console.error('[DayFlow] Failed to load goals:', err);
+      });
+    }
   }, [user]);
 
   // Sync startTime when hour/minute change via picker
@@ -157,7 +169,7 @@ export function ActivityFormScreen({ route, navigation }: Props) {
           category_id: categoryId, is_scheduled: isScheduled,
           assigned_date: newAssignedDate,
           recurrence_type: recurrence, recurrence_days: recurrenceDays,
-          subtasks,
+          subtasks, goal_id: goalId,
         });
       } else {
         await addActivity({
@@ -167,6 +179,7 @@ export function ActivityFormScreen({ route, navigation }: Props) {
           category_id: categoryId, is_scheduled: isScheduled,
           recurrence_type: recurrence, recurrence_days: recurrenceDays,
           subtasks: subtasks.length > 0 ? subtasks : undefined,
+          goal_id: goalId,
         });
       }
       navigation.goBack();
@@ -406,6 +419,25 @@ export function ActivityFormScreen({ route, navigation }: Props) {
               ))}
             </View>
           )}
+
+          {/* Goal row */}
+          <TouchableOpacity
+            style={styles.formRow}
+            onPress={() => setShowGoalPicker(true)}
+            activeOpacity={0.6}
+          >
+            <Text style={styles.formRowIcon}>{'🎯'}</Text>
+            <Text style={styles.formRowLabel}>
+              {goalId ? (goals.find(g => g.id === goalId)?.title ?? 'Linked goal') : 'No goal'}
+            </Text>
+            {goalId ? (
+              <TouchableOpacity onPress={() => setGoalId(null)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <Text style={styles.formRowClear}>{'Clear'}</Text>
+              </TouchableOpacity>
+            ) : (
+              <Text style={styles.formRowChevron}>{'>'}</Text>
+            )}
+          </TouchableOpacity>
 
           {/* Subtasks — expandable */}
           <TouchableOpacity
@@ -682,6 +714,40 @@ export function ActivityFormScreen({ route, navigation }: Props) {
               ))}
             </ScrollView>
             <TouchableOpacity style={styles.modalDoneBtn} onPress={() => setShowCategoryPicker(false)}>
+              <Text style={styles.modalDoneBtnText}>Done</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ─── Goal picker modal ─── */}
+      <Modal visible={showGoalPicker} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalSheet}>
+            <View style={styles.modalHandleBar}><View style={styles.handle} /></View>
+            <Text style={[styles.modalTitle, { textAlign: 'center', marginBottom: 16 }]}>Link to Goal</Text>
+            <ScrollView style={styles.categoryList} showsVerticalScrollIndicator={false}>
+              <TouchableOpacity
+                style={[styles.categoryItem, !goalId && { backgroundColor: colors.primaryBg }]}
+                onPress={() => { setGoalId(null); setShowGoalPicker(false); }}
+              >
+                <Text style={styles.categoryItemIcon}>{'—'}</Text>
+                <Text style={[styles.categoryItemName, !goalId && { color: colors.primary, fontWeight: '700' }]}>No goal</Text>
+                {!goalId && <Text style={[styles.categoryItemCheck, { color: colors.primary }]}>{'\u2713'}</Text>}
+              </TouchableOpacity>
+              {goals.filter(g => g.is_active).map((goal) => (
+                <TouchableOpacity
+                  key={goal.id}
+                  style={[styles.categoryItem, goalId === goal.id && { backgroundColor: colors.primaryBg }]}
+                  onPress={() => { setGoalId(goal.id); setShowGoalPicker(false); }}
+                >
+                  <Text style={styles.categoryItemIcon}>{'🎯'}</Text>
+                  <Text style={[styles.categoryItemName, goalId === goal.id && { color: colors.primary, fontWeight: '700' }]}>{goal.title}</Text>
+                  {goalId === goal.id && <Text style={[styles.categoryItemCheck, { color: colors.primary }]}>{'\u2713'}</Text>}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+            <TouchableOpacity style={styles.modalDoneBtn} onPress={() => setShowGoalPicker(false)}>
               <Text style={styles.modalDoneBtnText}>Done</Text>
             </TouchableOpacity>
           </View>
