@@ -19,8 +19,10 @@ export const CREATE_TABLES_SQL = `
   CREATE TABLE IF NOT EXISTS activities (
     id TEXT PRIMARY KEY,
     user_id TEXT NOT NULL,
+    activity_type TEXT NOT NULL DEFAULT 'TIME_BLOCK',
     title TEXT NOT NULL,
     description TEXT,
+    assigned_date TEXT,
     start_time TEXT NOT NULL,
     duration_minutes INTEGER NOT NULL,
     category_id TEXT NOT NULL,

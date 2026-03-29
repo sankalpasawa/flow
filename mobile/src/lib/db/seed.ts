@@ -1,7 +1,7 @@
 // Seed data from Sankalp's Any.do export
 // Maps real tasks to DayFlow categories and creates a realistic 14-day canvas
 
-import { generateId, nowISO } from './db';
+import { generateId, nowISO, getDb } from './db';
 import { SYSTEM_CATEGORIES } from '../../features/categories/systemCategories';
 
 const USER_ID = 'dev-user-001';
@@ -371,13 +371,21 @@ function buildActivities(): { activities: SeedActivity[]; logs: SeedLog[] } {
 }
 
 export async function seedDummyData(): Promise<void> {
-  if (typeof localStorage === 'undefined') return;
+  const SEED_VERSION = '10';
+  const isWeb = typeof localStorage !== 'undefined';
 
-  // Check if already seeded with latest version (bump to re-seed)
-  const SEED_VERSION = '9';
-  if (localStorage.getItem('dayflow_seed_version') === SEED_VERSION) return;
+  // Check if already seeded
+  if (isWeb) {
+    if (localStorage.getItem('dayflow_seed_version') === SEED_VERSION) return;
+  } else {
+    // On native, check via AsyncStorage
+    try {
+      const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+      const ver = await AsyncStorage.getItem('dayflow_seed_version');
+      if (ver === SEED_VERSION) return;
+    } catch {}
+  }
 
-  // Write directly to localStorage, bypassing the web DB's SQL parser
   const { activities, logs } = buildActivities();
   const seedNow = nowISO();
 
@@ -417,16 +425,41 @@ export async function seedDummyData(): Promise<void> {
     log_phase: l.log_phase, logged_at: l.logged_at, synced: 0, deleted: 0,
   }));
 
-  const dbState = {
-    categories: categoryRows,
-    activities: activityRows,
-    experience_logs: logRows,
-  };
-
-  localStorage.setItem('dayflow_db', JSON.stringify(dbState));
-  localStorage.setItem('dayflow_seed_version', SEED_VERSION);
-  // Mark onboarding complete so we skip straight to canvas
-  localStorage.setItem('dayflow_onboarded', 'true');
+  if (isWeb) {
+    // Web: write directly to localStorage
+    const dbState = { categories: categoryRows, activities: activityRows, experience_logs: logRows };
+    localStorage.setItem('dayflow_db', JSON.stringify(dbState));
+    localStorage.setItem('dayflow_seed_version', SEED_VERSION);
+    localStorage.setItem('dayflow_onboarded', 'true');
+  } else {
+    // Native: use SQLite via getDb
+    try {
+      const db = await getDb();
+      for (const c of categoryRows) {
+        await db.runAsync(
+          `INSERT OR IGNORE INTO categories (id, user_id, name, color, icon, is_system, sort_order, synced) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          [c.id, c.user_id, c.name, c.color, c.icon, c.is_system, c.sort_order, c.synced]
+        );
+      }
+      for (const a of activityRows) {
+        await db.runAsync(
+          `INSERT OR IGNORE INTO activities (id, user_id, activity_type, title, description, assigned_date, start_time, duration_minutes, category_id, is_scheduled, mindset_prompt, mindset_overridden, recurrence_type, recurrence_days, subtasks, status, priority, actual_start, actual_end, created_at, updated_at, synced, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [a.id, a.user_id, a.activity_type, a.title, a.description, a.assigned_date, a.start_time, a.duration_minutes, a.category_id, a.is_scheduled, a.mindset_prompt, a.mindset_overridden, a.recurrence_type, a.recurrence_days, a.subtasks, a.status, a.priority, a.actual_start, a.actual_end, a.created_at, a.updated_at, a.synced, a.deleted]
+        );
+      }
+      for (const l of logRows) {
+        await db.runAsync(
+          `INSERT OR IGNORE INTO experience_logs (id, activity_id, user_id, mood, energy, completion_pct, reflection, would_repeat, log_phase, logged_at, synced, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [l.id, l.activity_id, l.user_id, l.mood, l.energy, l.completion_pct, l.reflection, l.would_repeat, l.log_phase, l.logged_at, l.synced, l.deleted]
+        );
+      }
+      const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+      await AsyncStorage.setItem('dayflow_seed_version', SEED_VERSION);
+      await AsyncStorage.setItem('dayflow_onboarded', 'true');
+    } catch (err) {
+      console.error('[DayFlow] Native seed failed:', err);
+    }
+  }
 
   console.log(`[DayFlow] Seeded ${activityRows.length} activities and ${logRows.length} logs for Sankalp`);
 }
