@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import { User, DEFAULT_SETTINGS } from '../types';
 import { DEV_USER_ID } from '../lib/db/seed';
 import { DEMO_USER_ID, seedDemoData } from '../lib/db/seedDemo';
+import { performFullSync } from '../lib/sync';
 
 // Dev mode: bypass Supabase auth when using placeholder credentials or explicit flag
 const IS_DEV = process.env.EXPO_PUBLIC_DEV_MODE === 'true' ||
@@ -158,16 +159,21 @@ async function fetchOrCreateUser(id: string, email: string): Promise<User> {
     .eq('id', id)
     .single();
 
+  let appUser: User;
   if (error || !data) {
-    // Create on first sign in
-    const newUser = {
-      id, email,
-      settings: DEFAULT_SETTINGS,
-    };
-    await supabase.from('users').upsert(newUser);
-    return newUser;
+    // First sign-in: create user profile in Supabase
+    appUser = { id, email, settings: DEFAULT_SETTINGS };
+    await supabase.from('users').upsert(appUser);
+  } else {
+    appUser = data as User;
   }
-  return data as User;
+
+  // Sync local data to/from Supabase after successful auth (non-blocking)
+  performFullSync(id).catch((err) =>
+    console.warn('[DayFlow] Background sync failed (non-fatal):', err)
+  );
+
+  return appUser;
 }
 
 function mapAuthError(msg: string): string {

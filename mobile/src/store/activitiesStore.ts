@@ -13,6 +13,7 @@ import { getLogForActivity, createLog, CreateLogInput } from '../lib/db/logs';
 import { scheduleLogNudge, cancelLogNudge, schedulePlanningNudge } from '../lib/notifications';
 import { generateMindsetPrompt, categorizeActivity } from '../lib/ai';
 import { SYSTEM_CATEGORIES } from '../features/categories/systemCategories';
+import { pushChanges } from '../lib/sync';
 
 interface ActivitiesState {
   activities: Activity[];
@@ -22,6 +23,8 @@ interface ActivitiesState {
   selectedDate: Date;
   loading: boolean;
   error: string | null;
+  /** The last userId passed to loadDay — used to push changes after mutations. */
+  currentUserId: string | null;
   // Plan tab state
   planActivities: Activity[];
   planTasks: Activity[];
@@ -53,6 +56,7 @@ export const useActivitiesStore = create<ActivitiesState>((set, get) => ({
   selectedDate: new Date(),
   loading: false,
   error: null,
+  currentUserId: null,
   // Plan tab state
   planActivities: [],
   planTasks: [],
@@ -167,6 +171,7 @@ export const useActivitiesStore = create<ActivitiesState>((set, get) => ({
     try {
       const task = await createTask(input);
       set((s) => ({ untimedTasks: [...s.untimedTasks, task] }));
+      pushChanges(input.user_id).catch(() => {});
       return task;
     } catch (err) {
       console.error('[DayFlow] Failed to create task:', err);
@@ -175,7 +180,7 @@ export const useActivitiesStore = create<ActivitiesState>((set, get) => ({
   },
 
   loadDay: async (userId, date) => {
-    set({ loading: true, error: null });
+    set({ loading: true, error: null, currentUserId: userId });
     try {
       const dateStr = format(date, 'yyyy-MM-dd');
 
@@ -228,6 +233,9 @@ export const useActivitiesStore = create<ActivitiesState>((set, get) => ({
         console.warn('[DayFlow] Failed to schedule nudge:', err)
       );
 
+      // Sync new activity to Supabase (fire-and-forget; no-op for dev users)
+      pushChanges(input.user_id).catch(() => {});
+
       // Async AI: categorize then generate mindset prompt (never block)
       (async () => {
         try {
@@ -271,6 +279,8 @@ export const useActivitiesStore = create<ActivitiesState>((set, get) => ({
           );
         }
       }
+      const { currentUserId } = get();
+      if (currentUserId) pushChanges(currentUserId).catch(() => {});
     } catch (err) {
       console.error('[DayFlow] Failed to edit activity:', err);
       throw new Error('Could not save changes. Please try again.');
@@ -286,6 +296,8 @@ export const useActivitiesStore = create<ActivitiesState>((set, get) => ({
       set((s) => ({
         activities: s.activities.filter((a) => a.id !== id),
       }));
+      const { currentUserId } = get();
+      if (currentUserId) pushChanges(currentUserId).catch(() => {});
     } catch (err) {
       console.error('[DayFlow] Failed to delete activity:', err);
       throw new Error('Could not delete activity. Please try again.');
@@ -304,6 +316,8 @@ export const useActivitiesStore = create<ActivitiesState>((set, get) => ({
           a.id === id ? { ...a, status, ...updates } : a
         ),
       }));
+      const { currentUserId } = get();
+      if (currentUserId) pushChanges(currentUserId).catch(() => {});
     } catch (err) {
       console.error('[DayFlow] Failed to update activity status:', err);
       throw new Error('Could not update status. Please try again.');
@@ -334,6 +348,8 @@ export const useActivitiesStore = create<ActivitiesState>((set, get) => ({
         planTasks: updateList(s.planTasks),
         carryForward: updateList(s.carryForward),
       }));
+      const { currentUserId } = get();
+      if (currentUserId) pushChanges(currentUserId).catch(() => {});
     } catch (err) {
       console.error('[DayFlow] Quick toggle failed:', err);
     }
@@ -343,6 +359,9 @@ export const useActivitiesStore = create<ActivitiesState>((set, get) => ({
     try {
       const log = await createLog(input);
       set((s) => ({ logs: { ...s.logs, [input.activity_id]: log } }));
+      // Sync the new log to Supabase (fire-and-forget)
+      const { currentUserId } = get();
+      if (currentUserId) pushChanges(currentUserId).catch(() => {});
       return log;
     } catch (err) {
       console.error('[DayFlow] Failed to submit log:', err);
