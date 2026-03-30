@@ -8,7 +8,7 @@ import { useAuthStore } from '../../../store/authStore';
 import { getLogsForUser } from '../../../lib/db/logs';
 import { ExperienceLog } from '../../../types';
 import { NetworkBanner } from '../../../components/common/NetworkBanner';
-import { colors, radii, shadows, spacing, type, getCategoryColor } from '../../../theme';
+import { colors, radii, shadows, spacing, text, ui, upperLabel, getCategoryColor } from '../../../theme';
 
 const MOOD_EMOJI = ['', '😫', '😕', '😐', '🙂', '🔥'];
 const ENERGY_EMOJI = ['', '🪫', '🔋', '⚡', '💪', '🚀'];
@@ -96,7 +96,7 @@ export function LogHistoryScreen() {
         stickySectionHeadersEnabled={false}
         renderSectionHeader={({ section }) => (
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionHeaderText}>{section.title}</Text>
+            <Text style={styles.sectionHeaderText}>{upperLabel(section.title)}</Text>
           </View>
         )}
         renderItem={({ item }) => <LogCard log={item} />}
@@ -155,19 +155,19 @@ function MetricPill({ emoji, label, value, color }: {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg },
+  container: { ...ui.screenContainer },
   header: {
     paddingHorizontal: spacing.screen,
     paddingTop: spacing.xl,
     paddingBottom: spacing.md,
   },
-  headerTitle: { color: colors.text, ...type.h2 },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xxl },
+  headerTitle: { ...ui.screenTitle },
+  center: { ...ui.loading, padding: spacing.xxl },
 
   // Empty state
-  emptyEmoji: { fontSize: 48, marginBottom: spacing.md },
-  emptyTitle: { color: colors.text, fontSize: 20, fontWeight: '700', marginBottom: spacing.sm },
-  emptyBody: { color: colors.muted, fontSize: 14, textAlign: 'center', lineHeight: 22 },
+  emptyEmoji: { ...ui.emptyStateEmoji },
+  emptyTitle: { ...ui.emptyStateTitle },
+  emptyBody: { ...ui.emptyStateBody },
 
   // List
   listContent: { paddingHorizontal: spacing.screen, paddingBottom: 100 },

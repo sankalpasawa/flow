@@ -13,7 +13,7 @@ import { DateStrip } from '../components/DateStrip';
 import { ActivityCard } from '../components/ActivityCard';
 import { TaskSection } from '../components/TaskSection';
 import { Activity } from '../../../types';
-import { colors, shadows, spacing, type } from '../../../theme';
+import { colors, shadows, spacing, text, ui, sizes } from '../../../theme';
 import {
   HOUR_HEIGHT, START_HOUR, END_HOUR, HOUR_LABEL_WIDTH,
   TOTAL_CANVAS_HEIGHT, getActivityPosition, formatHour,
@@ -311,16 +311,17 @@ export function CanvasScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg },
+  container: { ...ui.screenContainer },
   header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: spacing.screen, paddingTop: 12, paddingBottom: 2,
+    ...ui.screenHeader,
+    paddingTop: 12,
+    paddingBottom: 2,
   },
-  headerTitle: { color: colors.text, ...type.h1 },
-  searchBtn: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
-  searchIcon: { color: colors.muted, fontSize: 24 },
+  headerTitle: { ...ui.screenTitle },
+  searchBtn: { width: sizes.touchTarget, height: sizes.touchTarget, borderRadius: sizes.touchTarget / 2, alignItems: 'center', justifyContent: 'center' },
+  searchIcon: { color: colors.muted, fontSize: 22 },
 
-  loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  loadingContainer: { ...ui.loading },
   canvasWrapper: { flex: 1 },
   canvas: { flex: 1 },
 
@@ -332,7 +333,7 @@ const styles = StyleSheet.create({
     height: 0, overflow: 'visible', zIndex: 1,
   },
   hourLabel: {
-    color: colors.muted, ...type.caption,
+    color: colors.muted, ...text.caption,
     width: HOUR_LABEL_WIDTH - 8, textAlign: 'right', marginRight: 8, marginTop: -14,
   },
   hourNow: { color: colors.terra, fontWeight: '700' },
@@ -383,10 +384,10 @@ const styles = StyleSheet.create({
 
   fab: {
     position: 'absolute', bottom: 88, right: 20,
-    width: 48, height: 48, borderRadius: 24,
+    width: sizes.fab.size, height: sizes.fab.size, borderRadius: sizes.fab.radius,
     backgroundColor: colors.primary,
     alignItems: 'center', justifyContent: 'center',
     ...shadows.fab,
   },
-  fabText: { color: '#fff', fontSize: 22, lineHeight: 24 },
+  fabText: { color: '#fff', fontSize: 24, lineHeight: 26, marginTop: -1 },
 });

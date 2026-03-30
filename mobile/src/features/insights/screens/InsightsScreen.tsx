@@ -9,7 +9,7 @@ import { useAuthStore } from '../../../store/authStore';
 import { getAllActivities } from '../../../lib/db/activities';
 import { getLogsForUser } from '../../../lib/db/logs';
 import { Activity, ExperienceLog, Goal } from '../../../types';
-import { colors, radii, shadows, spacing, getCategoryColor } from '../../../theme';
+import { colors, radii, shadows, spacing, text, ui, upperLabel, getCategoryColor } from '../../../theme';
 import { useGoalsStore } from '../../../store/goalsStore';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -253,7 +253,7 @@ export function InsightsScreen({ navigation }: Props) {
           {/* Goals This Week */}
           {activeGoals.length > 0 && (
             <FadeIn index={sectionIdx++}>
-              <Text style={styles.sectionLabel}>Goals This Week</Text>
+              <Text style={styles.sectionLabel}>{upperLabel('Goals This Week')}</Text>
               <View style={styles.goalsWeekCard}>
                 {activeGoals.map((goal, i) => {
                   const pct = goal.target_value > 0 ? Math.min(1, goal.current_value / goal.target_value) : 0;
@@ -306,7 +306,7 @@ export function InsightsScreen({ navigation }: Props) {
           {/* Goal Suggestions */}
           {goalSuggestions.length > 0 && (
             <FadeIn index={sectionIdx++}>
-              <Text style={styles.sectionLabel}>Suggested Goals</Text>
+              <Text style={styles.sectionLabel}>{upperLabel('Suggested Goals')}</Text>
               <View style={styles.suggestionsCard}>
                 {goalSuggestions.map((s, i) => {
                   const catColor = getCategoryColor(s.categoryId);
@@ -341,7 +341,7 @@ export function InsightsScreen({ navigation }: Props) {
 
           {/* Completion Stats */}
           <FadeIn index={sectionIdx++}>
-            <Text style={styles.sectionLabel}>Completion</Text>
+            <Text style={styles.sectionLabel}>{upperLabel('Completion')}</Text>
             <View style={styles.statsRow}>
               <StatCard label="7-day rate" value={`${Math.round(stats7.rate * 100)}%`} sub={`${stats7.completed}/${stats7.total}`} />
               <StatCard label="30-day rate" value={`${Math.round(stats30.rate * 100)}%`} sub={`${stats30.completed}/${stats30.total}`} />
@@ -352,7 +352,7 @@ export function InsightsScreen({ navigation }: Props) {
           {/* Mood & Energy Trend */}
           {logs.length > 0 && (
             <FadeIn index={sectionIdx++}>
-              <Text style={styles.sectionLabel}>Mood & Energy (7 days)</Text>
+              <Text style={styles.sectionLabel}>{upperLabel('Mood & Energy — 7 Days')}</Text>
               <View style={styles.trendCard}>
                 <View style={styles.trendLegend}>
                   <View style={styles.legendItem}>
@@ -456,52 +456,61 @@ function LegendDot({ color, label }: { color: string; label: string }) {
 // ─── Styles ──────────────────────────────────────
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg },
+  container: { ...ui.screenContainer },
   header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: spacing.screen, paddingTop: 20, paddingBottom: 12,
+    ...ui.screenHeader,
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.md,
   },
-  headerTitle: { color: colors.text, fontSize: 28, fontWeight: '600' },
+  headerTitle: { ...ui.screenTitle },
   catBtn: {
     backgroundColor: colors.surface, borderRadius: radii.pill, borderWidth: 1, borderColor: colors.border,
     paddingHorizontal: 14, paddingVertical: 8,
   },
-  catBtnText: { color: colors.text2, fontSize: 13, fontWeight: '500' },
-  loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  catBtnText: { color: colors.text2, ...text.bodySm },
+  loadingContainer: { ...ui.loading },
   scrollContent: { paddingHorizontal: spacing.screen, paddingTop: 4 },
 
   // Empty state
-  emptyContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 },
-  emptyIcon: { fontSize: 48, marginBottom: 16 },
-  emptyTitle: { color: colors.text, fontSize: 20, fontWeight: '600', marginBottom: 8 },
-  emptyBody: { color: colors.muted, fontSize: 14, textAlign: 'center', lineHeight: 20 },
+  emptyContainer: { ...ui.emptyState },
+  emptyIcon: { ...ui.emptyStateEmoji },
+  emptyTitle: { ...ui.emptyStateTitle },
+  emptyBody: { ...ui.emptyStateBody },
 
   // Insight banner
   insightBanner: {
-    backgroundColor: colors.primaryBg, borderRadius: radii.card, padding: 16,
-    marginBottom: 20, ...shadows.card,
+    backgroundColor: colors.primaryBg,
+    borderRadius: radii.card,
+    padding: spacing.lg,
+    marginBottom: spacing.xl,
+    borderLeftWidth: 3,
+    borderLeftColor: colors.primary,
+    ...shadows.sm,
   },
-  insightText: { color: colors.primary, fontSize: 14, fontWeight: '500', lineHeight: 20 },
+  insightText: { color: colors.primary, ...text.bodyMd, fontWeight: '500' as const },
 
-  // Section labels
+  // Section labels — use upperLabel() on the string, not textTransform
   sectionLabel: {
-    color: colors.text, fontSize: 16, fontWeight: '600', marginBottom: 10, marginTop: 4,
+    ...ui.sectionLabel,
+    marginTop: spacing.sm,
+    marginBottom: spacing.sm,
   },
 
   // Stat cards
-  statsRow: { flexDirection: 'row', gap: 12, marginBottom: 12 },
+  statsRow: { flexDirection: 'row', gap: spacing.md, marginBottom: spacing.md },
   statCard: {
     flex: 1, backgroundColor: colors.surface, borderRadius: radii.card,
-    padding: 16, alignItems: 'center', ...shadows.card,
+    padding: spacing.lg, alignItems: 'center',
+    borderWidth: 1, borderColor: colors.border,
+    ...shadows.card,
   },
   statValue: {
-    color: colors.primary, fontSize: 28, fontWeight: '700',
-    fontVariant: ['tabular-nums'],
+    color: colors.primary, ...text.numeric, fontVariant: ['tabular-nums'],
   },
-  statLabel: { color: colors.text2, fontSize: 12, fontWeight: '500', marginTop: 2 },
+  statLabel: { color: colors.text2, ...text.caption, marginTop: 2 },
   statSub: {
-    color: colors.muted, fontSize: 11, marginTop: 2,
-    fontVariant: ['tabular-nums'],
+    color: colors.muted, ...text.micro, marginTop: 2,
+    fontVariant: ['tabular-nums' as const],
   },
 
   // Completion bar

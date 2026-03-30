@@ -12,7 +12,7 @@ import Animated, {
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import * as Haptics from 'expo-haptics';
 import { format, parseISO, addMinutes } from 'date-fns';
-import { colors, getCategoryColor, radii, shadows, type } from '../../../theme';
+import { colors, getCategoryColor, radii, shadows, text, statusColors, sizes, withAlpha } from '../../../theme';
 import { Activity, ExperienceLog } from '../../../types';
 import { HOUR_HEIGHT } from '../../../lib/calendar';
 
@@ -229,18 +229,19 @@ export function ActivityCard({ activity, log, onPress, onQuickComplete, onResche
           style={[
             styles.card,
             {
-              borderLeftColor: catColor.solid,
-              backgroundColor: catColor.light,
+              borderLeftColor: isDone ? colors.primary : isNow ? colors.terra : catColor.solid,
+              backgroundColor: isDone
+                ? colors.primaryBg
+                : isSkipped
+                ? colors.surface2
+                : catColor.light,
               borderRadius: cardBorderRadius,
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: 1 },
-              shadowOpacity: 0.04,
-              shadowRadius: 2,
-              elevation: 1,
+              ...shadows.sm,
             },
             height !== undefined && { height, paddingVertical: compact ? 2 : 6 },
             isNow && styles.nowCard,
-            isSkipped && { opacity: 0.4 },
+            isSkipped && { opacity: 0.45 },
+            isDone && styles.doneCard,
             cardAnimStyle,
           ]}
         >
@@ -295,8 +296,8 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   card: {
-    borderLeftWidth: 3,
-    borderRadius: 12,
+    borderLeftWidth: sizes.card.borderLeft,
+    borderRadius: radii.card,
     paddingVertical: 10,
     paddingHorizontal: 14,
     overflow: 'hidden',
@@ -304,7 +305,9 @@ const styles = StyleSheet.create({
   },
   nowCard: {
     borderLeftWidth: 4,
-    borderLeftColor: colors.terra,
+  },
+  doneCard: {
+    borderLeftWidth: 2,
   },
   topRow: {
     flexDirection: 'row',
@@ -313,7 +316,7 @@ const styles = StyleSheet.create({
   },
   content: { flex: 1 },
   title: {
-    color: colors.text, fontSize: 15, fontWeight: '600', lineHeight: 20,
+    color: colors.text, ...text.cardTitle,
   },
   titleCompact: {
     fontSize: 12, lineHeight: 16,
@@ -325,7 +328,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row', gap: 8, marginTop: 4,
   },
   meta: {
-    color: colors.text2, fontSize: 12, fontWeight: '500',
+    color: colors.text2, ...text.caption,
   },
   indicators: {
     flexDirection: 'row', gap: 4, alignItems: 'center',

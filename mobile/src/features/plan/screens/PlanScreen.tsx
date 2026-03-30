@@ -8,7 +8,7 @@ import { format, addDays, parseISO, isSameDay } from 'date-fns';
 import { useAuthStore } from '../../../store/authStore';
 import { useActivitiesStore } from '../../../store/activitiesStore';
 import { Activity, Goal } from '../../../types';
-import { colors, radii, shadows, spacing, getCategoryColor } from '../../../theme';
+import { colors, radii, shadows, spacing, text, ui, sizes, getCategoryColor } from '../../../theme';
 import { START_HOUR, END_HOUR, formatHour } from '../../../lib/calendar';
 import { GoalSection } from '../../goals/components/GoalSection';
 import { GoalSuggestionCard } from '../../goals/components/GoalSuggestionCard';
@@ -635,15 +635,16 @@ function formatDuration(mins: number): string {
 // ─── Styles ──────────────────────────────────────
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg },
+  container: { ...ui.screenContainer },
   header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: spacing.screen, paddingTop: 16, paddingBottom: 8,
+    ...ui.screenHeader,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.sm,
   },
-  headerTitle: { color: colors.text, fontSize: 28, fontWeight: '600' },
-  headerSubtitle: { color: colors.muted, fontSize: 13, marginTop: 2 },
-  loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  scrollContent: { paddingHorizontal: spacing.screen, paddingTop: 8 },
+  headerTitle: { ...ui.screenTitle },
+  headerSubtitle: { color: colors.muted, ...text.bodySm, marginTop: 2 },
+  loadingContainer: { ...ui.loading },
+  scrollContent: { paddingHorizontal: spacing.screen, paddingTop: spacing.sm },
 
   // Sections
   section: { marginBottom: 24 },
@@ -652,7 +653,7 @@ const styles = StyleSheet.create({
     minHeight: 40, // adequate tap target
   },
   sectionIcon: { fontSize: 16 },
-  sectionTitle: { color: colors.text, fontSize: 16, fontWeight: '600', flex: 1 },
+  sectionTitle: { color: colors.text, ...text.sectionTitle, flex: 1 },
   countBadge: {
     backgroundColor: colors.primaryBg,
     borderRadius: 10,
@@ -723,21 +724,17 @@ const styles = StyleSheet.create({
     paddingLeft: 17, // 14 + 3 to match alignment with bordered rows
   },
   rowContent: { flex: 1 },
-  rowTitle: { color: colors.text, fontSize: 14, fontWeight: '500' },
+  rowTitle: { color: colors.text, ...text.rowTitle },
   rowTitleDone: { textDecorationLine: 'line-through', color: colors.muted },
   rowMeta: {
-    color: colors.text2, fontSize: 11, marginTop: 2,
-    fontVariant: ['tabular-nums'],
+    color: colors.text2, ...text.caption, marginTop: 2,
+    fontVariant: ['tabular-nums' as const],
   },
 
   // Checkbox — 22px visible, hitSlop 11px each side = 44px hit area (WCAG)
-  checkbox: {
-    width: 22, height: 22, borderRadius: 11,
-    borderWidth: 2, borderColor: colors.border,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  checkboxDone: { backgroundColor: colors.done, borderColor: colors.done },
-  checkmark: { color: '#fff', fontSize: 12, fontWeight: '800' },
+  checkbox: { ...ui.checkbox },
+  checkboxDone: { ...ui.checkboxDone },
+  checkmark: { ...ui.checkmark },
   categoryDot: { width: 8, height: 8, borderRadius: 4 },
 
   // Action buttons
@@ -759,11 +756,10 @@ const styles = StyleSheet.create({
 
   // CTA
   ctaButton: {
-    backgroundColor: colors.primary, borderRadius: radii.button,
-    paddingVertical: 16, alignItems: 'center', marginTop: 8,
-    ...shadows.card,
+    ...ui.primaryButton,
+    marginTop: spacing.sm,
   },
-  ctaText: { color: '#fff', fontSize: 15, fontWeight: '600', letterSpacing: 0.3 },
+  ctaText: { ...ui.primaryButtonText },
 
   bottomPadding: { height: 100 },
 
