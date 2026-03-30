@@ -7,7 +7,7 @@ import { SYSTEM_CATEGORIES } from '../../features/categories/systemCategories';
 const USER_ID = 'dev-user-001';
 
 // Custom categories mapped from Any.do categories not covered by system ones
-const CUSTOM_CATEGORIES = [
+export const CUSTOM_CATEGORIES = [
   { id: 'cust-social', name: 'Social', color: '#14B8A6', icon: '👥', sort_order: 8 },
   { id: 'cust-family', name: 'Family', color: '#F97316', icon: '🏠', sort_order: 9 },
   { id: 'cust-finance', name: 'Finance', color: '#10B981', icon: '💰', sort_order: 10 },
@@ -94,7 +94,7 @@ interface SeedLog {
   logged_at: string;
 }
 
-function buildActivities(): { activities: SeedActivity[]; logs: SeedLog[] } {
+export function buildActivities(): { activities: SeedActivity[]; logs: SeedLog[] } {
   const activities: SeedActivity[] = [];
   const logs: SeedLog[] = [];
 
@@ -384,14 +384,14 @@ interface SeedGoal {
   updated_at: string;
 }
 
-function buildGoals(): SeedGoal[] {
+export function buildGoals(userId: string = USER_ID): SeedGoal[] {
   const ts = nowISO();
   return [
-    { id: uuid(), user_id: USER_ID, title: 'Read every day', metric_type: 'TIME', target_value: 30, frequency: 'DAILY', category_id: 'sys-learning', specific_days: null, is_active: 1, created_at: ts, updated_at: ts },
-    { id: uuid(), user_id: USER_ID, title: 'Exercise regularly', metric_type: 'SESSIONS', target_value: 4, frequency: 'WEEKLY', category_id: 'sys-health', specific_days: null, is_active: 1, created_at: ts, updated_at: ts },
-    { id: uuid(), user_id: USER_ID, title: 'Deep work focus', metric_type: 'TIME', target_value: 180, frequency: 'DAILY', category_id: 'sys-deep-work', specific_days: null, is_active: 1, created_at: ts, updated_at: ts },
-    { id: uuid(), user_id: USER_ID, title: 'Connect with family', metric_type: 'SESSIONS', target_value: 3, frequency: 'WEEKLY', category_id: 'cust-family', specific_days: null, is_active: 1, created_at: ts, updated_at: ts },
-    { id: uuid(), user_id: USER_ID, title: 'Creative time', metric_type: 'TIME', target_value: 60, frequency: 'WEEKLY', category_id: 'sys-creative', specific_days: null, is_active: 1, created_at: ts, updated_at: ts },
+    { id: uuid(), user_id: userId, title: 'Read every day', metric_type: 'TIME', target_value: 30, frequency: 'DAILY', category_id: 'sys-learning', specific_days: null, is_active: 1, created_at: ts, updated_at: ts },
+    { id: uuid(), user_id: userId, title: 'Exercise regularly', metric_type: 'SESSIONS', target_value: 4, frequency: 'WEEKLY', category_id: 'sys-health', specific_days: null, is_active: 1, created_at: ts, updated_at: ts },
+    { id: uuid(), user_id: userId, title: 'Deep work focus', metric_type: 'TIME', target_value: 180, frequency: 'DAILY', category_id: 'sys-deep-work', specific_days: null, is_active: 1, created_at: ts, updated_at: ts },
+    { id: uuid(), user_id: userId, title: 'Connect with family', metric_type: 'SESSIONS', target_value: 3, frequency: 'WEEKLY', category_id: 'cust-family', specific_days: null, is_active: 1, created_at: ts, updated_at: ts },
+    { id: uuid(), user_id: userId, title: 'Creative time', metric_type: 'TIME', target_value: 60, frequency: 'WEEKLY', category_id: 'sys-creative', specific_days: null, is_active: 1, created_at: ts, updated_at: ts },
   ];
 }
 
