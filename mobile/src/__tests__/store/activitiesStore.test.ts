@@ -1,6 +1,8 @@
 // Unit tests for activitiesStore — carry-forward, task creation, activity type switching
 import { useActivitiesStore } from '../../store/activitiesStore';
 import { Activity } from '../../types';
+import { DEV_USER } from '../fixtures/users';
+import { makeActivity, makeTask, resetSeq } from '../fixtures/activities';
 
 // ─── Mock DB layer ──────────────────────────────────────────────────────────
 
@@ -30,6 +32,8 @@ jest.mock('../../lib/db/activities', () => ({
   createTask: (...a: unknown[]) => mockCreateTask(...a),
   updateActivity: (...a: unknown[]) => mockUpdateActivity(...a),
   deleteActivity: (...a: unknown[]) => mockDeleteActivity(...a),
+  generateRecurringInstances: jest.fn().mockResolvedValue(undefined),
+  getActivity: jest.fn().mockResolvedValue(null),
 }));
 
 jest.mock('../../lib/db/logs', () => ({
@@ -47,51 +51,19 @@ jest.mock('../../lib/ai', () => ({
   categorizeActivity: jest.fn().mockResolvedValue(null),
 }));
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+// sync is a no-op in unit tests — push/pull tested separately in sync tests
+jest.mock('../../lib/sync', () => ({
+  pushChanges: jest.fn().mockResolvedValue(undefined),
+  isDevUser: jest.fn().mockReturnValue(true),
+}));
 
-function makeActivity(overrides: Partial<Activity> = {}): Activity {
-  const now = new Date().toISOString();
-  return {
-    id: 'act-1',
-    user_id: 'user-1',
-    activity_type: 'TIME_BLOCK',
-    title: 'Test activity',
-    description: null,
-    start_time: now,
-    duration_minutes: 60,
-    category_id: 'sys-deep-work',
-    assigned_date: now.substring(0, 10),
-    is_scheduled: true,
-    mindset_prompt: null,
-    mindset_overridden: false,
-    recurrence_type: 'NONE',
-    recurrence_days: [],
-    subtasks: [],
-    status: 'PLANNED',
-    priority: 'MEDIUM',
-    actual_start: null,
-    actual_end: null,
-    goal_id: null,
-    created_at: now,
-    updated_at: now,
-    ...overrides,
-  };
-}
-
-function makeTask(overrides: Partial<Activity> = {}): Activity {
-  return makeActivity({
-    id: 'task-1',
-    activity_type: 'TASK',
-    is_scheduled: false,
-    duration_minutes: 0,
-    ...overrides,
-  });
-}
+// makeActivity, makeTask, resetSeq imported from fixtures
 
 // ─── Tests ───────────────────────────────────────────────────────────────────
 
 describe('activitiesStore', () => {
   beforeEach(() => {
+    resetSeq();
     useActivitiesStore.setState({
       activities: [],
       untimedTasks: [],
@@ -100,6 +72,7 @@ describe('activitiesStore', () => {
       selectedDate: new Date(),
       loading: false,
       error: null,
+      currentUserId: DEV_USER.id,
       planActivities: [],
       planTasks: [],
       carryForward: [],
@@ -120,7 +93,7 @@ describe('activitiesStore', () => {
       mockGetUntimedTasksForDay.mockResolvedValueOnce([]);
       mockGetOverdueTasks.mockResolvedValueOnce([]);
 
-      await useActivitiesStore.getState().loadDay('user-1', new Date());
+      await useActivitiesStore.getState().loadDay(DEV_USER.id, new Date());
 
       const { activities } = useActivitiesStore.getState();
       expect(activities).toHaveLength(2);
@@ -139,7 +112,7 @@ describe('activitiesStore', () => {
       mockGetUntimedTasksForDay.mockResolvedValueOnce([]);
       mockGetOverdueTasks.mockResolvedValueOnce([]);
 
-      await useActivitiesStore.getState().loadDay('user-1', new Date());
+      await useActivitiesStore.getState().loadDay(DEV_USER.id, new Date());
 
       const { activities } = useActivitiesStore.getState();
       expect(activities[0].id).toBe('overdue-1');
@@ -155,7 +128,7 @@ describe('activitiesStore', () => {
       mockGetOverdueTasks.mockResolvedValueOnce([overdueTask]);
       mockGetInProgressTasks.mockResolvedValueOnce([]);
 
-      await useActivitiesStore.getState().loadDay('user-1', new Date());
+      await useActivitiesStore.getState().loadDay(DEV_USER.id, new Date());
 
       const { untimedTasks } = useActivitiesStore.getState();
       expect(untimedTasks).toHaveLength(1);
@@ -170,7 +143,7 @@ describe('activitiesStore', () => {
       mockGetUntimedTasksForDay.mockResolvedValueOnce([]);
       mockGetOverdueTasks.mockResolvedValueOnce([]);
 
-      await useActivitiesStore.getState().loadDay('user-1', new Date());
+      await useActivitiesStore.getState().loadDay(DEV_USER.id, new Date());
 
       const { activities } = useActivitiesStore.getState();
       expect(activities.some(a => a.id === 'inprogress-1')).toBe(true);
@@ -184,7 +157,7 @@ describe('activitiesStore', () => {
       mockGetOverdueTasks.mockResolvedValueOnce([]);
       mockGetInProgressTasks.mockResolvedValueOnce([]);
 
-      const promise = useActivitiesStore.getState().loadDay('user-1', new Date());
+      const promise = useActivitiesStore.getState().loadDay(DEV_USER.id, new Date());
       expect(useActivitiesStore.getState().loading).toBe(true);
       await promise;
       expect(useActivitiesStore.getState().loading).toBe(false);
@@ -199,7 +172,7 @@ describe('activitiesStore', () => {
       mockCreateTask.mockResolvedValueOnce(createdTask);
 
       const result = await useActivitiesStore.getState().addTask({
-        user_id: 'user-1',
+        user_id: DEV_USER.id,
         title: 'My new task',
         category_id: 'sys-personal',
       });
@@ -207,7 +180,7 @@ describe('activitiesStore', () => {
       expect(result.activity_type).toBe('TASK');
       expect(result.title).toBe('My new task');
       expect(mockCreateTask).toHaveBeenCalledWith(expect.objectContaining({
-        user_id: 'user-1',
+        user_id: DEV_USER.id,
         title: 'My new task',
       }));
       const { untimedTasks } = useActivitiesStore.getState();
@@ -220,7 +193,7 @@ describe('activitiesStore', () => {
       mockCreateTask.mockResolvedValueOnce(createdTask);
 
       await useActivitiesStore.getState().addTask({
-        user_id: 'user-1',
+        user_id: DEV_USER.id,
         title: 'Dated task',
         assigned_date: today,
       });
@@ -238,7 +211,7 @@ describe('activitiesStore', () => {
       mockCreateActivity.mockResolvedValueOnce(created);
 
       const result = await useActivitiesStore.getState().addActivity({
-        user_id: 'user-1',
+        user_id: DEV_USER.id,
         title: 'Deep work',
         start_time: new Date().toISOString(),
         duration_minutes: 90,
@@ -253,7 +226,7 @@ describe('activitiesStore', () => {
       mockCreateActivity.mockResolvedValueOnce(created);
 
       const result = await useActivitiesStore.getState().addActivity({
-        user_id: 'user-1',
+        user_id: DEV_USER.id,
         title: 'Task',
         start_time: new Date().toISOString(),
         duration_minutes: 0,
@@ -269,7 +242,7 @@ describe('activitiesStore', () => {
       mockCreateActivity.mockResolvedValueOnce(created);
 
       const result = await useActivitiesStore.getState().addActivity({
-        user_id: 'user-1',
+        user_id: DEV_USER.id,
         title: 'Scheduled',
         start_time: new Date().toISOString(),
         duration_minutes: 60,
@@ -284,7 +257,7 @@ describe('activitiesStore', () => {
       mockCreateActivity.mockResolvedValueOnce(created);
 
       const result = await useActivitiesStore.getState().addActivity({
-        user_id: 'user-1',
+        user_id: DEV_USER.id,
         title: 'Unscheduled task',
         start_time: new Date().toISOString(),
         duration_minutes: 0,
@@ -310,7 +283,7 @@ describe('activitiesStore', () => {
       mockGetOverdueTasks.mockResolvedValueOnce([]);
       mockGetInProgressTasks.mockResolvedValueOnce([]);
 
-      await useActivitiesStore.getState().loadDay('user-1', new Date());
+      await useActivitiesStore.getState().loadDay(DEV_USER.id, new Date());
 
       expect(mockGetOverdueActivities).toHaveBeenCalled();
       const { activities } = useActivitiesStore.getState();
@@ -327,7 +300,7 @@ describe('activitiesStore', () => {
       mockGetOverdueTasks.mockResolvedValueOnce([]);
       mockGetInProgressTasks.mockResolvedValueOnce([]);
 
-      await useActivitiesStore.getState().loadDay('user-1', new Date());
+      await useActivitiesStore.getState().loadDay(DEV_USER.id, new Date());
 
       const { activities } = useActivitiesStore.getState();
       expect(activities.some(a => a.id === 'done-1')).toBe(false);
