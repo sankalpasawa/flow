@@ -6,10 +6,11 @@ import {
   getUntimedTasksForDay, getOverdueTasks, getSomedayTasks,
   getInProgressActivities, getInProgressTasks,
   createActivity, createTask, updateActivity, deleteActivity,
+  generateRecurringInstances,
   CreateActivityInput, CreateTaskInput, UpdateActivityInput,
 } from '../lib/db/activities';
 import { getLogForActivity, createLog, CreateLogInput } from '../lib/db/logs';
-import { scheduleLogNudge, cancelLogNudge } from '../lib/notifications';
+import { scheduleLogNudge, cancelLogNudge, schedulePlanningNudge } from '../lib/notifications';
 import { generateMindsetPrompt, categorizeActivity } from '../lib/ai';
 import { SYSTEM_CATEGORIES } from '../features/categories/systemCategories';
 
@@ -84,6 +85,10 @@ export const useActivitiesStore = create<ActivitiesState>((set, get) => ({
         somedayTasks: someday,
         planLoading: false,
       });
+
+      // Schedule end-of-day planning nudge if tomorrow is sparse
+      const tomorrowTotal = tomorrowActs.length + tomorrowTasks.length;
+      schedulePlanningNudge(tomorrowTotal).catch(() => {});
     } catch (err) {
       console.error('[DayFlow] Failed to load plan:', err);
       set({ planLoading: false });
@@ -173,6 +178,9 @@ export const useActivitiesStore = create<ActivitiesState>((set, get) => ({
     set({ loading: true, error: null });
     try {
       const dateStr = format(date, 'yyyy-MM-dd');
+
+      // Auto-populate recurring activity instances for this day (fire and forget errors)
+      await generateRecurringInstances(userId, dateStr).catch(() => {});
       const todayStr = format(new Date(), 'yyyy-MM-dd');
       const isToday = dateStr === todayStr;
       const [dayActs, overdueActs, dayTasks, overdueTsks] = await Promise.all([

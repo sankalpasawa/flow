@@ -70,6 +70,58 @@ function nudgeId(activityId: string): string {
   return `log-nudge-${activityId}`;
 }
 
+export async function schedulePlanningNudge(tomorrowActivityCount: number): Promise<void> {
+  if (Platform.OS === 'web') return;
+  if (!Device.isDevice) return;
+
+  // Cancel any existing planning nudge
+  await cancelPlanningNudge();
+
+  // Only nudge if tomorrow has fewer than 3 activities planned
+  if (tomorrowActivityCount >= 3) return;
+
+  // Schedule between 8:00 PM and 9:30 PM tonight
+  const now = new Date();
+  const nudgeTime = new Date();
+  nudgeTime.setHours(20, 0, 0, 0); // 8:00 PM
+
+  // If it's already past 9:30 PM, skip for today
+  if (now.getHours() >= 21 && now.getMinutes() > 30) return;
+
+  // If it's past 8 PM, schedule for now + 5 min so it fires soon
+  if (now >= nudgeTime) {
+    nudgeTime.setTime(now.getTime() + 5 * 60000);
+  }
+
+  // Don't schedule if nudge time is in the past
+  if (nudgeTime <= now) return;
+
+  const count = tomorrowActivityCount;
+  const body = count === 0
+    ? "Nothing planned yet — take 2 minutes to set your intentions for tomorrow"
+    : `You have ${count} ${count === 1 ? 'activity' : 'activities'} planned — add a few more to fill your day`;
+
+  await Notifications.scheduleNotificationAsync({
+    identifier: PLANNING_NUDGE_ID,
+    content: {
+      title: "Plan your tomorrow \uD83C\uDF05",
+      body,
+      data: { type: 'planning_nudge' },
+    },
+    trigger: {
+      type: Notifications.SchedulableTriggerInputTypes.DATE,
+      date: nudgeTime,
+    },
+  });
+}
+
+export async function cancelPlanningNudge(): Promise<void> {
+  if (Platform.OS === 'web') return;
+  await Notifications.cancelScheduledNotificationAsync(PLANNING_NUDGE_ID).catch(() => {});
+}
+
+const PLANNING_NUDGE_ID = 'planning-nudge-tonight';
+
 export function addNotificationResponseListener(
   handler: (response: Notifications.NotificationResponse) => void
 ) {

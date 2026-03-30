@@ -243,6 +243,19 @@ export function CanvasScreen({ navigation }: Props) {
                 </View>
               )}
 
+              {/* Empty state — no activities on canvas for this day */}
+              {timedActivities.length === 0 && !loading && (
+                <View style={styles.canvasEmpty} pointerEvents="none">
+                  <Text style={styles.canvasEmptyEmoji}>{isToday ? '☀️' : '✨'}</Text>
+                  <Text style={styles.canvasEmptyTitle}>
+                    {isToday ? 'Nothing scheduled yet' : 'Free day'}
+                  </Text>
+                  <Text style={styles.canvasEmptyBody}>
+                    Tap any hour slot to add an activity
+                  </Text>
+                </View>
+              )}
+
               {/* Activity blocks */}
               {timedActivities.map((activity) => {
                 const { top, height } = getActivityPosition(activity.start_time, activity.duration_minutes);
@@ -340,6 +353,33 @@ const styles = StyleSheet.create({
   },
 
   activityBlock: { position: 'absolute', left: HOUR_LABEL_WIDTH, right: 12, zIndex: 5 },
+
+  // Canvas empty state (centered within the timeline area)
+  canvasEmpty: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 40,
+    pointerEvents: 'none',
+  },
+  canvasEmptyEmoji: { fontSize: 40, marginBottom: 12 },
+  canvasEmptyTitle: {
+    color: colors.text2,
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginBottom: 6,
+  },
+  canvasEmptyBody: {
+    color: colors.muted,
+    fontSize: 13,
+    textAlign: 'center',
+    lineHeight: 19,
+  },
 
   fab: {
     position: 'absolute', bottom: 88, right: 20,

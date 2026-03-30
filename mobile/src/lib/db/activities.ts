@@ -316,6 +316,158 @@ export async function setMindsetPrompt(id: string, prompt: string): Promise<void
   await updateActivity(id, { mindset_prompt: prompt });
 }
 
+/**
+ * Check if a proposed TIME_BLOCK overlaps with any existing scheduled activity.
+ * Returns the conflicting activity if found, null if the slot is free.
+ */
+export async function checkActivityOverlap(
+  userId: string,
+  startTime: string,
+  durationMinutes: number,
+  excludeId?: string,
+): Promise<Activity | null> {
+  if (durationMinutes <= 0) return null;
+
+  const proposedStart = new Date(startTime).getTime();
+  const proposedEnd = proposedStart + durationMinutes * 60000;
+  const dateStr = startTime.substring(0, 10);
+
+  const db = await getDb();
+  const rows = await db.getAllAsync<Record<string, unknown>>(
+    `SELECT a.*, c.name as cat_name, c.color as cat_color, c.icon as cat_icon
+     FROM activities a
+     LEFT JOIN categories c ON a.category_id = c.id
+     WHERE a.user_id = ? AND date(a.start_time) = ? AND a.is_scheduled = 1
+       AND a.activity_type = 'TIME_BLOCK' AND a.deleted = 0`,
+    [userId, dateStr],
+  );
+
+  for (const row of rows) {
+    const activity = mapRow(row);
+    if (excludeId && activity.id === excludeId) continue;
+    if (activity.duration_minutes <= 0) continue;
+
+    const existStart = new Date(activity.start_time).getTime();
+    const existEnd = existStart + activity.duration_minutes * 60000;
+
+    // Overlap: intervals intersect (but not just touching)
+    if (proposedStart < existEnd && proposedEnd > existStart) {
+      return activity;
+    }
+  }
+  return null;
+}
+
+/**
+ * Generate instances of recurring activities for the given date.
+ * Creates a new PLANNED activity for each template that should recur on that day,
+ * skipping if an identical title + start-time instance already exists.
+ */
+export async function generateRecurringInstances(userId: string, dateStr: string): Promise<void> {
+  const db = await getDb();
+
+  // Load all activities that have a recurrence pattern
+  const rows = await db.getAllAsync<Record<string, unknown>>(
+    `SELECT a.*, c.name as cat_name, c.color as cat_color, c.icon as cat_icon
+     FROM activities a
+     LEFT JOIN categories c ON a.category_id = c.id
+     WHERE a.user_id = ? AND a.deleted = 0`,
+    [userId],
+  );
+  const all = rows.map(mapRow);
+  const templates = all.filter(a => a.recurrence_type !== 'NONE' && a.is_scheduled);
+
+  if (templates.length === 0) return;
+
+  const targetDate = new Date(dateStr + 'T00:00:00');
+
+  for (const tmpl of templates) {
+    if (!shouldOccurOnDate(tmpl, targetDate)) continue;
+
+    // Compute the start_time for this instance on the target date
+    const originalStart = new Date(tmpl.start_time);
+    const instanceStart = new Date(dateStr + 'T' + padTime(originalStart.getHours(), originalStart.getMinutes()));
+
+    // Check if an instance already exists (same title + overlapping time on that date)
+    const alreadyExists = all.some(a => {
+      if (a.user_id !== userId) return false;
+      if (a.title !== tmpl.title) return false;
+      if (!a.start_time.startsWith(dateStr)) return false;
+      // Same hour/minute = same instance
+      const aDate = new Date(a.start_time);
+      return aDate.getHours() === originalStart.getHours() &&
+             aDate.getMinutes() === originalStart.getMinutes();
+    });
+
+    if (alreadyExists) continue;
+
+    // Create the instance
+    const id = generateId();
+    const now = nowISO();
+    const recurrenceDays = tmpl.recurrence_days?.length ? JSON.stringify(tmpl.recurrence_days) : null;
+
+    await db.runAsync(
+      `INSERT INTO activities
+        (id, user_id, activity_type, title, description, start_time, duration_minutes, category_id,
+         assigned_date, is_scheduled, mindset_prompt, mindset_overridden, recurrence_type, recurrence_days,
+         subtasks, status, priority, actual_start, actual_end, goal_id, created_at, updated_at, synced, deleted)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, NULL, 0, 'NONE', ?, ?, 'PLANNED', ?, NULL, NULL, ?, ?, ?, 0, 0)`,
+      [
+        id, userId, tmpl.activity_type, tmpl.title, tmpl.description ?? null,
+        instanceStart.toISOString(), tmpl.duration_minutes, tmpl.category_id,
+        dateStr, recurrenceDays,
+        tmpl.subtasks?.length ? JSON.stringify(tmpl.subtasks) : null,
+        tmpl.priority ?? 'MEDIUM', tmpl.goal_id ?? null, now, now,
+      ],
+    );
+  }
+}
+
+function padTime(hours: number, minutes: number): string {
+  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`;
+}
+
+const WEEKDAY_MAP: Record<number, Weekday> = { 0: 'Sun', 1: 'Mon', 2: 'Tue', 3: 'Wed', 4: 'Thu', 5: 'Fri', 6: 'Sat' };
+
+function shouldOccurOnDate(activity: Activity, date: Date): boolean {
+  const dayOfWeek = WEEKDAY_MAP[date.getDay()];
+  const originalStart = new Date(activity.start_time);
+  const originalDayOfWeek = WEEKDAY_MAP[originalStart.getDay()];
+
+  // If recurrence_days is populated, use that for membership check
+  if (activity.recurrence_days?.length) {
+    return activity.recurrence_days.includes(dayOfWeek);
+  }
+
+  switch (activity.recurrence_type) {
+    case 'DAILY':
+      return true;
+    case 'WEEKDAYS':
+      return date.getDay() >= 1 && date.getDay() <= 5;
+    case 'WEEKLY':
+      return dayOfWeek === originalDayOfWeek;
+    case 'BIWEEKLY': {
+      // Every 2 weeks from the original start date
+      const diffMs = date.getTime() - originalStart.getTime();
+      const diffWeeks = Math.round(diffMs / (7 * 24 * 60 * 60 * 1000));
+      return dayOfWeek === originalDayOfWeek && diffWeeks % 2 === 0;
+    }
+    case 'TRIWEEKLY': {
+      const diffMs = date.getTime() - originalStart.getTime();
+      const diffWeeks = Math.round(diffMs / (7 * 24 * 60 * 60 * 1000));
+      return dayOfWeek === originalDayOfWeek && diffWeeks % 3 === 0;
+    }
+    case 'MONTHLY':
+      return date.getDate() === originalStart.getDate();
+    case 'BIMONTHLY':
+      return date.getDate() === originalStart.getDate() && date.getMonth() % 2 === originalStart.getMonth() % 2;
+    case 'QUARTERLY':
+      return date.getDate() === originalStart.getDate() && date.getMonth() % 3 === originalStart.getMonth() % 3;
+    default:
+      return false;
+  }
+}
+
 function parseJsonArray<T>(val: unknown): T[] {
   if (!val) return [];
   if (typeof val === 'string') {
