@@ -14,6 +14,7 @@ import { scheduleLogNudge, cancelLogNudge, schedulePlanningNudge } from '../lib/
 import { generateMindsetPrompt, categorizeActivity } from '../lib/ai';
 import { SYSTEM_CATEGORIES } from '../features/categories/systemCategories';
 import { pushChanges } from '../lib/sync';
+import { analytics } from '../lib/analytics';
 
 interface ActivitiesState {
   activities: Activity[];
@@ -171,6 +172,7 @@ export const useActivitiesStore = create<ActivitiesState>((set, get) => ({
     try {
       const task = await createTask(input);
       set((s) => ({ untimedTasks: [...s.untimedTasks, task] }));
+      analytics.track('activity_created', { type: 'TASK', category_id: task.category_id });
       pushChanges(input.user_id).catch(() => {});
       return task;
     } catch (err) {
@@ -233,7 +235,7 @@ export const useActivitiesStore = create<ActivitiesState>((set, get) => ({
         console.warn('[DayFlow] Failed to schedule nudge:', err)
       );
 
-      // Sync new activity to Supabase (fire-and-forget; no-op for dev users)
+      analytics.track('activity_created', { type: activity.activity_type, category_id: activity.category_id });
       pushChanges(input.user_id).catch(() => {});
 
       // Async AI: categorize then generate mindset prompt (never block)
@@ -296,6 +298,7 @@ export const useActivitiesStore = create<ActivitiesState>((set, get) => ({
       set((s) => ({
         activities: s.activities.filter((a) => a.id !== id),
       }));
+      analytics.track('activity_deleted');
       const { currentUserId } = get();
       if (currentUserId) pushChanges(currentUserId).catch(() => {});
     } catch (err) {
@@ -348,6 +351,7 @@ export const useActivitiesStore = create<ActivitiesState>((set, get) => ({
         planTasks: updateList(s.planTasks),
         carryForward: updateList(s.carryForward),
       }));
+      if (newStatus === 'COMPLETED') analytics.track('activity_completed', { type: activity.activity_type });
       const { currentUserId } = get();
       if (currentUserId) pushChanges(currentUserId).catch(() => {});
     } catch (err) {
@@ -359,7 +363,7 @@ export const useActivitiesStore = create<ActivitiesState>((set, get) => ({
     try {
       const log = await createLog(input);
       set((s) => ({ logs: { ...s.logs, [input.activity_id]: log } }));
-      // Sync the new log to Supabase (fire-and-forget)
+      analytics.track('log_submitted', { mood: log.mood, energy: log.energy, completion_pct: log.completion_pct });
       const { currentUserId } = get();
       if (currentUserId) pushChanges(currentUserId).catch(() => {});
       return log;

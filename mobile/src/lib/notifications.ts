@@ -1,7 +1,36 @@
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Activity } from '../types';
+
+// ─── Preference keys (must match SettingsScreen) ──────────────────────────────
+const PREF_LOG_REMINDERS  = 'dayflow_pref_log_reminders';
+const PREF_PLANNING_NUDGE = 'dayflow_pref_planning_nudge';
+const PREF_QUIET_START    = 'dayflow_pref_quiet_start';
+const PREF_QUIET_END      = 'dayflow_pref_quiet_end';
+
+async function isEnabled(key: string): Promise<boolean> {
+  try {
+    const v = await AsyncStorage.getItem(key);
+    return v === null ? true : v === 'true'; // default on
+  } catch { return true; }
+}
+
+/** Returns true if the given hour falls within the user's quiet hours. */
+async function isQuietHour(hour: number): Promise<boolean> {
+  try {
+    const [qs, qe] = await Promise.all([
+      AsyncStorage.getItem(PREF_QUIET_START),
+      AsyncStorage.getItem(PREF_QUIET_END),
+    ]);
+    const start = qs !== null ? Number(qs) : 22; // default 10 PM
+    const end   = qe !== null ? Number(qe) : 7;  // default 7 AM
+    // Quiet window may wrap midnight (e.g. 22–7)
+    if (start > end) return hour >= start || hour < end;
+    return hour >= start && hour < end;
+  } catch { return false; }
+}
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -39,11 +68,20 @@ export async function getExpoPushToken(): Promise<string | null> {
  * Cancels and reschedules if already exists.
  */
 export async function scheduleLogNudge(activity: Activity): Promise<void> {
+  if (Platform.OS === 'web') return;
+  if (!Device.isDevice) return;
+
+  // Respect "Log reminders" toggle
+  if (!(await isEnabled(PREF_LOG_REMINDERS))) return;
+
   const endTime = new Date(activity.start_time);
   endTime.setMinutes(endTime.getMinutes() + activity.duration_minutes + 30);
 
   // Don't schedule nudges for the past
   if (endTime <= new Date()) return;
+
+  // Skip if the nudge would fire during quiet hours
+  if (await isQuietHour(endTime.getHours())) return;
 
   // Cancel any existing nudge for this activity
   await cancelLogNudge(activity.id);
@@ -73,6 +111,9 @@ function nudgeId(activityId: string): string {
 export async function schedulePlanningNudge(tomorrowActivityCount: number): Promise<void> {
   if (Platform.OS === 'web') return;
   if (!Device.isDevice) return;
+
+  // Respect "Planning nudge" toggle
+  if (!(await isEnabled(PREF_PLANNING_NUDGE))) return;
 
   // Cancel any existing planning nudge
   await cancelPlanningNudge();

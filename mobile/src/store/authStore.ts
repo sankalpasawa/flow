@@ -4,6 +4,7 @@ import { User, DEFAULT_SETTINGS } from '../types';
 import { DEV_USER_ID } from '../lib/db/seed';
 import { DEMO_USER_ID, seedDemoData } from '../lib/db/seedDemo';
 import { performFullSync, isDevUser } from '../lib/sync';
+import { analytics } from '../lib/analytics';
 
 /**
  * Auto-login convenience flag — true locally so Sankalp doesn't need to
@@ -134,6 +135,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         localStorage.removeItem('dayflow_signed_out');
         localStorage.removeItem('dayflow_active_user');
       }
+      analytics.identify(DEV_USER.id, { email: DEV_USER.email });
+      analytics.track('sign_in', { method: 'local' });
       set({ user: DEV_USER, loading: false });
       return;
     }
@@ -153,6 +156,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         localStorage.removeItem('dayflow_signed_out');
         localStorage.setItem('dayflow_active_user', DEMO_USER_ID);
       }
+      analytics.identify(DEMO_USER_ID, { email: 'demo@dayflow.app' });
+      analytics.track('sign_in', { method: 'local' });
       set({ user: DEMO_USER, loading: false });
       return;
     }
@@ -201,10 +206,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           localStorage.setItem('dayflow_signed_out', 'true');
           localStorage.removeItem('dayflow_active_user');
         }
+        analytics.track('sign_out');
+        analytics.reset();
         set({ user: null });
         return;
       }
       // Real Supabase users
+      analytics.track('sign_out');
+      analytics.reset();
       await supabase.auth.signOut();
       set({ user: null });
     } catch (err) {
@@ -229,7 +238,9 @@ async function fetchOrCreateUser(id: string, email: string): Promise<User> {
     appUser = data as User;
   }
 
-  // Kick off a full sync in the background (no-op for dev/demo users)
+  // Identify in analytics and kick off sync (both no-ops for dev/demo users)
+  analytics.identify(id, { email });
+  analytics.track('sign_in', { method: 'supabase' });
   performFullSync(id).catch((err) =>
     console.warn('[DayFlow] Background sync failed (non-fatal):', err)
   );

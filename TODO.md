@@ -19,20 +19,20 @@
 
 - [x] **Warm theme remaining fixes**: OnboardingScreen, SignInScreen, SignUpScreen now use theme tokens (colors, radii, spacing) instead of hardcoded hex values.
 - [x] **Insights tab analytics**: Completion stats (7d/30d), stacked status bar, mood/energy 7-day trend bars, category breakdown with progress bars, AI-generated behavioral insight banner. Category drill-down moved to stack screen.
-- [ ] **Settings screen**: Add toggle switches for notifications, mindset prompts, quiet hours. Currently just a placeholder with sign-out.
-- [ ] **Log insights**: "Your energy peaks on Tuesdays" — analyze logged mood/energy data and surface patterns.
-- [ ] **End-of-day planning nudge**: Push notification at 8-9:30pm when tomorrow has <3 planned activities.
-- [ ] **Log prompt nudge**: Fire notification 30min after activity end_time for experience logging.
+- [x] **Settings screen**: Add toggle switches for notifications, mindset prompts, quiet hours. Currently just a placeholder with sign-out.
+- [x] **Log insights**: "Your energy peaks on Tuesdays" — analyze logged mood/energy data and surface patterns.
+- [x] **End-of-day planning nudge**: Push notification at 8-9:30pm when tomorrow has <3 planned activities.
+- [x] **Log prompt nudge**: Fire notification 30min after activity end_time for experience logging.
 
 ## Lower Priority
 
-- [ ] **Data fetching from server**: Replace hardcoded seed data with Supabase sync for production. Seed data is dev-only (in `src/lib/db/seed.ts`).
+- [x] **Data fetching from server**: Replace hardcoded seed data with Supabase sync for production. Seed data is dev-only (in `src/lib/db/seed.ts`).
 - [ ] **AI features with real API keys**: Mindset prompts (Claude Sonnet), auto-categorize (Claude Haiku), planning suggestions. Edge functions exist in `supabase/functions/`.
 - [ ] **Codex review integration**: Use codex to review code on each change.
 - [ ] **Calendar sync**: Google Calendar, Apple Calendar integration (deferred to post-PMF per PRD).
 - [ ] **Activity overlap validation**: Prevent scheduling two activities at the same time.
 - [x] **Freemium gate removed**: All features are free. Removed subscription_tier from User type, FREE_TIER_LOG_LIMIT, and daily log gate from LogFormScreen.
-- [ ] **PostHog analytics**: Add event tracking for key user actions.
+- [x] **PostHog analytics**: Add event tracking for key user actions.
 
 ## Technical Context
 

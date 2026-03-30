@@ -111,6 +111,86 @@ function findInsight(activities: Activity[], logs: ExperienceLog[]): string | nu
   return null;
 }
 
+interface WeeklyPattern {
+  emoji: string;
+  text: string;
+}
+
+function computeWeeklyPatterns(activities: Activity[], logs: ExperienceLog[]): WeeklyPattern[] {
+  if (logs.length < 3) return [];
+  const patterns: WeeklyPattern[] = [];
+
+  // Day-of-week energy + mood
+  const dayEnergy: Record<string, number[]> = {};
+  const dayMood: Record<string, number[]> = {};
+  const dayOrder = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+  for (const l of logs) {
+    if (!l.logged_at) continue;
+    const day = format(parseISO(l.logged_at), 'EEEE');
+    if (!dayEnergy[day]) dayEnergy[day] = [];
+    if (!dayMood[day]) dayMood[day] = [];
+    dayEnergy[day].push(l.energy);
+    dayMood[day].push(l.mood);
+  }
+
+  // Best energy day (need ≥2 samples)
+  let bestEnergyDay = '';
+  let bestEnergyAvg = 0;
+  for (const day of dayOrder) {
+    const energies = dayEnergy[day];
+    if (!energies || energies.length < 2) continue;
+    const avg = energies.reduce((s, v) => s + v, 0) / energies.length;
+    if (avg > bestEnergyAvg) { bestEnergyAvg = avg; bestEnergyDay = day; }
+  }
+  if (bestEnergyDay && bestEnergyAvg >= 3.5) {
+    patterns.push({ emoji: ENERGY_EMOJI[Math.round(bestEnergyAvg)], text: `${bestEnergyDay}s are your highest-energy day` });
+  }
+
+  // Best mood day
+  let bestMoodDay = '';
+  let bestMoodAvg = 0;
+  for (const day of dayOrder) {
+    const moods = dayMood[day];
+    if (!moods || moods.length < 2) continue;
+    const avg = moods.reduce((s, v) => s + v, 0) / moods.length;
+    if (avg > bestMoodAvg) { bestMoodAvg = avg; bestMoodDay = day; }
+  }
+  if (bestMoodDay && bestMoodAvg >= 3.5 && bestMoodDay !== bestEnergyDay) {
+    patterns.push({ emoji: MOOD_EMOJI[Math.round(bestMoodAvg)], text: `You feel best on ${bestMoodDay}s` });
+  }
+
+  // Time-of-day pattern (morning = 5-11, afternoon = 12-16, evening = 17-21)
+  const slotCounts = { morning: 0, afternoon: 0, evening: 0 };
+  for (const l of logs) {
+    if (!l.logged_at) continue;
+    const h = parseISO(l.logged_at).getHours();
+    if (h >= 5 && h < 12) slotCounts.morning++;
+    else if (h >= 12 && h < 17) slotCounts.afternoon++;
+    else if (h >= 17 && h < 22) slotCounts.evening++;
+  }
+  const topSlot = Object.entries(slotCounts).sort((a, b) => b[1] - a[1])[0];
+  if (topSlot && topSlot[1] >= 3) {
+    const slotEmoji = { morning: '🌅', afternoon: '☀️', evening: '🌙' }[topSlot[0]] ?? '⏰';
+    const slotLabel = { morning: 'morning', afternoon: 'afternoon', evening: 'evening' }[topSlot[0]] ?? topSlot[0];
+    patterns.push({ emoji: slotEmoji, text: `You log most in the ${slotLabel}` });
+  }
+
+  // Completion streak (consecutive days with ≥1 completed activity)
+  let streak = 0;
+  for (let i = 0; i < 30; i++) {
+    const d = format(subDays(new Date(), i), 'yyyy-MM-dd');
+    const hasCompleted = activities.some(a => a.status === 'COMPLETED' && a.start_time?.startsWith(d));
+    if (hasCompleted) streak++;
+    else break;
+  }
+  if (streak >= 2) {
+    patterns.push({ emoji: '🔥', text: `${streak}-day completion streak` });
+  }
+
+  return patterns;
+}
+
 interface GoalSuggestion {
   categoryId: string;
   categoryName: string;
@@ -202,6 +282,7 @@ export function InsightsScreen({ navigation }: Props) {
   const stats30 = computeCompletionStats(activities, 30);
   const trend = computeMoodEnergyTrend(logs, 7);
   const insight = findInsight(activities, logs);
+  const weeklyPatterns = computeWeeklyPatterns(activities, logs);
 
   const { goals, loadGoals, getGoalProgress } = useGoalsStore();
 
@@ -380,6 +461,24 @@ export function InsightsScreen({ navigation }: Props) {
                     </View>
                   ))}
                 </View>
+              </View>
+            </FadeIn>
+          )}
+
+          {/* Weekly Patterns */}
+          {weeklyPatterns.length > 0 && (
+            <FadeIn index={sectionIdx++}>
+              <Text style={styles.sectionLabel}>{upperLabel('Weekly Patterns')}</Text>
+              <View style={styles.patternsCard}>
+                {weeklyPatterns.map((p, i) => (
+                  <View
+                    key={i}
+                    style={[styles.patternRow, i < weeklyPatterns.length - 1 && styles.patternRowBorder]}
+                  >
+                    <Text style={styles.patternEmoji}>{p.emoji}</Text>
+                    <Text style={styles.patternText}>{p.text}</Text>
+                  </View>
+                ))}
               </View>
             </FadeIn>
           )}
@@ -651,4 +750,25 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
   },
+
+  // Weekly patterns
+  patternsCard: {
+    backgroundColor: colors.surface,
+    borderRadius: radii.card,
+    padding: 14,
+    marginBottom: 24,
+    ...shadows.card,
+  },
+  patternRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 10,
+  },
+  patternRowBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  patternEmoji: { fontSize: 20, width: 28, textAlign: 'center' },
+  patternText: { color: colors.text, ...text.body, flex: 1 },
 });
