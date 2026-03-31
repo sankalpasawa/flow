@@ -23,7 +23,7 @@ export const CREATE_TABLES_SQL = `
     title TEXT NOT NULL,
     description TEXT,
     assigned_date TEXT,
-    start_time TEXT NOT NULL,
+    start_time TEXT,
     duration_minutes INTEGER NOT NULL,
     category_id TEXT NOT NULL,
     is_scheduled INTEGER NOT NULL DEFAULT 1,
