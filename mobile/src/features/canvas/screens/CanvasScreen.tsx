@@ -151,11 +151,11 @@ export function CanvasScreen({ navigation }: Props) {
 
   // Horizontal swipe to change day
   const swipeGesture = Gesture.Pan()
-    .activeOffsetX([-30, 30])
-    .failOffsetY([-10, 10])
+    .activeOffsetX([-50, 50])
+    .failOffsetY([-20, 20])
     .onEnd((e) => {
       'worklet';
-      if (Math.abs(e.translationX) > 60) {
+      if (Math.abs(e.translationX) > 100) {
         const direction = e.translationX > 0 ? -1 : 1;
         runOnJS(changeDay)(direction);
       }
@@ -174,9 +174,24 @@ export function CanvasScreen({ navigation }: Props) {
         <Text style={styles.headerTitle}>
           {isToday ? 'Today' : format(selectedDate, 'EEE, MMM d')}
         </Text>
-        <TouchableOpacity style={styles.searchBtn} onPress={() => navigation.navigate('Search')}>
-          <Text style={styles.searchIcon}>{'\u2315'}</Text>
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+          {!isToday && (
+            <TouchableOpacity
+              style={styles.todayBtn}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                setSelectedDate(new Date());
+              }}
+              activeOpacity={0.7}
+            >
+              <View style={styles.todayBtnBar} />
+              <Text style={styles.todayBtnDate}>{new Date().getDate()}</Text>
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity style={styles.searchBtn} onPress={() => navigation.navigate('Search')}>
+            <Text style={styles.searchIcon}>{'\u2315'}</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <DateStrip selectedDate={selectedDate} onSelectDate={setSelectedDate} />
@@ -203,7 +218,7 @@ export function CanvasScreen({ navigation }: Props) {
           <ScrollView
             ref={scrollRef}
             style={styles.canvas}
-            contentContainerStyle={{ height: TOTAL_CANVAS_HEIGHT + 40 }}
+            contentContainerStyle={{ height: TOTAL_CANVAS_HEIGHT + 120 }}
             showsVerticalScrollIndicator={false}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
           >
@@ -304,6 +319,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.screen, paddingTop: 12, paddingBottom: 2,
   },
   headerTitle: { color: colors.text, ...type.h1 },
+  todayBtn: {
+    width: 40, height: 40, borderRadius: 8,
+    alignItems: 'center', justifyContent: 'flex-start',
+    backgroundColor: colors.bg, borderWidth: 1, borderColor: colors.border,
+    overflow: 'hidden',
+  },
+  todayBtnBar: {
+    width: '100%', height: 2, backgroundColor: colors.primary,
+  },
+  todayBtnDate: {
+    color: colors.text, fontSize: 18, fontWeight: '700',
+    lineHeight: 22, marginTop: 6,
+  },
   searchBtn: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
   searchIcon: { color: colors.muted, fontSize: 24 },
 

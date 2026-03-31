@@ -297,8 +297,8 @@ const styles = StyleSheet.create({
   card: {
     borderLeftWidth: 3,
     borderRadius: 12,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
     overflow: 'hidden',
     justifyContent: 'center',
   },
@@ -313,19 +313,19 @@ const styles = StyleSheet.create({
   },
   content: { flex: 1 },
   title: {
-    color: colors.text, fontSize: 15, fontWeight: '600', lineHeight: 20,
+    color: colors.text, fontSize: 14, fontWeight: '600', lineHeight: 18,
   },
   titleCompact: {
-    fontSize: 12, lineHeight: 16,
+    fontSize: 12, lineHeight: 15,
   },
   titleDone: {
     textDecorationLine: 'line-through', color: colors.muted,
   },
   metaRow: {
-    flexDirection: 'row', gap: 8, marginTop: 4,
+    flexDirection: 'row', gap: 6, marginTop: 2,
   },
   meta: {
-    color: colors.text2, fontSize: 12, fontWeight: '500',
+    color: colors.text2, fontSize: 11, fontWeight: '500',
   },
   indicators: {
     flexDirection: 'row', gap: 4, alignItems: 'center',

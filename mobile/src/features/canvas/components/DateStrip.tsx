@@ -172,9 +172,7 @@ export function DateStrip({ selectedDate, onSelectDate }: Props) {
 
       {/* Expand/collapse toggle */}
       <TouchableOpacity style={styles.toggleBar} onPress={toggleCalendar} activeOpacity={0.7}>
-        <Text style={[styles.toggleChevron, calendarOpen && styles.toggleChevronUp]}>
-          {calendarOpen ? '‹' : '›'}
-        </Text>
+        <View style={[styles.toggleHandle, calendarOpen && styles.toggleHandleOpen]} />
       </TouchableOpacity>
 
       {/* Expanded calendar */}
@@ -257,14 +255,15 @@ const styles = StyleSheet.create({
 
   // Toggle bar
   toggleBar: {
-    alignItems: 'center', paddingVertical: 2,
+    alignItems: 'center', paddingVertical: 8,
   },
-  toggleChevron: {
-    color: colors.muted, fontSize: 14,
-    transform: [{ rotate: '90deg' }],
+  toggleHandle: {
+    width: 36, height: 4,
+    borderRadius: 2,
+    backgroundColor: colors.border,
   },
-  toggleChevronUp: {
-    transform: [{ rotate: '-90deg' }],
+  toggleHandleOpen: {
+    backgroundColor: colors.muted,
   },
 
   // Calendar
