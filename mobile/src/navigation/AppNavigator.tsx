@@ -29,6 +29,7 @@ import { InsightsScreen } from '../features/insights/screens/InsightsScreen';
 import { GoalFormScreen } from '../features/goals/screens/GoalFormScreen';
 import { GoalEditScreen } from '../features/goals/screens/GoalEditScreen';
 import { ExperienceLogScreen } from '../features/canvas/screens/ExperienceLogScreen';
+import { captureOnNavigation } from '../debug/DesignQA';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -135,7 +136,10 @@ export function AppNavigator() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-    <NavigationContainer>
+    <NavigationContainer onStateChange={(state) => {
+        const route = state?.routes?.[state.index];
+        if (route?.name) captureOnNavigation(route.name);
+      }}>
       <Stack.Navigator screenOptions={{ headerStyle: { backgroundColor: '#FAF7F2' }, headerTintColor: '#1A1A1A', headerShadowVisible: false }}>
         {!user ? (
           <>

@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { Platform, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { AppNavigator } from './src/navigation/AppNavigator';
+import { DesignQAProvider } from './src/debug/DesignQA';
 import { colors } from './src/theme';
 
 export default function App() {
@@ -28,9 +29,11 @@ export default function App() {
   }, []);
 
   return (
-    <View style={{ flex: 1 }}>
-      <StatusBar style="dark" />
-      <AppNavigator />
-    </View>
+    <DesignQAProvider>
+      <View style={{ flex: 1 }}>
+        <StatusBar style="dark" />
+        <AppNavigator />
+      </View>
+    </DesignQAProvider>
   );
 }
