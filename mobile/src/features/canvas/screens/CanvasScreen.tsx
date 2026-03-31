@@ -354,7 +354,7 @@ export function CanvasScreen({ navigation }: Props) {
           addTask({
             user_id: user.id,
             title,
-            category_id: 'cat-general',
+            category_id: 'sys-personal',
             assigned_date: format(selectedDate, 'yyyy-MM-dd'),
           });
         }}

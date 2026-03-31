@@ -186,7 +186,7 @@ export async function createTask(input: CreateTaskInput): Promise<Activity> {
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, 0, ?, NULL, ?, ?, ?, NULL, NULL, ?, ?, 0, 0)`,
     [
       id, input.user_id, 'TASK', input.title, input.description ?? null,
-      null, 0, input.category_id ?? 'sys-personal',
+      '', 0, input.category_id ?? 'sys-personal',
       assignedDate, 0, 'NONE', subtasks,
       'PLANNED', input.priority ?? 'MEDIUM', now, now,
     ]
