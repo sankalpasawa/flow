@@ -414,8 +414,8 @@ function PlanActivityRow({ activity, onPress, onToggle, isLast }: {
 }) {
   const catColor = getCategoryColor(activity.category_id);
   const isDone = activity.status === 'COMPLETED';
-  const startDate = new Date(activity.start_time);
-  const timeStr = format(startDate, 'h:mm a');
+  const startDate = activity.start_time ? new Date(activity.start_time) : new Date();
+  const timeStr = activity.start_time ? format(startDate, 'h:mm a') : '';
 
   return (
     <Pressable
@@ -480,7 +480,7 @@ function CarryForwardRow({ activity, onMoveToTomorrow, onMoveToSomeday, onPress,
 }) {
   const catColor = getCategoryColor(activity.category_id);
   const isTask = activity.activity_type === 'TASK';
-  const daysOverdue = Math.floor((Date.now() - new Date(activity.assigned_date || activity.start_time).getTime()) / 86400000);
+  const daysOverdue = Math.floor((Date.now() - new Date(activity.assigned_date || activity.start_time || Date.now()).getTime()) / 86400000);
 
   return (
     <Pressable
@@ -551,6 +551,7 @@ function TomorrowCalendar({ activities, tasks, tomorrowStr, onSlotPress, onActiv
   const slots = [];
   for (let h = START_HOUR; h < END_HOUR; h++) {
     const items = activities.filter(a => {
+      if (!a.start_time) return false;
       const start = parseISO(a.start_time);
       return start.getHours() === h;
     });

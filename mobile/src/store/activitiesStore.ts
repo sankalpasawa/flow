@@ -97,7 +97,7 @@ export const useActivitiesStore = create<ActivitiesState>((set, get) => ({
       const activity = allPlan.find(a => a.id === id);
       if (!activity) return;
 
-      if (activity.activity_type === 'TASK') {
+      if (activity.activity_type === 'TASK' || !activity.start_time) {
         await updateActivity(id, { assigned_date: dateStr });
       } else {
         // For time blocks, update start_time date portion keeping the same hour
@@ -107,7 +107,7 @@ export const useActivitiesStore = create<ActivitiesState>((set, get) => ({
         await updateActivity(id, { start_time: newStart.toISOString() });
       }
       // Build the updated activity with correct fields for both tasks and time blocks
-      const updated = activity.activity_type === 'TASK'
+      const updated = (activity.activity_type === 'TASK' || !activity.start_time)
         ? { ...activity, assigned_date: dateStr }
         : { ...activity, assigned_date: dateStr, start_time: new Date(
             Number(dateStr.split('-')[0]), Number(dateStr.split('-')[1]) - 1, Number(dateStr.split('-')[2]),
@@ -116,7 +116,7 @@ export const useActivitiesStore = create<ActivitiesState>((set, get) => ({
       // Remove from carry-forward / someday and add to plan
       set(s => {
         const newPlanActivities = activity.is_scheduled
-          ? [...s.planActivities, updated].sort((a, b) => a.start_time.localeCompare(b.start_time))
+          ? [...s.planActivities, updated].sort((a, b) => (a.start_time ?? '').localeCompare(b.start_time ?? ''))
           : s.planActivities;
         return {
           carryForward: s.carryForward.filter(a => a.id !== id),

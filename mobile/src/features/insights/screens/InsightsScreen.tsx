@@ -45,6 +45,7 @@ interface DayMoodEnergy {
 function computeCompletionStats(activities: Activity[], days: number): CompletionStats {
   const cutoff = subDays(new Date(), days);
   const recent = activities.filter(a => {
+    if (!a.start_time) return false;
     const d = parseISO(a.start_time);
     return d >= cutoff;
   });

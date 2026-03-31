@@ -28,6 +28,7 @@ import { CategoryListScreen } from '../features/categories/screens/CategoryListS
 import { InsightsScreen } from '../features/insights/screens/InsightsScreen';
 import { GoalFormScreen } from '../features/goals/screens/GoalFormScreen';
 import { GoalEditScreen } from '../features/goals/screens/GoalEditScreen';
+import { ExperienceLogScreen } from '../features/canvas/screens/ExperienceLogScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -189,6 +190,15 @@ export function AppNavigator() {
               name="Search"
               component={SearchScreen}
               options={{ headerShown: false }}
+            />
+            <Stack.Screen
+              name="ExperienceLog"
+              component={ExperienceLogScreen as any}
+              options={{
+                presentation: 'transparentModal',
+                headerShown: false,
+                animation: 'slide_from_bottom',
+              }}
             />
             <Stack.Screen
               name="CategoryList"

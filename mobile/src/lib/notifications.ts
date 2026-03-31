@@ -39,6 +39,7 @@ export async function getExpoPushToken(): Promise<string | null> {
  * Cancels and reschedules if already exists.
  */
 export async function scheduleLogNudge(activity: Activity): Promise<void> {
+  if (!activity.start_time) return;
   const endTime = new Date(activity.start_time);
   endTime.setMinutes(endTime.getMinutes() + activity.duration_minutes + 30);
 

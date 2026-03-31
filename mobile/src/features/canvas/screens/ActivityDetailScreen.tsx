@@ -50,7 +50,7 @@ export function ActivityDetailScreen({ route, navigation }: Props) {
     );
   }
 
-  const endTime = addMinutes(parseISO(activity.start_time), activity.duration_minutes);
+  const endTime = addMinutes(parseISO(activity.start_time!), activity.duration_minutes);
   const canLog = isEditWindowOpen(endTime) && !log;
   const canEditLog = log && isEditWindowOpen(endTime);
   const nextStatus = STATUS_TRANSITIONS[activity.status][0];
@@ -101,7 +101,7 @@ export function ActivityDetailScreen({ route, navigation }: Props) {
 
         <View style={styles.metaRow}>
           <Text style={styles.meta}>
-            {format(parseISO(activity.start_time), 'h:mm a')} – {format(endTime, 'h:mm a')}
+            {format(parseISO(activity.start_time!), 'h:mm a')} – {format(endTime, 'h:mm a')}
           </Text>
           <Text style={styles.metaSep}>·</Text>
           <Text style={styles.meta}>{activity.duration_minutes}m</Text>

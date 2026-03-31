@@ -86,7 +86,7 @@ export function LogFormScreen({ route, navigation }: Props) {
     );
   }
 
-  const endTime = addMinutes(parseISO(activity.start_time), activity.duration_minutes);
+  const endTime = addMinutes(parseISO(activity.start_time!), activity.duration_minutes);
   if (!isEditWindowOpen(endTime) && !editMode) {
     return (
       <View style={styles.container}>
@@ -125,7 +125,7 @@ export function LogFormScreen({ route, navigation }: Props) {
 
   function determinePhase(): LogPhase {
     const now = new Date();
-    const start = parseISO(activity!.start_time);
+    const start = parseISO(activity!.start_time!);
     if (now < start) return 'BEFORE';
     if (now <= endTime) return 'DURING';
     return 'AFTER';

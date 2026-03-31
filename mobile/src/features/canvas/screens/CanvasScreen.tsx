@@ -13,6 +13,7 @@ import { DateStrip } from '../components/DateStrip';
 import { ActivityCard } from '../components/ActivityCard';
 // v2: Tasks moved to bottom bar
 // import { TaskSection } from '../components/TaskSection';
+import { BottomTaskBar } from '../components/BottomTaskBar';
 import { Activity } from '../../../types';
 import { colors, shadows, spacing, type } from '../../../theme';
 import {
@@ -167,6 +168,21 @@ export function CanvasScreen({ navigation }: Props) {
     return h;
   }, []);
 
+  const navigateToActivity = useCallback((activity: Activity) => {
+    const shouldLog =
+      activity.status === 'COMPLETED' ||
+      activity.status === 'SKIPPED' ||
+      (activity.start_time && (() => {
+        const actEnd = new Date(parseISO(activity.start_time!).getTime() + activity.duration_minutes * 60000);
+        return isToday && actEnd < now && activity.status === 'PLANNED';
+      })());
+    if (shouldLog) {
+      navigation.navigate('ExperienceLog', { activityId: activity.id });
+    } else {
+      navigation.navigate('ActivityForm', { activityId: activity.id });
+    }
+  }, [navigation, isToday, now]);
+
   const nowY = (now.getHours() + now.getMinutes() / 60) * HOUR_HEIGHT;
 
   // Horizontal swipe to change day
@@ -311,7 +327,7 @@ export function CanvasScreen({ navigation }: Props) {
                       isNow={isCurrentlyActive}
                       isOverdue={isOverdue}
                       height={height}
-                      onPress={() => navigation.navigate('ActivityForm', { activityId: activity.id })}
+                      onPress={() => navigateToActivity(activity)}
                       onQuickComplete={() => quickToggleComplete(activity.id)}
                       onReschedule={handleReschedule}
                     />
@@ -323,6 +339,26 @@ export function CanvasScreen({ navigation }: Props) {
         )}
       </View>
       </GestureDetector>
+
+      {/* Bottom task bar */}
+      <BottomTaskBar
+        tasks={untimedTasks}
+        onToggle={(id) => quickToggleComplete(id)}
+        onPress={(id) => {
+          const task = untimedTasks.find(t => t.id === id);
+          if (task) navigateToActivity(task);
+          else navigation.navigate('ActivityForm', { activityId: id });
+        }}
+        onQuickAdd={(title) => {
+          if (!user) return;
+          addTask({
+            user_id: user.id,
+            title,
+            category_id: 'cat-general',
+            assigned_date: format(selectedDate, 'yyyy-MM-dd'),
+          });
+        }}
+      />
 
       {/* FAB */}
       <TouchableOpacity

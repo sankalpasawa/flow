@@ -51,7 +51,7 @@ export function SearchScreen({ navigation }: Props) {
   function renderItem({ item }: { item: Activity }) {
     const cat = item.category;
     const catColor = getCategoryColor(item.category_id);
-    const dateStr = format(parseISO(item.start_time), 'MMM d, yyyy');
+    const dateStr = item.start_time ? format(parseISO(item.start_time), 'MMM d, yyyy') : 'No date';
 
     return (
       <TouchableOpacity
