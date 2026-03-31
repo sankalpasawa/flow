@@ -11,7 +11,8 @@ import { useAuthStore } from '../../../store/authStore';
 import { useActivitiesStore } from '../../../store/activitiesStore';
 import { DateStrip } from '../components/DateStrip';
 import { ActivityCard } from '../components/ActivityCard';
-import { TaskSection } from '../components/TaskSection';
+// v2: Tasks moved to bottom bar
+// import { TaskSection } from '../components/TaskSection';
 import { Activity } from '../../../types';
 import { colors, shadows, spacing, type } from '../../../theme';
 import {
@@ -28,7 +29,7 @@ function computeOverlapLayout(activities: Activity[]): Map<string, { column: num
   if (activities.length === 0) return result;
 
   const parsed = activities.map((a) => {
-    const start = parseISO(a.start_time).getTime();
+    const start = parseISO(a.start_time!).getTime();
     const end = start + a.duration_minutes * 60000;
     return { id: a.id, start, end };
   });
@@ -130,11 +131,30 @@ export function CanvasScreen({ navigation }: Props) {
 
   const timedActivities = useMemo(() =>
     activities.filter((a) => {
+      if (!a.start_time) return false;
       const start = parseISO(a.start_time);
       return isSameDay(start, selectedDate) && start.getHours() >= START_HOUR;
     }),
     [activities, selectedDate]
   );
+
+  // Watermark activities: no start_time AND recurring (recurrence_type !== 'NONE')
+  const watermarkActivities = useMemo(() =>
+    activities.filter((a) => !a.start_time && a.recurrence_type !== 'NONE'),
+    [activities]
+  );
+
+  // Distribute watermark chips evenly through the day (every 90 min starting from 7:00)
+  const watermarkPositions = useMemo(() => {
+    const WATERMARK_START_HOUR = 7; // start distributing from 7 AM
+    const WATERMARK_INTERVAL_MIN = 90; // 90 minutes apart
+    return watermarkActivities.map((a, i) => {
+      const minuteOffset = i * WATERMARK_INTERVAL_MIN;
+      const hour = WATERMARK_START_HOUR + minuteOffset / 60;
+      const top = hour * HOUR_HEIGHT;
+      return { activity: a, top };
+    });
+  }, [watermarkActivities]);
 
   const overlapLayout = useMemo(() => computeOverlapLayout(timedActivities), [timedActivities]);
 
@@ -196,16 +216,7 @@ export function CanvasScreen({ navigation }: Props) {
 
       <DateStrip selectedDate={selectedDate} onSelectDate={setSelectedDate} />
 
-      {/* Tasks — pinned above canvas */}
-      <TaskSection
-        tasks={untimedTasks}
-        todayStr={format(new Date(), 'yyyy-MM-dd')}
-        onToggle={(id) => quickToggleComplete(id)}
-        onPress={(id) => navigation.navigate('ActivityForm', { activityId: id })}
-        onQuickAdd={(title) => {
-          if (user) addTask({ user_id: user.id, title, assigned_date: format(selectedDate, 'yyyy-MM-dd') });
-        }}
-      />
+      {/* v2: Tasks moved to bottom bar */}
 
       {/* Canvas — single day, swipe left/right to change day */}
       <GestureDetector gesture={swipeGesture}>
@@ -258,11 +269,24 @@ export function CanvasScreen({ navigation }: Props) {
                 </View>
               )}
 
+              {/* Watermark chips — recurring untimed activities */}
+              {watermarkPositions.map(({ activity: wm, top: wmTop }) => (
+                <View
+                  key={`wm-${wm.id}`}
+                  style={[styles.watermarkChip, { top: wmTop }]}
+                  pointerEvents="none"
+                >
+                  <Text style={styles.watermarkText}>
+                    {wm.category?.icon ? `${wm.category.icon} ` : ''}{wm.title}
+                  </Text>
+                </View>
+              ))}
+
               {/* Activity blocks */}
               {timedActivities.map((activity) => {
-                const { top, height } = getActivityPosition(activity.start_time, activity.duration_minutes);
+                const { top, height } = getActivityPosition(activity.start_time!, activity.duration_minutes);
                 const log = logs[activity.id];
-                const actStart = parseISO(activity.start_time);
+                const actStart = parseISO(activity.start_time!);
                 const actEnd = new Date(actStart.getTime() + activity.duration_minutes * 60000);
                 const isCurrentlyActive = isToday && isWithinInterval(now, { start: actStart, end: actEnd });
                 const isPast = isToday && actEnd < now;
@@ -368,6 +392,21 @@ const styles = StyleSheet.create({
   },
 
   activityBlock: { position: 'absolute', left: HOUR_LABEL_WIDTH, right: 12, zIndex: 5 },
+
+  watermarkChip: {
+    position: 'absolute',
+    right: 12,
+    zIndex: 8,
+    backgroundColor: colors.watermark.bg,
+    borderRadius: 5,
+    paddingVertical: 3,
+    paddingHorizontal: 8,
+  },
+  watermarkText: {
+    color: colors.watermark.text,
+    fontSize: 9,
+    fontWeight: '600',
+  },
 
   fab: {
     position: 'absolute', bottom: 88, right: 20,

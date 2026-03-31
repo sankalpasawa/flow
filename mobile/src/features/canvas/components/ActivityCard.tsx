@@ -12,7 +12,7 @@ import Animated, {
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import * as Haptics from 'expo-haptics';
 import { format, parseISO, addMinutes } from 'date-fns';
-import { colors, getCategoryColor, radii, shadows, type } from '../../../theme';
+import { colors, getCategoryColor, shadows, type } from '../../../theme';
 import { Activity, ExperienceLog } from '../../../types';
 import { HOUR_HEIGHT } from '../../../lib/calendar';
 
@@ -30,6 +30,27 @@ interface Props {
   isNow: boolean;
   isOverdue?: boolean;
   height?: number;
+}
+
+/**
+ * Blend a hex category color at a given opacity onto a white base.
+ * Returns an rgba string approximating the glass + category tint.
+ */
+function glassTintBackground(catHex: string): string {
+  // Parse hex
+  const r = parseInt(catHex.slice(1, 3), 16);
+  const g = parseInt(catHex.slice(3, 5), 16);
+  const b = parseInt(catHex.slice(5, 7), 16);
+  // White base at 0.65 opacity, then overlay category at 0.06 opacity
+  // Approximate: blend category color at 6% onto the white glass
+  const tint = colors.categoryTint; // 0.06
+  const baseR = 255;
+  const baseG = 255;
+  const baseB = 255;
+  const finalR = Math.round(baseR * (1 - tint) + r * tint);
+  const finalG = Math.round(baseG * (1 - tint) + g * tint);
+  const finalB = Math.round(baseB * (1 - tint) + b * tint);
+  return `rgba(${finalR},${finalG},${finalB},0.65)`;
 }
 
 export function ActivityCard({ activity, log, onPress, onQuickComplete, onReschedule, isNow, isOverdue, height }: Props) {
@@ -66,6 +87,7 @@ export function ActivityCard({ activity, log, onPress, onQuickComplete, onResche
   }, [onQuickComplete]);
 
   const updateDragTimeLabel = useCallback((snapCount: number) => {
+    if (!activity.start_time) return;
     const startDate = parseISO(activity.start_time);
     const newDate = addMinutes(startDate, snapCount * 15);
     setDragTimeLabel(format(newDate, 'h:mm a'));
@@ -76,13 +98,13 @@ export function ActivityCard({ activity, log, onPress, onQuickComplete, onResche
   }, []);
 
   const handleReschedule = useCallback((snapCount: number) => {
-    if (!onReschedule || snapCount === 0) return;
+    if (!onReschedule || snapCount === 0 || !activity.start_time) return;
     const startDate = parseISO(activity.start_time);
     const newDate = addMinutes(startDate, snapCount * 15);
     onReschedule(activity.id, newDate.toISOString());
   }, [onReschedule, activity.id, activity.start_time]);
 
-  // Horizontal pan — swipe to complete (existing)
+  // Horizontal pan — swipe to complete
   const horizontalPan = Gesture.Pan()
     .activeOffsetX(20)
     .failOffsetY([-10, 10])
@@ -122,12 +144,10 @@ export function ActivityCard({ activity, log, onPress, onQuickComplete, onResche
       runOnJS(updateDragTimeLabel)(0);
     })
     .onUpdate((e) => {
-      // Snap to 15-minute increments
       const snapIndex = Math.round(e.translationY / SNAP_PX);
       const snappedY = snapIndex * SNAP_PX;
       translateY.value = snappedY;
 
-      // Haptic on each new snap point
       if (snapIndex !== lastSnapIndex.value) {
         lastSnapIndex.value = snapIndex;
         runOnJS(triggerSnapHaptic)();
@@ -176,14 +196,13 @@ export function ActivityCard({ activity, log, onPress, onQuickComplete, onResche
       [1, 0.3],
       Extrapolation.CLAMP,
     ),
-    // Deepen shadow while dragging vertically
-    shadowOpacity: isDraggingVertical.value ? 0.15 : 0.04,
-    shadowRadius: isDraggingVertical.value ? 12 : 2,
-    elevation: isDraggingVertical.value ? 6 : 1,
+    shadowOpacity: isDraggingVertical.value ? 0.15 : 0.06,
+    shadowRadius: isDraggingVertical.value ? 12 : 8,
+    elevation: isDraggingVertical.value ? 6 : 3,
     zIndex: isDraggingVertical.value ? 100 : 0,
   }));
 
-  // Guide line at the snapped position (shown at original card position while card moves)
+  // Guide line at the snapped position
   const guideLineStyle = useAnimatedStyle(() => ({
     opacity: isDraggingVertical.value && translateY.value !== 0 ? 0.6 : 0,
     transform: [{ translateY: translateY.value }],
@@ -198,11 +217,15 @@ export function ActivityCard({ activity, log, onPress, onQuickComplete, onResche
     ),
   }));
 
-  const duration = activity.duration_minutes;
-  const durationText = duration === 0 ? '' : duration < 60 ? `${duration}m` : `${Math.floor(duration / 60)}h${duration % 60 ? ` ${duration % 60}m` : ''}`;
+  const compact = height !== undefined && height < 50;
+  const cardBorderRadius = compact ? 12 : 14;
+  const pillBg = glassTintBackground(catColor.solid);
 
-  const compact = height !== undefined && height < 40;
-  const cardBorderRadius = compact ? 8 : 14;
+  // Subtask progress
+  const subtasks = activity.subtasks ?? [];
+  const hasSubtasks = subtasks.length > 0;
+  const subtasksDone = subtasks.filter((s) => s.done).length;
+  const subtaskProgress = hasSubtasks ? subtasksDone / subtasks.length : 0;
 
   return (
     <GestureDetector gesture={composed}>
@@ -229,40 +252,68 @@ export function ActivityCard({ activity, log, onPress, onQuickComplete, onResche
           style={[
             styles.card,
             {
-              borderLeftColor: catColor.solid,
-              backgroundColor: catColor.light,
+              backgroundColor: pillBg,
+              borderWidth: 1,
+              borderColor: colors.glass.border,
               borderRadius: cardBorderRadius,
+              // Multi-layer shadow (first layer)
               shadowColor: '#000',
-              shadowOffset: { width: 0, height: 1 },
-              shadowOpacity: 0.04,
-              shadowRadius: 2,
-              elevation: 1,
+              shadowOffset: { width: 0, height: 3 },
+              shadowOpacity: 0.06,
+              shadowRadius: 8,
+              elevation: 3,
             },
-            height !== undefined && { height, paddingVertical: compact ? 2 : 6 },
+            height !== undefined && { height, paddingVertical: compact ? 3 : 6 },
             isNow && styles.nowCard,
+            isDone && styles.doneCard,
             isSkipped && { opacity: 0.4 },
             cardAnimStyle,
           ]}
         >
-          <View style={styles.topRow}>
-            <View style={styles.content}>
-              <Text style={[styles.title, compact && styles.titleCompact, isDone && styles.titleDone]} numberOfLines={1}>
-                {activity.title}
-              </Text>
-              {!compact && (
-                <View style={styles.metaRow}>
-                  {durationText ? <Text style={styles.meta}>{durationText}</Text> : null}
-                  {cat && <Text style={[styles.meta, { color: catColor.solid }]}>{cat.icon} {cat.name}</Text>}
-                </View>
-              )}
-            </View>
-
+          {/* Row 1: Category icon + Title */}
+          <View style={styles.row1}>
+            {cat?.icon ? (
+              <Text style={styles.catIcon}>{cat.icon}</Text>
+            ) : null}
+            <Text
+              style={[
+                styles.title,
+                compact && styles.titleCompact,
+                isDone && styles.titleDone,
+              ]}
+              numberOfLines={1}
+            >
+              {activity.title}
+            </Text>
             {/* Status indicators */}
             <View style={styles.indicators}>
               {log && <View style={[styles.dot, { backgroundColor: moodColor(log.mood) }]} />}
               {isOverdue && <View style={[styles.dot, { backgroundColor: colors.danger }]} />}
             </View>
           </View>
+
+          {/* Row 2: Mindset prompt (always show if exists) */}
+          {activity.mindset_prompt ? (
+            <Text
+              style={[
+                styles.mindset,
+                compact && styles.mindsetCompact,
+              ]}
+              numberOfLines={compact ? 1 : 2}
+            >
+              {activity.mindset_prompt}
+            </Text>
+          ) : null}
+
+          {/* Row 3: Subtask progress bar (optional) */}
+          {hasSubtasks && !compact && (
+            <View style={styles.subtaskRow}>
+              <View style={styles.progressTrack}>
+                <View style={[styles.progressFill, { width: `${subtaskProgress * 100}%` }]} />
+              </View>
+              <Text style={styles.subtaskCount}>{subtasksDone}/{subtasks.length}</Text>
+            </View>
+          )}
 
           {/* Drag time label */}
           {dragTimeLabel && (
@@ -295,43 +346,94 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   card: {
-    borderLeftWidth: 3,
-    borderRadius: 12,
-    paddingVertical: 8,
-    paddingHorizontal: 10,
+    borderRadius: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
     overflow: 'hidden',
     justifyContent: 'center',
   },
   nowCard: {
-    borderLeftWidth: 4,
-    borderLeftColor: colors.terra,
+    // Amber glow for active activity — using shadow instead of border
+    shadowColor: colors.active,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    borderColor: 'rgba(196,121,91,0.35)',
   },
-  topRow: {
+  doneCard: {
+    opacity: 0.4,
+  },
+  // Row 1: icon + title
+  row1: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 6,
   },
-  content: { flex: 1 },
+  catIcon: {
+    fontSize: 15,
+    lineHeight: 18,
+  },
   title: {
-    color: colors.text, fontSize: 14, fontWeight: '600', lineHeight: 18,
+    flex: 1,
+    color: colors.text,
+    fontSize: 14,
+    fontWeight: '700',
+    lineHeight: 18,
   },
   titleCompact: {
-    fontSize: 12, lineHeight: 15,
+    fontSize: 12,
+    lineHeight: 15,
   },
   titleDone: {
-    textDecorationLine: 'line-through', color: colors.muted,
+    textDecorationLine: 'line-through',
+    color: colors.muted,
   },
-  metaRow: {
-    flexDirection: 'row', gap: 6, marginTop: 2,
+  // Row 2: mindset
+  mindset: {
+    color: colors.text,
+    fontSize: 9.5,
+    fontStyle: 'italic',
+    opacity: 0.6,
+    lineHeight: 13,
+    marginTop: 2,
   },
-  meta: {
-    color: colors.text2, fontSize: 11, fontWeight: '500',
+  mindsetCompact: {
+    fontSize: 8.5,
+    lineHeight: 11,
+  },
+  // Row 3: subtask progress
+  subtaskRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 4,
+  },
+  progressTrack: {
+    flex: 1,
+    height: 3,
+    backgroundColor: 'rgba(0,0,0,0.06)',
+    borderRadius: 1.5,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: 3,
+    backgroundColor: colors.primary,
+    borderRadius: 1.5,
+  },
+  subtaskCount: {
+    fontSize: 9,
+    fontWeight: '600',
+    color: colors.muted,
   },
   indicators: {
-    flexDirection: 'row', gap: 4, alignItems: 'center',
+    flexDirection: 'row',
+    gap: 4,
+    alignItems: 'center',
   },
   dot: {
-    width: 7, height: 7, borderRadius: 4,
+    width: 7,
+    height: 7,
+    borderRadius: 4,
   },
   guideLine: {
     position: 'absolute',
