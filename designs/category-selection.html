@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Category Selection Variants — DayFlow</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #F5F0E8;
+    --page: #E8E2D8;
+    --glass: rgba(255,255,255,0.88);
+    --glass-border: rgba(255,255,255,0.75);
+    --text: #1A1714;
+    --text2: #4A4540;
+    --muted: #8C857D;
+    --border: #E0D9CE;
+    --primary: #2D5A3E;
+    --primary-light: rgba(45,90,62,0.12);
+    --accent: #C4795B;
+    --pill-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 3px 8px rgba(0,0,0,0.06), 0 8px 20px rgba(0,0,0,0.04);
+  }
+
+  body {
+    background: var(--bg);
+    font-family: 'Instrument Sans', -apple-system, sans-serif;
+    color: var(--text);
+    padding: 40px 24px;
+    min-height: 100vh;
+  }
+
+  h1 {
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+
+  .subtitle {
+    font-size: 13px;
+    color: var(--muted);
+    font-weight: 500;
+    margin-bottom: 36px;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    max-width: 760px;
+    margin: 0 auto;
+  }
+
+  .variant-card {
+    background: var(--glass);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    padding: 20px;
+    box-shadow: var(--pill-shadow);
+  }
+
+  .variant-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--primary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 16px;
+  }
+
+  /* Shared form chrome */
+  .form-mock {
+    background: var(--page);
+    border-radius: 14px;
+    padding: 14px;
+    margin-bottom: 12px;
+  }
+
+  .form-mock.selected {
+    /* no different bg, just inner state changes */
+  }
+
+  .form-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+
+  .form-title.placeholder {
+    color: var(--muted);
+  }
+
+  .form-time-row {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+  }
+
+  .form-chip {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text2);
+    background: rgba(255,255,255,0.7);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 4px 8px;
+  }
+
+  .state-label {
+    font-family: 'Geist Mono', monospace;
+    font-size: 9px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+  }
+
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 10px 0;
+  }
+
+  /* ========== A. Inline Chips ========== */
+  .chips-row {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    padding-bottom: 2px;
+  }
+
+  .chips-row::-webkit-scrollbar { display: none; }
+
+  .cat-chip {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text2);
+    background: rgba(255,255,255,0.7);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 5px 10px;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+  }
+
+  .cat-chip.active {
+    background: var(--primary);
+    color: #fff;
+    border-color: var(--primary);
+  }
+
+  .cat-chip .emoji { font-size: 13px; }
+
+  .cat-chip.add-chip {
+    color: var(--muted);
+    font-size: 14px;
+    padding: 5px 10px;
+  }
+
+  /* ========== B. Expanding Grid ========== */
+  .cat-row-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--muted);
+    padding: 6px 0;
+    cursor: pointer;
+  }
+
+  .cat-row-trigger .chevron {
+    font-size: 10px;
+    color: var(--muted);
+  }
+
+  .cat-row-trigger.has-value {
+    color: var(--text);
+  }
+
+  .cat-row-trigger.has-value .cat-display {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .cat-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    margin-top: 8px;
+  }
+
+  .cat-grid-tile {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    background: rgba(255,255,255,0.7);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 10px 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .cat-grid-tile .emoji { font-size: 18px; }
+  .cat-grid-tile .name {
+    font-size: 9px;
+    font-weight: 600;
+    color: var(--text2);
+  }
+
+  .cat-grid-tile.active {
+    background: var(--primary);
+    border-color: var(--primary);
+  }
+
+  .cat-grid-tile.active .name { color: #fff; }
+
+  .cat-grid-tile.add-tile .emoji {
+    font-size: 16px;
+    color: var(--muted);
+  }
+  .cat-grid-tile.add-tile .name { color: var(--muted); }
+
+  /* ========== C. Icon Toolbar ========== */
+  .icon-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 4px;
+    border-top: 1px solid var(--border);
+    margin-top: 4px;
+  }
+
+  .icon-btn {
+    position: relative;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: transparent;
+  }
+
+  .icon-btn.active {
+    background: var(--primary);
+    box-shadow: 0 2px 8px rgba(45,90,62,0.3);
+  }
+
+  .icon-btn .tooltip {
+    position: absolute;
+    top: -24px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 9px;
+    font-weight: 600;
+    color: var(--primary);
+    background: rgba(255,255,255,0.9);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 2px 6px;
+    white-space: nowrap;
+    display: none;
+  }
+
+  .icon-btn.active .tooltip { display: block; }
+
+  .icon-btn.add-icon {
+    font-size: 14px;
+    color: var(--muted);
+    font-weight: 600;
+  }
+
+  /* ========== D. Pill Selector ========== */
+  .pill-row {
+    display: flex;
+    gap: 4px;
+    overflow-x: auto;
+    padding-bottom: 2px;
+  }
+
+  .pill-row::-webkit-scrollbar { display: none; }
+
+  .cat-pill {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text2);
+    background: rgba(255,255,255,0.6);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 3px 8px;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+  }
+
+  .cat-pill .emoji { font-size: 11px; }
+
+  .cat-pill.active {
+    background: var(--primary);
+    color: #fff;
+    border-color: var(--primary);
+  }
+
+  .cat-pill.add-pill {
+    color: var(--muted);
+    font-size: 12px;
+    padding: 3px 8px;
+  }
+
+  @media (max-width: 600px) {
+    .grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+</head>
+<body>
+
+<h1>Category Selection</h1>
+<p class="subtitle">4 variants for selecting a category on the activity form</p>
+
+<div class="grid">
+
+  <!-- ==================== A. Inline Chips ==================== -->
+  <div class="variant-card">
+    <div class="variant-label">A. Inline Chips</div>
+
+    <!-- Unselected -->
+    <div class="state-label">Unselected</div>
+    <div class="form-mock">
+      <div class="form-title placeholder">What you want to do?</div>
+      <div class="form-time-row">
+        <span class="form-chip">Today</span>
+        <span class="form-chip">🕐</span>
+        <span class="form-chip">&mdash;</span>
+      </div>
+      <div class="chips-row">
+        <span class="cat-chip"><span class="emoji">🧠</span> Deep Work</span>
+        <span class="cat-chip"><span class="emoji">💪</span> Health</span>
+        <span class="cat-chip"><span class="emoji">👥</span> Meetings</span>
+        <span class="cat-chip"><span class="emoji">🎨</span> Creative</span>
+        <span class="cat-chip"><span class="emoji">✨</span> Personal</span>
+        <span class="cat-chip"><span class="emoji">😴</span> Rest</span>
+        <span class="cat-chip add-chip">+</span>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Selected -->
+    <div class="state-label">Selected &mdash; Deep Work</div>
+    <div class="form-mock selected">
+      <div class="form-title">Morning focus session</div>
+      <div class="form-time-row">
+        <span class="form-chip">Today</span>
+        <span class="form-chip">9:00 AM</span>
+        <span class="form-chip">1h</span>
+      </div>
+      <div class="chips-row">
+        <span class="cat-chip active"><span class="emoji">🧠</span> Deep Work</span>
+        <span class="cat-chip"><span class="emoji">💪</span> Health</span>
+        <span class="cat-chip"><span class="emoji">👥</span> Meetings</span>
+        <span class="cat-chip"><span class="emoji">🎨</span> Creative</span>
+        <span class="cat-chip"><span class="emoji">✨</span> Personal</span>
+        <span class="cat-chip"><span class="emoji">😴</span> Rest</span>
+        <span class="cat-chip add-chip">+</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== B. Expanding Grid ==================== -->
+  <div class="variant-card">
+    <div class="variant-label">B. Expanding Grid</div>
+
+    <!-- Unselected (collapsed) -->
+    <div class="state-label">Unselected &mdash; Collapsed</div>
+    <div class="form-mock">
+      <div class="form-title placeholder">What you want to do?</div>
+      <div class="form-time-row">
+        <span class="form-chip">Today</span>
+        <span class="form-chip">🕐</span>
+        <span class="form-chip">&mdash;</span>
+      </div>
+      <div class="cat-row-trigger">
+        Category <span class="chevron">&#9662;</span>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Unselected (expanded) + then Selected -->
+    <div class="state-label">Tapped &mdash; Grid Expanded</div>
+    <div class="form-mock">
+      <div class="form-title">Morning focus session</div>
+      <div class="form-time-row">
+        <span class="form-chip">Today</span>
+        <span class="form-chip">9:00 AM</span>
+        <span class="form-chip">1h</span>
+      </div>
+      <div class="cat-row-trigger has-value">
+        <span class="cat-display">🧠 Deep Work</span>
+        <span class="chevron">&#9652;</span>
+      </div>
+      <div class="cat-grid">
+        <div class="cat-grid-tile active">
+          <span class="emoji">🧠</span>
+          <span class="name">Deep Work</span>
+        </div>
+        <div class="cat-grid-tile">
+          <span class="emoji">💪</span>
+          <span class="name">Health</span>
+        </div>
+        <div class="cat-grid-tile">
+          <span class="emoji">👥</span>
+          <span class="name">Meetings</span>
+        </div>
+        <div class="cat-grid-tile">
+          <span class="emoji">🎨</span>
+          <span class="name">Creative</span>
+        </div>
+        <div class="cat-grid-tile">
+          <span class="emoji">✨</span>
+          <span class="name">Personal</span>
+        </div>
+        <div class="cat-grid-tile">
+          <span class="emoji">😴</span>
+          <span class="name">Rest</span>
+        </div>
+        <div class="cat-grid-tile add-tile">
+          <span class="emoji">+</span>
+          <span class="name">Add new</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== C. Icon Toolbar ==================== -->
+  <div class="variant-card">
+    <div class="variant-label">C. Icon Toolbar</div>
+
+    <!-- Unselected -->
+    <div class="state-label">Unselected</div>
+    <div class="form-mock">
+      <div class="form-title placeholder">What you want to do?</div>
+      <div class="form-time-row">
+        <span class="form-chip">Today</span>
+        <span class="form-chip">🕐</span>
+        <span class="form-chip">&mdash;</span>
+      </div>
+      <div class="icon-toolbar">
+        <span class="icon-btn">🧠</span>
+        <span class="icon-btn">💪</span>
+        <span class="icon-btn">👥</span>
+        <span class="icon-btn">🎨</span>
+        <span class="icon-btn">✨</span>
+        <span class="icon-btn">😴</span>
+        <span class="icon-btn add-icon">+</span>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Selected -->
+    <div class="state-label">Selected &mdash; Deep Work</div>
+    <div class="form-mock selected">
+      <div class="form-title">Morning focus session</div>
+      <div class="form-time-row">
+        <span class="form-chip">Today</span>
+        <span class="form-chip">9:00 AM</span>
+        <span class="form-chip">1h</span>
+      </div>
+      <div class="icon-toolbar">
+        <span class="icon-btn active">
+          🧠
+          <span class="tooltip">Deep Work</span>
+        </span>
+        <span class="icon-btn">💪</span>
+        <span class="icon-btn">👥</span>
+        <span class="icon-btn">🎨</span>
+        <span class="icon-btn">✨</span>
+        <span class="icon-btn">😴</span>
+        <span class="icon-btn add-icon">+</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== D. Pill Selector ==================== -->
+  <div class="variant-card">
+    <div class="variant-label">D. Pill Selector</div>
+
+    <!-- Unselected -->
+    <div class="state-label">Unselected</div>
+    <div class="form-mock">
+      <div class="form-title placeholder">What you want to do?</div>
+      <div class="form-time-row">
+        <span class="form-chip">Today</span>
+        <span class="form-chip">🕐</span>
+        <span class="form-chip">&mdash;</span>
+      </div>
+      <div class="pill-row">
+        <span class="cat-pill"><span class="emoji">🧠</span> Deep Work</span>
+        <span class="cat-pill"><span class="emoji">💪</span> Health</span>
+        <span class="cat-pill"><span class="emoji">👥</span> Meetings</span>
+        <span class="cat-pill"><span class="emoji">🎨</span> Creative</span>
+        <span class="cat-pill"><span class="emoji">✨</span> Personal</span>
+        <span class="cat-pill"><span class="emoji">😴</span> Rest</span>
+        <span class="cat-pill add-pill">+</span>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Selected -->
+    <div class="state-label">Selected &mdash; Deep Work</div>
+    <div class="form-mock selected">
+      <div class="form-title">Morning focus session</div>
+      <div class="form-time-row">
+        <span class="form-chip">Today</span>
+        <span class="form-chip">9:00 AM</span>
+        <span class="form-chip">1h</span>
+      </div>
+      <div class="pill-row">
+        <span class="cat-pill active"><span class="emoji">🧠</span> Deep Work</span>
+        <span class="cat-pill"><span class="emoji">💪</span> Health</span>
+        <span class="cat-pill"><span class="emoji">👥</span> Meetings</span>
+        <span class="cat-pill"><span class="emoji">🎨</span> Creative</span>
+        <span class="cat-pill"><span class="emoji">✨</span> Personal</span>
+        <span class="cat-pill"><span class="emoji">😴</span> Rest</span>
+        <span class="cat-pill add-pill">+</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

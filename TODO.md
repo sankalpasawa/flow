@@ -24,6 +24,12 @@
 - [ ] **End-of-day planning nudge**: Push notification at 8-9:30pm when tomorrow has <3 planned activities.
 - [ ] **Log prompt nudge**: Fire notification 30min after activity end_time for experience logging.
 
+## Future Scope
+
+- [ ] **Conflict → calendar view**: When there's a scheduling conflict, show a calendar icon that navigates to that day's canvas so user can see and rearrange visually
+- [ ] **Post-create scroll**: After creating an activity, auto-navigate to that day's canvas and scroll to the time slot where the activity was placed
+- [ ] **Experience log screen**: Post-activity mood/energy/reflection logging (design in progress)
+
 ## Lower Priority
 
 - [ ] **Data fetching from server**: Replace hardcoded seed data with Supabase sync for production. Seed data is dev-only (in `src/lib/db/seed.ts`).

@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DayFlow — Final Mockup: Sankalp's Monday</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap');
+
+  :root {
+    --bg: #F5F0E8;
+    --text: #1A1714;
+    --text2: #4A4540;
+    --muted: #8C857D;
+    --border: #E0D9CE;
+    --primary: #2D5A3E;
+    --primary-soft: #E3ECE6;
+    --accent: #C4795B;
+    --terra: #B5634A;
+    --sage: #5A8C6A;
+    --slate: #3D5F80;
+    --mauve: #7D5A7C;
+    --amber: #A67B0A;
+    --wm-text: #8B4A30;
+    --wm-bg: rgba(181,99,74,0.12);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Instrument Sans', -apple-system, sans-serif;
+    background: #E8E2D8;
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    padding: 40px 20px 80px;
+  }
+  .page { max-width: 520px; margin: 0 auto; }
+  .page-title { font-size: 13px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; color: var(--muted); text-align: center; margin-bottom: 6px; }
+  .page-sub { font-size: 20px; font-weight: 700; text-align: center; margin-bottom: 32px; letter-spacing: -0.3px; }
+
+  /* Phone */
+  .phone {
+    width: 393px; height: 852px; margin: 0 auto;
+    background: var(--bg); border-radius: 48px; border: 6px solid #1a1714;
+    overflow: hidden; position: relative;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.08), 0 4px 8px rgba(0,0,0,0.08), 0 16px 40px rgba(26,23,20,0.18), 0 32px 80px rgba(26,23,20,0.12);
+  }
+  .ps { height: 100%; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  .ps::-webkit-scrollbar { display: none; }
+
+  /* Fixed header */
+  .fh { position: sticky; top: 0; z-index: 30; background: var(--bg); }
+  .sb { display: flex; justify-content: space-between; align-items: center; padding: 14px 28px 0; font-size: 15px; font-weight: 600; }
+  .di { width: 126px; height: 36px; background: #1a1714; border-radius: 20px; margin: -28px auto 0; position: relative; margin-bottom: -20px; }
+
+  .ah { display: flex; justify-content: space-between; align-items: center; padding: 8px 24px 4px; }
+  .at { font-size: 32px; font-weight: 700; letter-spacing: -0.8px; }
+  .ha { display: flex; gap: 8px; }
+  .hb { width: 36px; height: 36px; border-radius: 12px; background: linear-gradient(180deg,#fff,#F5F0E8); box-shadow: 0 1px 3px rgba(0,0,0,0.06); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: var(--primary); position: relative; overflow: hidden; }
+  .hb-bar { position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--primary); border-radius: 12px 12px 0 0; }
+
+  .ds { display: flex; gap: 2px; padding: 12px 20px 4px; }
+  .dc { min-width: 48px; height: 60px; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 16px; gap: 2px; flex-shrink: 0; }
+  .dc-d { font-size: 11px; font-weight: 500; color: var(--muted); text-transform: uppercase; letter-spacing: 0.3px; }
+  .dc-n { font-size: 18px; font-weight: 700; color: var(--text); line-height: 1; }
+  .dc.s { background: linear-gradient(180deg,#3E7A55,#2D5A3E); box-shadow: 0 3px 10px rgba(45,90,62,0.3); }
+  .dc.s .dc-d { color: rgba(255,255,255,0.7); }
+  .dc.s .dc-n { color: #fff; }
+
+  .ph { display: flex; justify-content: center; padding: 6px 0 2px; }
+  .pb { width: 36px; height: 4px; border-radius: 2px; background: var(--border); }
+
+  /* Canvas */
+  .ca { position: relative; min-height: 1360px; padding-bottom: 120px; }
+  .ca::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    background:
+      radial-gradient(ellipse 280px 180px at 65% 60px, rgba(181,99,74,0.04), transparent),
+      radial-gradient(ellipse 260px 200px at 55% 300px, rgba(45,90,62,0.05), transparent),
+      radial-gradient(ellipse 240px 180px at 60% 600px, rgba(61,95,128,0.04), transparent),
+      radial-gradient(ellipse 260px 180px at 50% 900px, rgba(90,140,106,0.04), transparent);
+    pointer-events: none;
+  }
+
+  /* Hour */
+  .hr { position: absolute; left: 0; right: 0; }
+  .hr-t { position: absolute; left: 8px; font-size: 11px; font-weight: 500; color: var(--muted); opacity: 0.3; width: 40px; text-align: right; top: -6px; }
+  .hr-t.now { color: var(--accent); opacity: 1; font-weight: 600; }
+  .hr-l { position: absolute; left: 52px; right: 12px; height: 1px; background: var(--border); opacity: 0.15; }
+
+  /* Now */
+  .nl { position: absolute; left: 50px; right: 12px; display: flex; align-items: center; z-index: 10; pointer-events: none; }
+  .nd { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 3px rgba(196,121,91,0.2), 0 0 16px rgba(196,121,91,0.35); flex-shrink: 0; animation: glow 2.5s ease-in-out infinite; }
+  @keyframes glow { 0%,100%{box-shadow:0 0 0 3px rgba(196,121,91,0.2),0 0 16px rgba(196,121,91,0.35)} 50%{box-shadow:0 0 0 5px rgba(196,121,91,0.15),0 0 24px rgba(196,121,91,0.4)} }
+  .nr { flex: 1; height: 2px; background: linear-gradient(to right, var(--accent), transparent 80%); margin-left: -1px; }
+
+  /* Glass pill */
+  .p {
+    position: absolute; left: 56px; right: 14px;
+    border-radius: 14px; padding: 10px 12px;
+    background: rgba(255,255,255,0.65); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.75);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 3px 8px rgba(0,0,0,0.06), 0 8px 20px rgba(0,0,0,0.04);
+    overflow: visible; z-index: 2;
+  }
+  .p.cat-primary { background: linear-gradient(rgba(45,90,62,0.06),rgba(45,90,62,0.06)), rgba(255,255,255,0.65); }
+  .p.cat-terra { background: linear-gradient(rgba(181,99,74,0.05),rgba(181,99,74,0.05)), rgba(255,255,255,0.65); }
+  .p.cat-slate { background: linear-gradient(rgba(61,95,128,0.05),rgba(61,95,128,0.05)), rgba(255,255,255,0.65); }
+  .p.cat-amber { background: linear-gradient(rgba(166,123,10,0.05),rgba(166,123,10,0.05)), rgba(255,255,255,0.65); }
+  .p.cat-mauve { background: linear-gradient(rgba(125,90,124,0.06),rgba(125,90,124,0.06)), rgba(255,255,255,0.65); }
+  .p.cat-sage { background: linear-gradient(rgba(90,140,106,0.06),rgba(90,140,106,0.06)), rgba(255,255,255,0.65); }
+  .p.compact { padding: 6px 10px; border-radius: 12px; }
+  .p.hl { right: calc(50% + 6px); }
+  .p.hr2 { left: calc(50% + 30px); }
+
+  .p-r { display: flex; align-items: center; gap: 8px; }
+  .p-i { font-size: 15px; line-height: 1; flex-shrink: 0; }
+  .p-i.sm { font-size: 12px; }
+  .p-b { flex: 1; min-width: 0; }
+  .p-n { font-size: 13px; font-weight: 700; color: var(--text); line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .p-n.sm { font-size: 11px; }
+  .p-n.done { text-decoration: line-through; opacity: 0.4; }
+  .p-m { font-size: 9.5px; font-style: italic; color: var(--text2); opacity: 0.6; margin-top: 2px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.35; }
+  .p.compact .p-m { font-size: 8.5px; -webkit-line-clamp: 1; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
+  .p-pg { display: flex; align-items: center; gap: 6px; margin-top: 8px; padding-left: 24px; }
+  .p-trk { flex: 1; height: 4px; background: rgba(0,0,0,0.06); border-radius: 2px; overflow: hidden; }
+  .p-fl { height: 100%; border-radius: 2px; }
+  .p-ct { font-family: 'Geist Mono', monospace; font-size: 10px; color: var(--muted); }
+
+  /* Watermark — dark warm chip, always on top, right-aligned, exact time position */
+  .wm {
+    position: absolute;
+    right: 16px;
+    font-size: 9px; font-weight: 600;
+    color: var(--wm-text);
+    background: var(--wm-bg);
+    padding: 3px 8px;
+    border-radius: 5px;
+    display: flex; align-items: center; gap: 3px;
+    white-space: nowrap;
+    z-index: 8;
+  }
+  .wm-ico { font-size: 10px; line-height: 1; }
+
+  /* Bottom task bar */
+  .btb {
+    position: absolute; bottom: 82px; left: 0; right: 0; height: 44px;
+    background: rgba(255,255,255,0.75); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    border-top: 0.5px solid rgba(255,255,255,0.5);
+    display: flex; align-items: center; padding: 0 20px; gap: 10px; z-index: 20;
+  }
+  .btb-ck { width: 16px; height: 16px; border-radius: 5px; border: 1.5px solid var(--border); flex-shrink: 0; }
+  .btb-nm { font-size: 13px; font-weight: 500; color: var(--text2); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .btb-ct { font-family: 'Geist Mono', monospace; font-size: 10px; font-weight: 600; color: var(--primary); background: var(--primary-soft); padding: 2px 8px; border-radius: 6px; }
+
+  /* FAB */
+  .fab {
+    position: absolute; bottom: 140px; right: 24px;
+    width: 52px; height: 52px; border-radius: 16px;
+    background: linear-gradient(145deg, #4A8060, #2D5A3E, #1a3d2d);
+    color: #fff; font-size: 26px; font-weight: 300;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 2px 4px rgba(45,90,62,0.15), 0 8px 24px rgba(45,90,62,0.3), 0 16px 40px rgba(45,90,62,0.12);
+    z-index: 20;
+  }
+
+  /* Tab bar */
+  .tb {
+    position: absolute; bottom: 0; left: 0; right: 0; height: 82px;
+    background: rgba(255,255,255,0.7); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+    border-top: 0.5px solid rgba(255,255,255,0.5);
+    display: flex; justify-content: space-around; align-items: flex-start; padding-top: 10px; z-index: 20;
+  }
+  .t { display: flex; flex-direction: column; align-items: center; gap: 2px; width: 64px; position: relative; }
+  .t-d { width: 4px; height: 4px; border-radius: 2px; background: var(--primary); position: absolute; top: -7px; opacity: 0; }
+  .t.on .t-d { opacity: 1; }
+  .t svg { width: 24px; height: 24px; fill: none; stroke: var(--muted); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .t.on svg { stroke: var(--primary); }
+  .t span { font-size: 10px; font-weight: 600; color: var(--muted); }
+  .t.on span { color: var(--primary); }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="page-title">Final mockup</div>
+  <div class="page-sub">Sankalp's Monday, March 31</div>
+
+  <div class="phone">
+    <div class="ps">
+      <div class="fh">
+        <div class="sb"><span>9:41</span><span style="font-size:12px;letter-spacing:2px">&#9679;&#9679;&#9679;</span></div>
+        <div class="di"></div>
+        <div class="ah">
+          <span class="at">Today</span>
+          <div class="ha">
+            <div class="hb"><div class="hb-bar"></div>31</div>
+            <div class="hb" style="color:var(--muted)">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="7" cy="7" r="5"/><path d="M11 11l3 3"/></svg>
+            </div>
+          </div>
+        </div>
+        <div class="ds">
+          <div class="dc"><span class="dc-d">Thu</span><span class="dc-n">27</span></div>
+          <div class="dc"><span class="dc-d">Fri</span><span class="dc-n">28</span></div>
+          <div class="dc"><span class="dc-d">Sat</span><span class="dc-n">29</span></div>
+          <div class="dc"><span class="dc-d">Sun</span><span class="dc-n">30</span></div>
+          <div class="dc s"><span class="dc-d">Mon</span><span class="dc-n">31</span></div>
+          <div class="dc"><span class="dc-d">Tue</span><span class="dc-n">1</span></div>
+          <div class="dc"><span class="dc-d">Wed</span><span class="dc-n">2</span></div>
+        </div>
+        <div class="ph"><div class="pb"></div></div>
+      </div>
+
+      <!-- CANVAS -->
+      <div class="ca">
+        <!-- Hours 7 AM - 11 PM (80px each) -->
+        <div class="hr" style="top:0"><span class="hr-t">7 AM</span><div class="hr-l"></div></div>
+        <div class="hr" style="top:80px"><span class="hr-t">8 AM</span><div class="hr-l"></div></div>
+        <div class="hr" style="top:160px"><span class="hr-t">9 AM</span><div class="hr-l"></div></div>
+        <div class="hr" style="top:240px"><span class="hr-t now">10 AM</span><div class="hr-l"></div></div>
+        <div class="hr" style="top:320px"><span class="hr-t">11 AM</span><div class="hr-l"></div></div>
+        <div class="hr" style="top:400px"><span class="hr-t">12 PM</span><div class="hr-l"></div></div>
+        <div class="hr" style="top:480px"><span class="hr-t">1 PM</span><div class="hr-l"></div></div>
+        <div class="hr" style="top:560px"><span class="hr-t">2 PM</span><div class="hr-l"></div></div>
+        <div class="hr" style="top:640px"><span class="hr-t">3 PM</span><div class="hr-l"></div></div>
+        <div class="hr" style="top:720px"><span class="hr-t">4 PM</span><div class="hr-l"></div></div>
+        <div class="hr" style="top:800px"><span class="hr-t">5 PM</span><div class="hr-l"></div></div>
+        <div class="hr" style="top:880px"><span class="hr-t">6 PM</span><div class="hr-l"></div></div>
+        <div class="hr" style="top:960px"><span class="hr-t">7 PM</span><div class="hr-l"></div></div>
+        <div class="hr" style="top:1040px"><span class="hr-t">8 PM</span><div class="hr-l"></div></div>
+        <div class="hr" style="top:1120px"><span class="hr-t">9 PM</span><div class="hr-l"></div></div>
+        <div class="hr" style="top:1200px"><span class="hr-t">10 PM</span><div class="hr-l"></div></div>
+
+        <!-- ===== 7:00-7:50 Morning routine + medicine ===== -->
+        <div class="p compact cat-mauve" style="top:4px;height:62px">
+          <div class="p-r">
+            <span class="p-i">🌅</span>
+            <div class="p-b">
+              <div class="p-n done">Morning routine + medicine</div>
+              <div class="p-m">"Feel the energy. Affirmations of loving self, universe."</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 8:00-8:45 Walk + gym (done) -->
+        <div class="p cat-terra" style="top:82px;height:58px">
+          <div class="p-r">
+            <span class="p-i">💪</span>
+            <div class="p-b">
+              <div class="p-n done">Walk, little gym</div>
+              <div class="p-m">"Start with stretches. Focus on compound lifts."</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Watermark: 8:30 Drink water -->
+        <div class="wm" style="top:120px"><span class="wm-ico">💧</span>Drink water</div>
+
+        <!-- 9:00-9:30 Breakfast (done) -->
+        <div class="p compact cat-amber" style="top:162px;height:38px">
+          <div class="p-r">
+            <span class="p-i">🍳</span>
+            <div class="p-b"><div class="p-n done">Breakfast</div><div class="p-m">"Be grateful for the food. Eat slowly."</div></div>
+          </div>
+        </div>
+
+        <!-- 9:30-10:00 Sunlight + Mudra + Prayer (overlap) -->
+        <div class="p hl compact cat-terra" style="top:202px;height:36px">
+          <div class="p-r">
+            <span class="p-i sm">☀️</span>
+            <div class="p-b"><div class="p-n sm done">Sunlight</div><div class="p-m">"15 min, face the warmth..."</div></div>
+          </div>
+        </div>
+        <div class="p hr2 compact cat-mauve" style="top:202px;height:36px">
+          <div class="p-r">
+            <span class="p-i sm">🙏</span>
+            <div class="p-b"><div class="p-n sm done">Mudra + Prayer</div><div class="p-m">"Surrender to the universe..."</div></div>
+          </div>
+        </div>
+
+        <!-- Now indicator 10:15 -->
+        <div class="nl" style="top:260px"><div class="nd"></div><div class="nr"></div></div>
+
+        <!-- Watermark: 10:00 Stand up (same time as now) -->
+        <div class="wm" style="top:240px"><span class="wm-ico">🧍</span>Stand and stretch</div>
+
+        <!-- 10:30-12:30 Sankalp work (in progress) -->
+        <div class="p cat-primary" style="top:284px;height:152px">
+          <div class="p-r">
+            <span class="p-i">🧠</span>
+            <div class="p-b">
+              <div class="p-n">Sankalp work</div>
+              <div class="p-m">"Serious about intent, playful execution. No Slack until the first draft is done."</div>
+            </div>
+          </div>
+          <div class="p-pg">
+            <div class="p-trk"><div class="p-fl" style="width:40%;background:var(--primary)"></div></div>
+            <span class="p-ct">2/5</span>
+          </div>
+        </div>
+
+        <!-- Watermark: 11:30 Drink water (mid-pill) -->
+        <div class="wm" style="top:360px"><span class="wm-ico">💧</span>Drink water</div>
+
+        <!-- 1:00-1:30 Medicine + Prayer + Lunch -->
+        <div class="p cat-amber" style="top:482px;height:56px">
+          <div class="p-r">
+            <span class="p-i">🍛</span>
+            <div class="p-b">
+              <div class="p-n">Medicine, prayer, lunch</div>
+              <div class="p-m">"Be grateful for the food. Eat slowly."</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Watermark: 1:00 Drink water (same start as lunch) -->
+        <div class="wm" style="top:480px"><span class="wm-ico">💧</span>Drink water</div>
+
+        <!-- 2:00-4:00 Problem solving (deep work block 2) -->
+        <div class="p cat-primary" style="top:562px;height:152px">
+          <div class="p-r">
+            <span class="p-i">🧠</span>
+            <div class="p-b">
+              <div class="p-n">Problem solving</div>
+              <div class="p-m">"Go deeper. Research and build from scratch. Understand everything."</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Watermark: 2:30 Stand up (mid-pill) -->
+        <div class="wm" style="top:600px"><span class="wm-ico">🧍</span>Stand and stretch</div>
+
+        <!-- 4:00-5:00 Leisure (overlap: TT + Reading) -->
+        <div class="p hl cat-sage" style="top:722px;height:72px">
+          <div class="p-r">
+            <span class="p-i">🏓</span>
+            <div class="p-b">
+              <div class="p-n">Table Tennis</div>
+              <div class="p-m">"Play for fun, not to win."</div>
+            </div>
+          </div>
+        </div>
+        <div class="p hr2 cat-slate" style="top:722px;height:72px">
+          <div class="p-r">
+            <span class="p-i">📚</span>
+            <div class="p-b">
+              <div class="p-n">Read Aesop</div>
+              <div class="p-m">"Strategy reading, 15 min."</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Watermark: 4:00 Drink water (same start as leisure) -->
+        <div class="wm" style="top:720px"><span class="wm-ico">💧</span>Drink water</div>
+
+        <!-- 5:00-6:00 Sunlight + family -->
+        <div class="p cat-terra" style="top:802px;height:72px">
+          <div class="p-r">
+            <span class="p-i">🏠</span>
+            <div class="p-b">
+              <div class="p-n">Family time: Mummy, Papa</div>
+              <div class="p-m">"Be present. Listen. Don't give advice unless asked."</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Watermark: 5:30 Stand up -->
+        <div class="wm" style="top:840px"><span class="wm-ico">🧍</span>Stand and stretch</div>
+
+        <!-- 7:00-7:30 Medicine + Prayer + Dinner -->
+        <div class="p cat-amber" style="top:962px;height:56px">
+          <div class="p-r">
+            <span class="p-i">🍽️</span>
+            <div class="p-b">
+              <div class="p-n">Medicine, prayer, dinner</div>
+              <div class="p-m">"Eat mindfully. No screens at the table."</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 8:00-9:00 News light -->
+        <div class="p cat-slate" style="top:1042px;height:72px">
+          <div class="p-r">
+            <span class="p-i">📰</span>
+            <div class="p-b">
+              <div class="p-n">News light</div>
+              <div class="p-m">"Know what's happening. Don't idolise one person. Sectors and trends."</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 9:00-10:00 Leisure + steady activity -->
+        <div class="p cat-sage" style="top:1122px;height:72px">
+          <div class="p-r">
+            <span class="p-i">🎵</span>
+            <div class="p-b">
+              <div class="p-n">Leisure: music, plants, family</div>
+              <div class="p-m">"Spend time in the child zone. Experience things."</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Watermark: 9:00 Drink water -->
+        <div class="wm" style="top:1120px"><span class="wm-ico">💧</span>Drink water</div>
+
+        <!-- 10:00-10:15 Night routine -->
+        <div class="p compact cat-mauve" style="top:1202px;height:32px">
+          <div class="p-r">
+            <span class="p-i sm">🌙</span>
+            <div class="p-b"><div class="p-n sm">Night routine + intentions</div><div class="p-m">"Check the day. What went well..."</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom task bar -->
+    <div class="btb">
+      <div class="btb-ck"></div>
+      <span class="btb-nm">Message Saurabh about weekend</span>
+      <span class="btb-ct">+4</span>
+    </div>
+
+    <!-- FAB -->
+    <div class="fab">+</div>
+
+    <!-- Tab bar -->
+    <div class="tb">
+      <div class="t on"><div class="t-d"></div><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/></svg><span>Today</span></div>
+      <div class="t"><div class="t-d"></div><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M4 10h16"/></svg><span>Plan</span></div>
+      <div class="t"><div class="t-d"></div><svg viewBox="0 0 24 24"><path d="M4 18l4-6 4 4 4-8 4 6"/></svg><span>Insights</span></div>
+      <div class="t"><div class="t-d"></div><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 5v-1m0 14v1m-7-7h-1m14 0h1"/></svg><span>Settings</span></div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

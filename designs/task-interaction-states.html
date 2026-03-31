@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DayFlow — Task Bar Interaction</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap');
+
+  :root {
+    --bg: #F5F0E8;
+    --text: #1A1714;
+    --text2: #4A4540;
+    --muted: #8C857D;
+    --border: #E0D9CE;
+    --primary: #2D5A3E;
+    --primary-soft: #E3ECE6;
+    --accent: #C4795B;
+    --terra: #B5634A;
+    --sage: #5A8C6A;
+    --slate: #3D5F80;
+    --amber: #A67B0A;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Instrument Sans', -apple-system, sans-serif;
+    background: #E8E2D8;
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    padding: 32px 8px 80px;
+  }
+
+  h1 { font-size: 20px; font-weight: 700; text-align: center; margin-bottom: 4px; }
+  .sub { font-size: 12px; color: var(--muted); text-align: center; margin-bottom: 28px; }
+
+  .grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; max-width: 960px; margin: 0 auto; }
+  @media (max-width: 800px) { .grid { grid-template-columns: 1fr; max-width: 393px; } }
+
+  .label { font-size: 10px; font-weight: 600; letter-spacing: 0.7px; text-transform: uppercase; color: var(--muted); text-align: center; margin-bottom: 4px; }
+  .desc { font-size: 10px; color: var(--text2); text-align: center; margin-bottom: 8px; line-height: 1.4; }
+  .arrow { font-size: 24px; color: var(--muted); text-align: center; margin-bottom: 4px; }
+
+  /* Phone */
+  .phone {
+    width: 393px; height: 500px; margin: 0 auto;
+    background: var(--bg); border-radius: 0 0 48px 48px; border: 6px solid #1a1714; border-top: none;
+    overflow: hidden; position: relative;
+    box-shadow: 0 8px 32px rgba(26,23,20,0.12);
+  }
+
+  /* Canvas background */
+  .canvas {
+    position: relative; height: 100%;
+    background: radial-gradient(ellipse 250px 150px at 55% 80px, rgba(45,90,62,0.04), transparent);
+  }
+
+  .hr { position: absolute; left: 0; right: 0; }
+  .hr-t { position: absolute; left: 8px; font-size: 10px; font-weight: 500; color: var(--muted); opacity: 0.3; width: 38px; text-align: right; top: -6px; }
+  .hr-l { position: absolute; left: 50px; right: 12px; height: 1px; background: var(--border); opacity: 0.15; }
+
+  /* Glass pill */
+  .g {
+    position: absolute; left: 54px; right: 12px;
+    border-radius: 14px; padding: 9px 11px;
+    background: linear-gradient(rgba(45,90,62,0.06),rgba(45,90,62,0.06)), rgba(255,255,255,0.65);
+    backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255,255,255,0.75);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 2px 6px rgba(0,0,0,0.05);
+    z-index: 2;
+  }
+  .g-r { display: flex; align-items: center; gap: 6px; }
+  .g-i { font-size: 13px; line-height: 1; }
+  .g-n { font-size: 12px; font-weight: 700; color: var(--text); }
+  .g-m { font-size: 9px; font-style: italic; color: var(--text2); opacity: 0.6; margin-top: 1px; }
+
+  /* Tab bar */
+  .tb {
+    position: absolute; bottom: 0; left: 0; right: 0; height: 78px;
+    background: rgba(255,255,255,0.7); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+    border-top: 0.5px solid rgba(255,255,255,0.5);
+    display: flex; justify-content: space-around; align-items: flex-start; padding-top: 10px; z-index: 20;
+  }
+  .t { display: flex; flex-direction: column; align-items: center; gap: 2px; width: 60px; position: relative; }
+  .t-d { width: 4px; height: 4px; border-radius: 2px; background: var(--primary); position: absolute; top: -7px; opacity: 0; }
+  .t.on .t-d { opacity: 1; }
+  .t svg { width: 22px; height: 22px; fill: none; stroke: var(--muted); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .t.on svg { stroke: var(--primary); }
+  .t span { font-size: 10px; font-weight: 600; color: var(--muted); }
+  .t.on span { color: var(--primary); }
+
+  /* ===== STATE 1: Collapsed bar ===== */
+  .bar-collapsed {
+    position: absolute; bottom: 78px; left: 0; right: 0; height: 44px;
+    background: rgba(255,255,255,0.75); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    border-top: 0.5px solid rgba(255,255,255,0.5);
+    display: flex; align-items: center; padding: 0 20px; gap: 10px; z-index: 20;
+    cursor: pointer;
+  }
+  .bc-ck { width: 16px; height: 16px; border-radius: 5px; border: 1.5px solid var(--border); flex-shrink: 0; }
+  .bc-nm { font-size: 13px; font-weight: 500; color: var(--text2); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bc-ct { font-family: 'Geist Mono', monospace; font-size: 10px; font-weight: 600; color: var(--primary); background: var(--primary-soft); padding: 2px 8px; border-radius: 6px; }
+
+  /* ===== STATE 2: Expanded sheet ===== */
+  .sheet {
+    position: absolute; bottom: 78px; left: 0; right: 0;
+    background: rgba(255,255,255,0.85); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+    border-top: 1px solid rgba(255,255,255,0.7);
+    border-radius: 20px 20px 0 0;
+    padding: 10px 20px 16px;
+    box-shadow: 0 -4px 24px rgba(0,0,0,0.06);
+    z-index: 20;
+  }
+  .sheet-handle { width: 36px; height: 4px; border-radius: 2px; background: var(--border); margin: 0 auto 12px; }
+  .sheet-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .sheet-title { font-size: 15px; font-weight: 700; }
+  .sheet-count { font-family: 'Geist Mono', monospace; font-size: 11px; color: var(--muted); }
+  .sheet-add { font-size: 13px; font-weight: 600; color: var(--primary); cursor: pointer; }
+
+  .task-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(224,217,206,0.4);
+    cursor: grab;
+  }
+  .task-row:last-child { border-bottom: none; }
+  .task-row:active { opacity: 0.6; transform: scale(0.98); }
+
+  .tr-ck {
+    width: 20px; height: 20px; border-radius: 6px;
+    border: 1.5px solid var(--border); flex-shrink: 0;
+  }
+  .tr-ck.done {
+    background: linear-gradient(180deg, #4A8060, var(--primary));
+    border-color: var(--primary);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .tr-ck.done::after { content: '\2713'; color: #fff; font-size: 11px; font-weight: 700; }
+
+  .tr-content { flex: 1; min-width: 0; }
+  .tr-name { font-size: 14px; font-weight: 500; color: var(--text); }
+  .tr-name.done { text-decoration: line-through; color: var(--muted); }
+  .tr-sub { font-size: 11px; color: var(--muted); margin-top: 1px; }
+
+  .tr-dot { width: 8px; height: 8px; border-radius: 4px; flex-shrink: 0; }
+  .tr-drag { font-size: 16px; color: var(--border); flex-shrink: 0; cursor: grab; }
+  .tr-drag:active { color: var(--muted); }
+
+  /* ===== STATE 3: Dragging to timeline ===== */
+  .drag-ghost {
+    position: absolute;
+    left: 54px; right: 12px;
+    border-radius: 14px; padding: 9px 11px;
+    background: rgba(255,255,255,0.8); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+    border: 2px dashed var(--primary);
+    box-shadow: 0 4px 16px rgba(45,90,62,0.15);
+    z-index: 15;
+    opacity: 0.85;
+  }
+  .drag-ghost .g-r { display: flex; align-items: center; gap: 6px; }
+  .drag-ghost .g-n { font-size: 12px; font-weight: 600; color: var(--primary); }
+  .drag-time {
+    position: absolute; left: 8px;
+    font-family: 'Geist Mono', monospace;
+    font-size: 10px; font-weight: 600;
+    color: var(--primary);
+    background: var(--primary-soft);
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+
+  /* Drop zone highlight */
+  .drop-zone {
+    position: absolute; left: 54px; right: 12px;
+    border-radius: 14px;
+    border: 2px dashed rgba(45,90,62,0.2);
+    background: rgba(45,90,62,0.03);
+    z-index: 1;
+  }
+
+  .fab {
+    position: absolute; right: 16px;
+    width: 48px; height: 48px; border-radius: 14px;
+    background: linear-gradient(145deg, #4A8060, #2D5A3E);
+    color: #fff; font-size: 22px; font-weight: 300;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 16px rgba(45,90,62,0.3);
+    z-index: 20;
+  }
+</style>
+</head>
+<body>
+
+<h1>Task bar interaction</h1>
+<p class="sub">Three states: collapsed, expanded, and dragging to timeline</p>
+
+<div class="grid">
+
+  <!-- ===== STATE 1: COLLAPSED ===== -->
+  <div>
+    <div class="label">1. Collapsed</div>
+    <div class="desc">Default state. Shows next task + count. Tap to expand.</div>
+    <div class="phone">
+      <div class="canvas">
+        <div class="hr" style="top:20px"><span class="hr-t">2 PM</span><div class="hr-l"></div></div>
+        <div class="hr" style="top:100px"><span class="hr-t">3 PM</span><div class="hr-l"></div></div>
+        <div class="hr" style="top:180px"><span class="hr-t">4 PM</span><div class="hr-l"></div></div>
+        <div class="hr" style="top:260px"><span class="hr-t">5 PM</span><div class="hr-l"></div></div>
+
+        <div class="g" style="top:24px;height:110px">
+          <div class="g-r"><span class="g-i">🧠</span><div><div class="g-n">Problem solving</div><div class="g-m">"Go deeper. Build from scratch."</div></div></div>
+        </div>
+        <div class="g" style="top:184px;height:72px;background:linear-gradient(rgba(90,140,106,0.06),rgba(90,140,106,0.06)),rgba(255,255,255,0.65)">
+          <div class="g-r"><span class="g-i">🏓</span><div><div class="g-n">Table Tennis</div><div class="g-m">"Play for fun, not to win."</div></div></div>
+        </div>
+      </div>
+
+      <div class="bar-collapsed">
+        <div class="bc-ck"></div>
+        <span class="bc-nm">Message Saurabh about weekend</span>
+        <span class="bc-ct">+4</span>
+      </div>
+
+      <div class="fab" style="bottom:136px">+</div>
+
+      <div class="tb">
+        <div class="t on"><div class="t-d"></div><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/></svg><span>Today</span></div>
+        <div class="t"><div class="t-d"></div><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M4 10h16"/></svg><span>Plan</span></div>
+        <div class="t"><div class="t-d"></div><svg viewBox="0 0 24 24"><path d="M4 18l4-6 4 4 4-8 4 6"/></svg><span>Insights</span></div>
+        <div class="t"><div class="t-d"></div><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 5v-1m0 14v1m-7-7h-1m14 0h1"/></svg><span>Settings</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== STATE 2: EXPANDED ===== -->
+  <div>
+    <div class="label">2. Expanded</div>
+    <div class="desc">Tap the bar. Glass sheet slides up with full task list. Swipe down to close.</div>
+    <div class="phone">
+      <div class="canvas">
+        <div class="hr" style="top:20px"><span class="hr-t">2 PM</span><div class="hr-l"></div></div>
+        <div class="hr" style="top:100px"><span class="hr-t">3 PM</span><div class="hr-l"></div></div>
+        <div class="hr" style="top:180px"><span class="hr-t">4 PM</span><div class="hr-l"></div></div>
+        <div class="hr" style="top:260px"><span class="hr-t">5 PM</span><div class="hr-l"></div></div>
+
+        <div class="g" style="top:24px;height:110px">
+          <div class="g-r"><span class="g-i">🧠</span><div><div class="g-n">Problem solving</div><div class="g-m">"Go deeper. Build from scratch."</div></div></div>
+        </div>
+      </div>
+
+      <!-- Expanded sheet -->
+      <div class="sheet">
+        <div class="sheet-handle"></div>
+        <div class="sheet-header">
+          <span class="sheet-title">Tasks</span>
+          <span class="sheet-add">+ Add</span>
+        </div>
+
+        <div class="task-row">
+          <div class="tr-ck done"></div>
+          <div class="tr-content">
+            <div class="tr-name done">Review Q3 planning doc</div>
+          </div>
+          <div class="tr-dot" style="background:var(--sage)"></div>
+        </div>
+
+        <div class="task-row">
+          <div class="tr-ck"></div>
+          <div class="tr-content">
+            <div class="tr-name">Message Saurabh about weekend</div>
+            <div class="tr-sub">Personal</div>
+          </div>
+          <div class="tr-dot" style="background:var(--amber)"></div>
+          <span class="tr-drag">&#8942;</span>
+        </div>
+
+        <div class="task-row">
+          <div class="tr-ck"></div>
+          <div class="tr-content">
+            <div class="tr-name">Pick up coffee beans</div>
+            <div class="tr-sub">Chores</div>
+          </div>
+          <div class="tr-dot" style="background:var(--muted)"></div>
+          <span class="tr-drag">&#8942;</span>
+        </div>
+
+        <div class="task-row">
+          <div class="tr-ck"></div>
+          <div class="tr-content">
+            <div class="tr-name">Call mom re: weekend visit</div>
+            <div class="tr-sub">Family</div>
+          </div>
+          <div class="tr-dot" style="background:var(--terra)"></div>
+          <span class="tr-drag">&#8942;</span>
+        </div>
+
+        <div class="task-row">
+          <div class="tr-ck"></div>
+          <div class="tr-content">
+            <div class="tr-name">Angel One: check portfolio</div>
+            <div class="tr-sub">Finance</div>
+          </div>
+          <div class="tr-dot" style="background:var(--primary)"></div>
+          <span class="tr-drag">&#8942;</span>
+        </div>
+      </div>
+
+      <div class="tb">
+        <div class="t on"><div class="t-d"></div><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/></svg><span>Today</span></div>
+        <div class="t"><div class="t-d"></div><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M4 10h16"/></svg><span>Plan</span></div>
+        <div class="t"><div class="t-d"></div><svg viewBox="0 0 24 24"><path d="M4 18l4-6 4 4 4-8 4 6"/></svg><span>Insights</span></div>
+        <div class="t"><div class="t-d"></div><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 5v-1m0 14v1m-7-7h-1m14 0h1"/></svg><span>Settings</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== STATE 3: DRAGGING ===== -->
+  <div>
+    <div class="label">3. Drag to schedule</div>
+    <div class="desc">Long-press a task, drag it onto the timeline. It becomes a timed pill at the drop position.</div>
+    <div class="phone">
+      <div class="canvas">
+        <div class="hr" style="top:20px"><span class="hr-t">2 PM</span><div class="hr-l"></div></div>
+        <div class="hr" style="top:100px"><span class="hr-t">3 PM</span><div class="hr-l"></div></div>
+        <div class="hr" style="top:180px"><span class="hr-t">4 PM</span><div class="hr-l"></div></div>
+        <div class="hr" style="top:260px"><span class="hr-t">5 PM</span><div class="hr-l"></div></div>
+
+        <div class="g" style="top:24px;height:110px">
+          <div class="g-r"><span class="g-i">🧠</span><div><div class="g-n">Problem solving</div><div class="g-m">"Go deeper. Build from scratch."</div></div></div>
+        </div>
+
+        <!-- Drop zone at 4 PM -->
+        <div class="drop-zone" style="top:180px;height:72px"></div>
+
+        <!-- Drag ghost being placed at 4 PM -->
+        <div class="drag-ghost" style="top:184px;height:64px">
+          <div class="g-r"><span class="g-i">☕</span><div><div class="g-n">Pick up coffee beans</div></div></div>
+        </div>
+
+        <!-- Time label showing where it will land -->
+        <div class="drag-time" style="top:186px">4:00 PM</div>
+
+        <div class="g" style="top:264px;height:72px;background:linear-gradient(rgba(90,140,106,0.06),rgba(90,140,106,0.06)),rgba(255,255,255,0.65)">
+          <div class="g-r"><span class="g-i">🏓</span><div><div class="g-n">Table Tennis</div><div class="g-m">"Play for fun, not to win."</div></div></div>
+        </div>
+      </div>
+
+      <!-- Sheet partially visible during drag -->
+      <div class="sheet" style="opacity:0.4">
+        <div class="sheet-handle"></div>
+        <div class="sheet-header">
+          <span class="sheet-title">Tasks</span>
+          <span class="sheet-count">4 left</span>
+        </div>
+
+        <div class="task-row" style="opacity:0.3">
+          <div class="tr-ck"></div>
+          <div class="tr-content">
+            <div class="tr-name">Pick up coffee beans</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tb">
+        <div class="t on"><div class="t-d"></div><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/></svg><span>Today</span></div>
+        <div class="t"><div class="t-d"></div><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M4 10h16"/></svg><span>Plan</span></div>
+        <div class="t"><div class="t-d"></div><svg viewBox="0 0 24 24"><path d="M4 18l4-6 4 4 4-8 4 6"/></svg><span>Insights</span></div>
+        <div class="t"><div class="t-d"></div><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 5v-1m0 14v1m-7-7h-1m14 0h1"/></svg><span>Settings</span></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

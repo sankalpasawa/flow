@@ -106,3 +106,51 @@ Read `TODO.md` for the full list. Top priorities:
 - Scan the QR code with iPhone camera to open in Expo Go
 - Web: `npx expo start --web` then open http://localhost:8081
 - SDK 54 for Expo Go compatibility
+
+## Living Documentation Rule
+Whenever a critical decision, philosophy, direction, or framework is decided during a session, immediately update the relevant document:
+
+- **DESIGN.md** — Visual decisions, component specs, interaction patterns, design philosophy, color/type/spacing rules. Updated when: new component designed, visual treatment decided, interaction pattern locked, design philosophy refined.
+- **PLAN.md** — Product direction, feature scope, architecture decisions, data model changes. Updated when: new feature scoped, data model changed, architecture decision made, product direction shifted.
+- **CLAUDE.md** — Development instructions, conventions, workflow rules. Updated when: process changes, new conventions established, tool/workflow updates.
+- **TODO.md** — Implementation tasks. Updated when: new work items identified, items completed.
+
+These documents must be thorough and exhaustive so that:
+1. Someone new can recreate the entire system by reading them
+2. Future changes reference the right document for context
+3. Decision rationale is preserved (WHY, not just WHAT)
+
+After every significant decision, ask: "Which document needs updating?" and update it before moving on.
+
+## Design System
+Always read DESIGN.md before making any visual or UI decisions.
+All font choices, colors, spacing, and aesthetic direction are defined there.
+Do not deviate without explicit user approval.
+Key rules: glass morphism pills, no accent bars (use category tints), watermark chips right-aligned, Instrument Sans only.
+In QA mode, flag any code that doesn't match DESIGN.md.
+
+## Agent Orchestration
+When working in this repo, always maintain a **standby listener agent** running in the background. When the user gives a new instruction:
+1. Dispatch a sub-agent to handle the task
+2. Immediately spawn a new standby listener agent
+3. If the standby agent finishes for any reason, spawn a new one
+
+The standby agent holds context on all design decisions and current work state. This ensures the user can give instructions at any time and they'll be picked up.
+
+## Skill routing
+
+When the user's request matches an available skill, ALWAYS invoke it using the Skill
+tool as your FIRST action. Do NOT answer directly, do NOT use other tools first.
+The skill has specialized workflows that produce better results than ad-hoc answers.
+
+Key routing rules:
+- Product ideas, "is this worth building", brainstorming → invoke office-hours
+- Bugs, errors, "why is this broken", 500 errors → invoke investigate
+- Ship, deploy, push, create PR → invoke ship
+- QA, test the site, find bugs → invoke qa
+- Code review, check my diff → invoke review
+- Update docs after shipping → invoke document-release
+- Weekly retro → invoke retro
+- Design system, brand → invoke design-consultation
+- Visual audit, design polish → invoke design-review
+- Architecture review → invoke plan-eng-review

@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DayFlow — Watermark: One Simple Rule</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&display=swap');
+
+  :root {
+    --bg: #F5F0E8;
+    --text: #1A1714;
+    --text2: #4A4540;
+    --muted: #8C857D;
+    --border: #E0D9CE;
+    --primary: #2D5A3E;
+    --wm-text: #8B4A30;
+    --wm-bg: rgba(181,99,74,0.12);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Instrument Sans', -apple-system, sans-serif;
+    background: #E8E2D8;
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    padding: 32px 8px 80px;
+  }
+
+  h1 { font-size: 20px; font-weight: 700; text-align: center; margin-bottom: 4px; }
+  .sub { font-size: 12px; color: var(--muted); text-align: center; margin-bottom: 28px; max-width: 500px; margin-left: auto; margin-right: auto; line-height: 1.5; }
+  .rule { font-size: 11px; color: var(--primary); text-align: center; margin-bottom: 24px; font-weight: 600; background: rgba(45,90,62,0.06); padding: 8px 16px; border-radius: 8px; display: inline-block; margin-left: auto; margin-right: auto; }
+  .rule-wrap { text-align: center; margin-bottom: 24px; }
+
+  .grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 12px; max-width: 960px; margin: 0 auto; }
+  @media (max-width: 700px) { .grid { grid-template-columns: 1fr 1fr; max-width: 500px; } }
+
+  .label { font-size: 9px; font-weight: 600; letter-spacing: 0.6px; text-transform: uppercase; color: var(--muted); text-align: center; margin-bottom: 4px; }
+  .desc { font-size: 9px; color: var(--text2); text-align: center; margin-bottom: 6px; line-height: 1.4; }
+
+  .blk {
+    background: var(--bg);
+    border-radius: 18px;
+    padding: 12px 0;
+    height: 320px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(26,23,20,0.08);
+  }
+  .blk::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    background: radial-gradient(ellipse 150px 100px at 55% 80px, rgba(45,90,62,0.04), transparent);
+    pointer-events: none;
+  }
+
+  .cv { position: relative; height: 100%; }
+
+  .hr { position: absolute; left: 0; right: 0; }
+  .hr-t { position: absolute; left: 4px; font-size: 8px; font-weight: 500; color: var(--muted); opacity: 0.3; width: 26px; text-align: right; top: -5px; }
+  .hr-l { position: absolute; left: 34px; right: 4px; height: 1px; background: var(--border); opacity: 0.15; }
+
+  /* Glass pill — never moves */
+  .g {
+    position: absolute; left: 36px; right: 4px;
+    border-radius: 11px; padding: 7px 8px;
+    background: linear-gradient(rgba(45,90,62,0.06),rgba(45,90,62,0.06)), rgba(255,255,255,0.65);
+    backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255,255,255,0.75);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 2px 6px rgba(0,0,0,0.05);
+    overflow: visible; z-index: 2;
+  }
+  .g.cat-terra { background: linear-gradient(rgba(181,99,74,0.06),rgba(181,99,74,0.06)), rgba(255,255,255,0.65); }
+  .g.cat-slate { background: linear-gradient(rgba(61,95,128,0.06),rgba(61,95,128,0.06)), rgba(255,255,255,0.65); }
+  .g.cat-amber { background: linear-gradient(rgba(166,123,10,0.05),rgba(166,123,10,0.05)), rgba(255,255,255,0.65); }
+
+  .g-r { display: flex; align-items: center; gap: 5px; }
+  .g-i { font-size: 10px; line-height: 1; }
+  .g-b { flex: 1; min-width: 0; }
+  .g-n { font-size: 10px; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .g-m { font-size: 8px; font-style: italic; color: var(--text2); opacity: 0.6; margin-top: 1px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+
+  /* Watermark — always at exact time, always on top, always right */
+  .wm {
+    position: absolute;
+    right: 6px;
+    font-size: 9px; font-weight: 600;
+    color: var(--wm-text);
+    background: var(--wm-bg);
+    padding: 3px 8px;
+    border-radius: 5px;
+    display: flex; align-items: center; gap: 3px;
+    white-space: nowrap;
+    z-index: 8;
+  }
+  .wm-ico { font-size: 10px; line-height: 1; }
+</style>
+</head>
+<body>
+
+<h1>One rule, all scenarios</h1>
+<div class="rule-wrap"><div class="rule">top = time * HOUR_HEIGHT. Right-aligned. z-index above pills. Pill never moves.</div></div>
+<p class="sub">Same rendering for every case. No collision detection. No shifting.</p>
+
+<div class="grid">
+
+  <!-- 1: Same start time -->
+  <div>
+    <div class="label">Same start</div>
+    <div class="desc">Pill and watermark both at 9 AM. Watermark floats on pill's top-right.</div>
+    <div class="blk">
+      <div class="cv">
+        <div class="hr" style="top:16px"><span class="hr-t">8 AM</span><div class="hr-l"></div></div>
+        <div class="hr" style="top:80px"><span class="hr-t">9 AM</span><div class="hr-l"></div></div>
+        <div class="hr" style="top:144px"><span class="hr-t">10 AM</span><div class="hr-l"></div></div>
+        <div class="hr" style="top:208px"><span class="hr-t">11 AM</span><div class="hr-l"></div></div>
+
+        <div class="g cat-terra" style="top:20px;height:50px">
+          <div class="g-r"><span class="g-i">💪</span><div class="g-b"><div class="g-n">Gym</div><div class="g-m">"Compound lifts today"</div></div></div>
+        </div>
+
+        <!-- Both at 9 AM: pill at 80px, watermark at 80px -->
+        <div class="g" style="top:80px;height:110px">
+          <div class="g-r"><span class="g-i">🧠</span><div class="g-b"><div class="g-n">Deep work: strategy</div><div class="g-m">"Ship something ugly..."</div></div></div>
+        </div>
+        <div class="wm" style="top:80px"><span class="wm-ico">💧</span>Drink water</div>
+
+        <div class="wm" style="top:208px"><span class="wm-ico">🧍</span>Stand up</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2: Mid-pill -->
+  <div>
+    <div class="label">Mid-pill</div>
+    <div class="desc">Pill started at 8:30. Watermark at 9 AM lands on the pill. Floats on top.</div>
+    <div class="blk">
+      <div class="cv">
+        <div class="hr" style="top:16px"><span class="hr-t">8 AM</span><div class="hr-l"></div></div>
+        <div class="hr" style="top:80px"><span class="hr-t">9 AM</span><div class="hr-l"></div></div>
+        <div class="hr" style="top:144px"><span class="hr-t">10 AM</span><div class="hr-l"></div></div>
+        <div class="hr" style="top:208px"><span class="hr-t">11 AM</span><div class="hr-l"></div></div>
+
+        <!-- Pill from 8:30 to 10:30 -->
+        <div class="g" style="top:48px;height:128px">
+          <div class="g-r"><span class="g-i">🧠</span><div class="g-b"><div class="g-n">Deep work: strategy</div><div class="g-m">"Ship something ugly..."</div></div></div>
+        </div>
+
+        <!-- Watermark at exactly 9 AM -->
+        <div class="wm" style="top:80px"><span class="wm-ico">💧</span>Drink water</div>
+
+        <div class="wm" style="top:208px"><span class="wm-ico">🧍</span>Stand up</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3: Free space -->
+  <div>
+    <div class="label">Free space</div>
+    <div class="desc">No pill at 9 or 11 AM. Watermark on empty hour line.</div>
+    <div class="blk">
+      <div class="cv">
+        <div class="hr" style="top:16px"><span class="hr-t">8 AM</span><div class="hr-l"></div></div>
+        <div class="hr" style="top:80px"><span class="hr-t">9 AM</span><div class="hr-l"></div></div>
+        <div class="hr" style="top:144px"><span class="hr-t">10 AM</span><div class="hr-l"></div></div>
+        <div class="hr" style="top:208px"><span class="hr-t">11 AM</span><div class="hr-l"></div></div>
+
+        <div class="g cat-terra" style="top:20px;height:50px">
+          <div class="g-r"><span class="g-i">💪</span><div class="g-b"><div class="g-n">Gym</div><div class="g-m">"Compound lifts today"</div></div></div>
+        </div>
+
+        <div class="wm" style="top:80px"><span class="wm-ico">💧</span>Drink water</div>
+
+        <div class="g cat-slate" style="top:148px;height:48px;padding:6px 8px">
+          <div class="g-r"><span class="g-i">📰</span><div class="g-b"><div class="g-n">News: 30 min</div></div></div>
+        </div>
+
+        <div class="wm" style="top:208px"><span class="wm-ico">🧍</span>Stand up</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4: End of pill -->
+  <div>
+    <div class="label">End of pill</div>
+    <div class="desc">Pill ends at 9 AM. Watermark at 9 AM sits right on the bottom edge of the pill.</div>
+    <div class="blk">
+      <div class="cv">
+        <div class="hr" style="top:16px"><span class="hr-t">8 AM</span><div class="hr-l"></div></div>
+        <div class="hr" style="top:80px"><span class="hr-t">9 AM</span><div class="hr-l"></div></div>
+        <div class="hr" style="top:144px"><span class="hr-t">10 AM</span><div class="hr-l"></div></div>
+        <div class="hr" style="top:208px"><span class="hr-t">11 AM</span><div class="hr-l"></div></div>
+
+        <!-- Pill from 8-9 AM -->
+        <div class="g cat-terra" style="top:20px;height:60px">
+          <div class="g-r"><span class="g-i">💪</span><div class="g-b"><div class="g-n">Gym</div><div class="g-m">"Compound lifts today"</div></div></div>
+        </div>
+
+        <!-- Watermark right at 9 AM, where pill ends -->
+        <div class="wm" style="top:80px"><span class="wm-ico">💧</span>Drink water</div>
+
+        <!-- Next pill at 10 AM -->
+        <div class="g" style="top:148px;height:100px">
+          <div class="g-r"><span class="g-i">🧠</span><div class="g-b"><div class="g-n">Deep work: strategy</div><div class="g-m">"Ship something ugly..."</div></div></div>
+        </div>
+
+        <div class="wm" style="top:208px"><span class="wm-ico">🧍</span>Stand up</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

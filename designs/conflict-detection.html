@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DayFlow — Conflict Detection</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Geist+Mono:wght@400;500;600&display=swap');
+
+  :root {
+    --bg: #F5F0E8;
+    --page: #E8E2D8;
+    --text: #1A1714;
+    --text2: #4A4540;
+    --muted: #8C857D;
+    --border: #E0D9CE;
+    --primary: #2D5A3E;
+    --primary-soft: #E3ECE6;
+    --accent: #C4795B;
+    --terra: #B5634A;
+    --sage: #5A8C6A;
+    --slate: #3D5F80;
+    --mauve: #7D5A7C;
+    --amber: #A67B0A;
+    --danger: #C45B5B;
+    --warn-bg: rgba(166,123,10,0.08);
+    --warn-border: rgba(166,123,10,0.18);
+    --warn-text: #8B6914;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Instrument Sans', -apple-system, sans-serif;
+    background: var(--page);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    padding: 40px 20px 80px;
+    overflow-x: auto;
+  }
+
+  .page-title {
+    font-size: 13px; font-weight: 600; letter-spacing: 0.5px;
+    text-transform: uppercase; color: var(--muted); text-align: center;
+    margin-bottom: 8px;
+  }
+  .page-subtitle {
+    font-size: 12px; font-weight: 400; color: var(--muted); text-align: center;
+    margin-bottom: 32px; max-width: 600px; margin-left: auto; margin-right: auto;
+    line-height: 1.5;
+  }
+
+  .phones-row {
+    display: flex;
+    gap: 40px;
+    overflow-x: auto;
+    padding: 0 20px 40px;
+    justify-content: center;
+  }
+  .phones-row::-webkit-scrollbar { display: none; }
+
+  .phone-wrapper {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+  .phone-label {
+    font-size: 11px; font-weight: 600; letter-spacing: 0.8px;
+    text-transform: uppercase; color: var(--muted);
+  }
+
+  /* Phone frame */
+  .phone {
+    width: 393px; height: 852px;
+    background: var(--bg); border-radius: 48px; border: 6px solid #1a1714;
+    overflow: hidden; position: relative;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.08), 0 4px 8px rgba(0,0,0,0.08),
+                0 16px 40px rgba(26,23,20,0.18), 0 32px 80px rgba(26,23,20,0.12);
+  }
+  .phone-inner { height: 100%; display: flex; flex-direction: column; position: relative; }
+
+  /* Status bar */
+  .sb {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 14px 28px 0; font-size: 15px; font-weight: 600;
+  }
+  .di {
+    width: 126px; height: 36px; background: #1a1714; border-radius: 20px;
+    margin: -28px auto 0; position: relative; z-index: 5;
+  }
+
+  /* Dimmed backdrop */
+  .backdrop {
+    flex: 1; position: relative; overflow: hidden;
+    background: radial-gradient(ellipse 260px 180px at 55% 120px, rgba(45,90,62,0.04), transparent);
+  }
+  .dim { position: absolute; inset: 0; background: rgba(26,23,20,0.3); z-index: 1; }
+  .ghost-pills { padding: 24px 20px; }
+  .ghost {
+    height: 60px; margin-bottom: 8px;
+    background: rgba(255,255,255,0.3); border-radius: 14px;
+    border: 1px solid rgba(255,255,255,0.4); opacity: 0.4;
+    display: flex; align-items: center; padding: 0 12px; gap: 8px;
+  }
+  .ghost-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); }
+  .ghost-line { height: 10px; border-radius: 4px; background: var(--border); opacity: 0.5; }
+
+  /* Bottom sheet */
+  .sheet {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    background: rgba(255,255,255,0.88);
+    backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+    border-radius: 24px 24px 0 0;
+    border-top: 1px solid rgba(255,255,255,0.8);
+    z-index: 10;
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.08);
+    padding: 0 20px 34px;
+    overflow-y: auto;
+    max-height: 88%;
+  }
+  .sheet::-webkit-scrollbar { display: none; }
+
+  /* Drag handle */
+  .handle {
+    display: flex; justify-content: center; padding: 10px 0 6px;
+    position: sticky; top: 0; z-index: 2;
+    background: rgba(255,255,255,0.88);
+    backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+  }
+  .handle-bar { width: 36px; height: 4px; border-radius: 2px; background: var(--border); }
+
+  /* Title input */
+  .title-input {
+    width: 100%; border: none; outline: none;
+    font-family: 'Instrument Sans', sans-serif;
+    font-size: 20px; font-weight: 600;
+    color: var(--text); background: transparent;
+    padding: 4px 0 8px; letter-spacing: -0.3px;
+  }
+  .title-input::placeholder { color: var(--muted); font-weight: 500; }
+
+  /* Compact row for date/time/duration */
+  .datetime-row {
+    display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
+    padding: 0 0 8px;
+  }
+
+  /* Chips */
+  .chip {
+    display: inline-flex; align-items: center; justify-content: center;
+    padding: 6px 12px; border-radius: 10px;
+    font-size: 13px; font-weight: 500; color: var(--text2);
+    background: rgba(255,255,255,0.5);
+    border: 1px solid rgba(255,255,255,0.65);
+    cursor: pointer; white-space: nowrap;
+  }
+  .chip.sel {
+    background: var(--primary); color: white; border-color: var(--primary);
+    font-weight: 600; box-shadow: 0 2px 6px rgba(45,90,62,0.25);
+  }
+  .chip.muted-chip { color: var(--muted); }
+
+  /* Small duration chips */
+  .dur-chip {
+    display: inline-flex; align-items: center; justify-content: center;
+    padding: 5px 9px; border-radius: 8px;
+    font-size: 12px; font-weight: 500; color: var(--text2);
+    background: rgba(255,255,255,0.45);
+    border: 1px solid rgba(255,255,255,0.55);
+    cursor: pointer; white-space: nowrap;
+  }
+  .dur-chip.sel {
+    background: var(--primary); color: white; border-color: var(--primary);
+    font-weight: 600;
+  }
+  .dur-chip.muted-sel {
+    background: rgba(140,133,125,0.12); border-color: rgba(140,133,125,0.15);
+    color: var(--muted); box-shadow: none; font-weight: 500;
+  }
+
+  /* Duration separator */
+  .dur-sep {
+    width: 1px; height: 16px; background: var(--border); opacity: 0.4;
+    margin: 0 2px; flex-shrink: 0;
+  }
+
+  /* Repeat section */
+  .repeat-row { padding: 2px 0 4px; }
+
+  .repeat-chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 6px 12px; border-radius: 10px;
+    font-size: 13px; font-weight: 500; color: var(--muted);
+    background: rgba(255,255,255,0.5);
+    border: 1px solid rgba(255,255,255,0.65);
+    cursor: pointer;
+  }
+  .repeat-chevron { font-size: 10px; opacity: 0.7; }
+
+  /* Section titles */
+  .section-title {
+    font-size: 11px; font-weight: 600; letter-spacing: 0.5px;
+    text-transform: uppercase; color: var(--muted);
+    padding: 10px 0 2px;
+  }
+
+  /* Inline field (mindset, notes) */
+  .inline-field {
+    display: flex; align-items: center; gap: 8px;
+    border-bottom: 1px solid rgba(224,217,206,0.25);
+    padding: 4px 0 6px;
+    min-height: 36px;
+  }
+  .inline-field input {
+    flex: 1; border: none; outline: none;
+    font-family: 'Instrument Sans', sans-serif;
+    font-size: 13px; font-weight: 400;
+    color: var(--text2); background: transparent;
+  }
+  .inline-field input::placeholder { color: var(--muted); opacity: 0.6; }
+  .inline-field input.filled { color: var(--text2); }
+  .inline-field input.italic { font-style: italic; }
+
+  /* Sparkle button */
+  .sparkle-btn {
+    width: 24px; height: 24px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; border-radius: 6px;
+  }
+  .sparkle-btn svg { width: 18px; height: 18px; }
+
+  /* Category row */
+  .cat-row {
+    display: flex; align-items: center; gap: 6px;
+    padding: 10px 0 6px;
+    cursor: pointer;
+  }
+  .cat-row .cat-emoji { font-size: 15px; }
+  .cat-row .cat-name { font-size: 13px; font-weight: 500; color: var(--text2); }
+  .cat-row .cat-name.muted { color: var(--muted); opacity: 0.6; }
+  .cat-row .cat-chevron { font-size: 10px; color: var(--muted); margin-left: 2px; }
+
+  /* Subtasks */
+  .subtasks { padding: 6px 0 4px; }
+  .st-add-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 4px 0;
+  }
+  .st-add-circle {
+    width: 24px; height: 24px; border-radius: 50%;
+    background: var(--primary-soft); color: var(--primary);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px; font-weight: 600; cursor: pointer;
+    line-height: 1;
+  }
+
+  /* Action button */
+  .btn-action {
+    width: 100%; padding: 14px;
+    background: linear-gradient(180deg, #3E7A55, #2D5A3E);
+    color: white; font-family: 'Instrument Sans', sans-serif;
+    font-size: 15px; font-weight: 700;
+    border: none; border-radius: 12px; cursor: pointer;
+    box-shadow: 0 2px 8px rgba(45,90,62,0.3);
+    margin-top: 10px;
+  }
+
+  /* ============================================================
+     CONFLICT DETECTION STYLES
+     ============================================================ */
+
+  /* A. Inline conflict warning — warm amber banner */
+  .conflict-warning {
+    background: var(--warn-bg);
+    border: 1px solid var(--warn-border);
+    border-radius: 10px;
+    padding: 8px 12px;
+    margin-bottom: 8px;
+  }
+  .conflict-warning-main {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 12px; font-weight: 600; color: var(--warn-text);
+    line-height: 1.3;
+  }
+  .conflict-warning-main .warn-icon {
+    font-size: 13px; flex-shrink: 0;
+  }
+  .conflict-warning-sub {
+    font-size: 11px; font-weight: 400; color: var(--muted);
+    margin-top: 3px; padding-left: 19px;
+  }
+
+  /* B. Mini timeline preview */
+  .mini-timeline {
+    background: rgba(255,255,255,0.5);
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.65);
+    border-radius: 12px;
+    padding: 10px 14px 10px;
+    margin-bottom: 8px;
+    position: relative;
+    height: 90px;
+  }
+  .mini-timeline-label {
+    font-family: 'Geist Mono', monospace;
+    font-size: 9px; font-weight: 600; color: var(--muted);
+    letter-spacing: 0.3px;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+  }
+  .mini-timeline-track {
+    position: relative;
+    height: 48px;
+    border-radius: 8px;
+    overflow: visible;
+  }
+  /* Hour markers */
+  .mini-hour-markers {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    display: flex; justify-content: space-between;
+  }
+  .mini-hour-mark {
+    display: flex; flex-direction: column; align-items: center;
+    width: 1px; position: relative;
+  }
+  .mini-hour-mark::before {
+    content: '';
+    width: 1px; height: 48px;
+    background: rgba(224,217,206,0.35);
+    display: block;
+  }
+  .mini-hour-label {
+    font-family: 'Geist Mono', monospace;
+    font-size: 8px; font-weight: 500; color: var(--muted);
+    position: absolute; top: 50px; white-space: nowrap;
+    transform: translateX(-50%);
+  }
+  /* Existing activity block */
+  .mini-block-existing {
+    position: absolute;
+    height: 36px; top: 6px;
+    background: rgba(45,90,62,0.12);
+    border: 1px solid rgba(45,90,62,0.25);
+    border-radius: 6px;
+    display: flex; align-items: center;
+    padding: 0 8px;
+    font-size: 10px; font-weight: 600; color: var(--primary);
+    overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+  }
+  /* New activity block (dashed outline) */
+  .mini-block-new {
+    position: absolute;
+    height: 36px; top: 6px;
+    background: rgba(196,121,91,0.08);
+    border: 1.5px dashed var(--accent);
+    border-radius: 6px;
+    display: flex; align-items: center;
+    padding: 0 8px;
+    font-size: 10px; font-weight: 600; color: var(--accent);
+    overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+  }
+
+  /* C. Smart suggestion */
+  .conflict-suggest {
+    margin-bottom: 8px;
+  }
+  .conflict-suggest-text {
+    font-size: 12px; font-weight: 500; color: var(--warn-text);
+    padding: 0 0 4px;
+    display: flex; align-items: center; gap: 5px;
+  }
+  .conflict-suggest-text .suggest-icon {
+    font-size: 12px; flex-shrink: 0;
+  }
+  .suggest-action {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 5px 12px; border-radius: 8px;
+    background: rgba(45,90,62,0.08);
+    border: 1px solid rgba(45,90,62,0.15);
+    font-size: 12px; font-weight: 600; color: var(--primary);
+    cursor: pointer;
+    transition: background 150ms ease;
+  }
+  .suggest-action:hover {
+    background: rgba(45,90,62,0.14);
+  }
+  .suggest-arrow {
+    font-size: 11px; opacity: 0.7;
+  }
+</style>
+</head>
+<body>
+
+<div class="page-title">Conflict Detection</div>
+<div class="page-subtitle">
+  Three approaches for showing time conflicts when creating a new activity.
+  Each shows "Team standup" being created at 10:30 AM, overlapping with existing "Sankalp work" (10:30 AM - 12:30 PM).
+</div>
+
+<div class="phones-row">
+
+  <!-- ==================== A. INLINE WARNING ==================== -->
+  <div class="phone-wrapper">
+    <div class="phone-label">A. Inline Warning</div>
+    <div class="phone">
+      <div class="phone-inner">
+        <div class="sb"><span>9:41</span><span style="font-size:12px;letter-spacing:2px">&#9679;&#9679;&#9679;</span></div>
+        <div class="di"></div>
+        <div class="backdrop">
+          <div class="dim"></div>
+          <div class="ghost-pills">
+            <div class="ghost"><div class="ghost-dot"></div><div class="ghost-line" style="width:40%"></div></div>
+            <div class="ghost" style="height:100px"><div class="ghost-dot"></div><div class="ghost-line" style="width:55%"></div></div>
+            <div class="ghost"><div class="ghost-dot"></div><div class="ghost-line" style="width:35%"></div></div>
+          </div>
+        </div>
+
+        <div class="sheet">
+          <div class="handle"><div class="handle-bar"></div></div>
+
+          <!-- Title -->
+          <input class="title-input" value="Team standup" readonly>
+
+          <!-- Date + Time + Duration -->
+          <div class="datetime-row">
+            <div class="chip sel">Mon, Mar 31</div>
+            <div class="chip sel">10:30 AM</div>
+            <div class="dur-sep"></div>
+            <div class="dur-chip">&mdash;</div>
+            <div class="dur-chip">15m</div>
+            <div class="dur-chip sel">30m</div>
+            <div class="dur-chip">1h</div>
+            <div class="dur-chip">2h</div>
+          </div>
+
+          <!-- CONFLICT: Inline amber warning -->
+          <div class="conflict-warning">
+            <div class="conflict-warning-main">
+              <span class="warn-icon">&#9888;&#65039;</span>
+              <span>Overlaps with Sankalp work (10:30 AM &#8211; 12:30 PM)</span>
+            </div>
+            <div class="conflict-warning-sub">Activities will overlap on the timeline</div>
+          </div>
+
+          <!-- Repeat -->
+          <div class="repeat-row">
+            <div class="repeat-chip">Once <span class="repeat-chevron">&#9662;</span></div>
+          </div>
+
+          <!-- Mindset -->
+          <div class="section-title">Mindset</div>
+          <div class="inline-field">
+            <input class="italic" placeholder="Set an intention..." readonly>
+            <div class="sparkle-btn">
+              <svg viewBox="0 0 24 24" fill="none"><path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5L12 2Z" fill="#C4795B"/></svg>
+            </div>
+          </div>
+
+          <!-- Notes -->
+          <div class="section-title">Notes</div>
+          <div class="inline-field">
+            <input placeholder="Add details..." readonly>
+          </div>
+
+          <!-- Category -->
+          <div class="cat-row">
+            <span class="cat-emoji">&#128101;</span>
+            <span class="cat-name">Meetings</span>
+            <span class="cat-chevron">&#9662;</span>
+          </div>
+
+          <!-- Subtasks -->
+          <div class="subtasks">
+            <div class="st-add-row">
+              <div class="st-add-circle">+</div>
+            </div>
+          </div>
+
+          <!-- Button -->
+          <button class="btn-action">Create</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== B. MINI TIMELINE ==================== -->
+  <div class="phone-wrapper">
+    <div class="phone-label">B. Mini Timeline</div>
+    <div class="phone">
+      <div class="phone-inner">
+        <div class="sb"><span>9:41</span><span style="font-size:12px;letter-spacing:2px">&#9679;&#9679;&#9679;</span></div>
+        <div class="di"></div>
+        <div class="backdrop">
+          <div class="dim"></div>
+          <div class="ghost-pills">
+            <div class="ghost"><div class="ghost-dot"></div><div class="ghost-line" style="width:40%"></div></div>
+            <div class="ghost" style="height:100px"><div class="ghost-dot"></div><div class="ghost-line" style="width:55%"></div></div>
+            <div class="ghost"><div class="ghost-dot"></div><div class="ghost-line" style="width:35%"></div></div>
+          </div>
+        </div>
+
+        <div class="sheet">
+          <div class="handle"><div class="handle-bar"></div></div>
+
+          <!-- Title -->
+          <input class="title-input" value="Team standup" readonly>
+
+          <!-- Date + Time + Duration -->
+          <div class="datetime-row">
+            <div class="chip sel">Mon, Mar 31</div>
+            <div class="chip sel">10:30 AM</div>
+            <div class="dur-sep"></div>
+            <div class="dur-chip">&mdash;</div>
+            <div class="dur-chip">15m</div>
+            <div class="dur-chip sel">30m</div>
+            <div class="dur-chip">1h</div>
+            <div class="dur-chip">2h</div>
+          </div>
+
+          <!-- CONFLICT: Mini timeline preview -->
+          <div class="mini-timeline">
+            <div class="mini-timeline-label">10 AM &mdash; 1 PM preview</div>
+            <div class="mini-timeline-track">
+              <!-- Hour markers at 10, 10:30, 11, 11:30, 12, 12:30, 1 -->
+              <!-- Track spans 10:00 - 13:00 = 3 hours, each hour = 33.33% -->
+              <div class="mini-hour-markers">
+                <div class="mini-hour-mark" style="position:absolute; left:0%">
+                  <div class="mini-hour-label">10</div>
+                </div>
+                <div class="mini-hour-mark" style="position:absolute; left:33.3%">
+                  <div class="mini-hour-label">11</div>
+                </div>
+                <div class="mini-hour-mark" style="position:absolute; left:66.6%">
+                  <div class="mini-hour-label">12</div>
+                </div>
+                <div class="mini-hour-mark" style="position:absolute; left:100%">
+                  <div class="mini-hour-label">1</div>
+                </div>
+              </div>
+
+              <!-- Existing: Sankalp work 10:30 - 12:30 -->
+              <!-- 10:30 = 16.7% from left, duration 2h = 66.6% width -->
+              <div class="mini-block-existing" style="left: 16.7%; width: 62%;">
+                Sankalp work
+              </div>
+
+              <!-- New: Team standup 10:30 - 11:00 -->
+              <!-- 10:30 = 16.7% from left, duration 30m = 16.7% width -->
+              <div class="mini-block-new" style="left: 16.7%; width: 15.5%;">
+                New
+              </div>
+            </div>
+          </div>
+
+          <!-- Repeat -->
+          <div class="repeat-row">
+            <div class="repeat-chip">Once <span class="repeat-chevron">&#9662;</span></div>
+          </div>
+
+          <!-- Mindset -->
+          <div class="section-title">Mindset</div>
+          <div class="inline-field">
+            <input class="italic" placeholder="Set an intention..." readonly>
+            <div class="sparkle-btn">
+              <svg viewBox="0 0 24 24" fill="none"><path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5L12 2Z" fill="#C4795B"/></svg>
+            </div>
+          </div>
+
+          <!-- Notes -->
+          <div class="section-title">Notes</div>
+          <div class="inline-field">
+            <input placeholder="Add details..." readonly>
+          </div>
+
+          <!-- Category -->
+          <div class="cat-row">
+            <span class="cat-emoji">&#128101;</span>
+            <span class="cat-name">Meetings</span>
+            <span class="cat-chevron">&#9662;</span>
+          </div>
+
+          <!-- Subtasks -->
+          <div class="subtasks">
+            <div class="st-add-row">
+              <div class="st-add-circle">+</div>
+            </div>
+          </div>
+
+          <!-- Button -->
+          <button class="btn-action">Create</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== C. SMART SUGGESTION ==================== -->
+  <div class="phone-wrapper">
+    <div class="phone-label">C. Smart Suggestion</div>
+    <div class="phone">
+      <div class="phone-inner">
+        <div class="sb"><span>9:41</span><span style="font-size:12px;letter-spacing:2px">&#9679;&#9679;&#9679;</span></div>
+        <div class="di"></div>
+        <div class="backdrop">
+          <div class="dim"></div>
+          <div class="ghost-pills">
+            <div class="ghost"><div class="ghost-dot"></div><div class="ghost-line" style="width:40%"></div></div>
+            <div class="ghost" style="height:100px"><div class="ghost-dot"></div><div class="ghost-line" style="width:55%"></div></div>
+            <div class="ghost"><div class="ghost-dot"></div><div class="ghost-line" style="width:35%"></div></div>
+          </div>
+        </div>
+
+        <div class="sheet">
+          <div class="handle"><div class="handle-bar"></div></div>
+
+          <!-- Title -->
+          <input class="title-input" value="Team standup" readonly>
+
+          <!-- Date + Time + Duration -->
+          <div class="datetime-row">
+            <div class="chip sel">Mon, Mar 31</div>
+            <div class="chip sel">10:30 AM</div>
+            <div class="dur-sep"></div>
+            <div class="dur-chip">&mdash;</div>
+            <div class="dur-chip">15m</div>
+            <div class="dur-chip sel">30m</div>
+            <div class="dur-chip">1h</div>
+            <div class="dur-chip">2h</div>
+          </div>
+
+          <!-- CONFLICT: Smart suggestion -->
+          <div class="conflict-suggest">
+            <div class="conflict-suggest-text">
+              <span class="suggest-icon">&#9888;&#65039;</span>
+              <span>10:30 AM overlaps with Sankalp work</span>
+            </div>
+            <div class="suggest-action">
+              Try 12:30 PM? <span class="suggest-arrow">&#8594;</span>
+            </div>
+          </div>
+
+          <!-- Repeat -->
+          <div class="repeat-row">
+            <div class="repeat-chip">Once <span class="repeat-chevron">&#9662;</span></div>
+          </div>
+
+          <!-- Mindset -->
+          <div class="section-title">Mindset</div>
+          <div class="inline-field">
+            <input class="italic" placeholder="Set an intention..." readonly>
+            <div class="sparkle-btn">
+              <svg viewBox="0 0 24 24" fill="none"><path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5L12 2Z" fill="#C4795B"/></svg>
+            </div>
+          </div>
+
+          <!-- Notes -->
+          <div class="section-title">Notes</div>
+          <div class="inline-field">
+            <input placeholder="Add details..." readonly>
+          </div>
+
+          <!-- Category -->
+          <div class="cat-row">
+            <span class="cat-emoji">&#128101;</span>
+            <span class="cat-name">Meetings</span>
+            <span class="cat-chevron">&#9662;</span>
+          </div>
+
+          <!-- Subtasks -->
+          <div class="subtasks">
+            <div class="st-add-row">
+              <div class="st-add-circle">+</div>
+            </div>
+          </div>
+
+          <!-- Button -->
+          <button class="btn-action">Create</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /phones-row -->
+
+</body>
+</html>

@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DayFlow — Experience Log</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Geist+Mono:wght@400;500;600&display=swap');
+
+  :root {
+    --bg: #F5F0E8;
+    --page: #E8E2D8;
+    --text: #1A1714;
+    --text2: #4A4540;
+    --muted: #8C857D;
+    --border: #E0D9CE;
+    --primary: #2D5A3E;
+    --primary-soft: #E3ECE6;
+    --accent: #C4795B;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Instrument Sans', -apple-system, sans-serif;
+    background: var(--page);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    padding: 40px 20px 80px;
+  }
+  .page { max-width: 520px; margin: 0 auto; }
+  .page-title { font-size: 13px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; color: var(--muted); text-align: center; margin-bottom: 32px; }
+
+  /* Phone */
+  .phone {
+    width: 393px; height: 852px; margin: 0 auto;
+    background: var(--bg); border-radius: 48px; border: 6px solid #1a1714;
+    overflow: hidden; position: relative;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.08), 0 4px 8px rgba(0,0,0,0.08), 0 16px 40px rgba(26,23,20,0.18), 0 32px 80px rgba(26,23,20,0.12);
+  }
+  .phone-inner { height: 100%; display: flex; flex-direction: column; position: relative; }
+
+  .sb { display: flex; justify-content: space-between; align-items: center; padding: 14px 28px 0; font-size: 15px; font-weight: 600; }
+  .di { width: 126px; height: 36px; background: #1a1714; border-radius: 20px; margin: -28px auto 0; position: relative; z-index: 5; }
+
+  /* Dimmed backdrop with pills from the today screen */
+  .backdrop { flex: 1; position: relative; overflow: hidden; }
+  .backdrop::before {
+    content: ''; position: absolute; inset: 0;
+    background: radial-gradient(ellipse 260px 180px at 55% 100px, rgba(45,90,62,0.04), transparent);
+  }
+  .dim { position: absolute; inset: 0; background: rgba(26,23,20,0.3); z-index: 1; }
+
+  /* Canvas pills behind the sheet */
+  .canvas-bg { padding: 20px 16px; position: relative; }
+  .hr-label { font-size: 10px; font-weight: 500; color: var(--muted); opacity: 0.3; margin-bottom: 4px; }
+  .bg-pill {
+    border-radius: 14px; padding: 10px 12px; margin-bottom: 6px;
+    background: rgba(255,255,255,0.4); border: 1px solid rgba(255,255,255,0.5);
+    opacity: 0.5;
+  }
+  .bg-pill-row { display: flex; align-items: center; gap: 8px; }
+  .bg-pill-icon { font-size: 14px; }
+  .bg-pill-name { font-size: 12px; font-weight: 600; color: var(--text); }
+  .bg-pill-name.done { text-decoration: line-through; opacity: 0.5; }
+  .bg-pill-mind { font-size: 9px; font-style: italic; color: var(--text2); opacity: 0.5; margin-top: 1px; }
+
+  /* Bottom sheet */
+  .sheet {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    background: rgba(255,255,255,0.88);
+    backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+    border-radius: 24px 24px 0 0;
+    border-top: 1px solid rgba(255,255,255,0.8);
+    z-index: 10;
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.08);
+    padding: 0 20px 36px;
+  }
+
+  .handle { display: flex; justify-content: center; padding: 10px 0 12px; }
+  .handle-bar { width: 36px; height: 4px; border-radius: 2px; background: var(--border); }
+
+  /* Activity header */
+  .log-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding-bottom: 14px;
+    border-bottom: 1px solid rgba(224,217,206,0.25);
+    margin-bottom: 16px;
+  }
+  .log-activity {
+    display: flex; align-items: center; gap: 10px;
+  }
+  .log-icon { font-size: 20px; }
+  .log-info {}
+  .log-name { font-size: 16px; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 6px; }
+  .log-check { color: var(--primary); font-size: 14px; }
+  .log-time { font-family: 'Geist Mono', monospace; font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .log-edit {
+    width: 32px; height: 32px; border-radius: 10px;
+    background: rgba(255,255,255,0.5); border: 1px solid rgba(255,255,255,0.65);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+  }
+  .log-edit svg { width: 16px; height: 16px; stroke: var(--muted); fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+  /* Section label */
+  .log-label {
+    font-size: 11px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.5px; color: var(--muted); margin-bottom: 10px;
+  }
+
+  /* Mood row */
+  .mood-row {
+    display: flex; justify-content: space-between; gap: 8px;
+    margin-bottom: 20px;
+  }
+  .mood-item {
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    cursor: pointer; flex: 1;
+  }
+  .mood-circle {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: rgba(255,255,255,0.5); border: 1.5px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; transition: all 150ms cubic-bezier(0.2,0,0,1);
+  }
+  .mood-circle:active { transform: scale(0.92); }
+  .mood-circle.sel {
+    background: rgba(196,121,91,0.15); border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(196,121,91,0.1);
+  }
+  .mood-text {
+    font-size: 10px; font-weight: 500; color: var(--muted);
+  }
+  .mood-text.sel { color: var(--accent); font-weight: 600; }
+
+  /* Energy row */
+  .energy-row {
+    display: flex; justify-content: space-between; gap: 8px;
+    margin-bottom: 20px;
+  }
+  .energy-item {
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    cursor: pointer; flex: 1;
+  }
+  .energy-circle {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: rgba(255,255,255,0.5); border: 1.5px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; transition: all 150ms cubic-bezier(0.2,0,0,1);
+  }
+  .energy-circle:active { transform: scale(0.92); }
+  .energy-circle.sel {
+    background: rgba(45,90,62,0.1); border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(45,90,62,0.08);
+  }
+  .energy-text {
+    font-size: 10px; font-weight: 500; color: var(--muted);
+  }
+  .energy-text.sel { color: var(--primary); font-weight: 600; }
+
+  /* Completion chips */
+  .comp-row {
+    display: flex; gap: 8px;
+    margin-bottom: 20px;
+  }
+  .comp-chip {
+    flex: 1; text-align: center;
+    padding: 8px 12px; border-radius: 10px;
+    font-size: 13px; font-weight: 500; color: var(--text2);
+    background: rgba(255,255,255,0.5);
+    border: 1px solid rgba(255,255,255,0.65);
+    cursor: pointer;
+  }
+  .comp-chip.sel {
+    background: var(--primary); color: white; border-color: var(--primary);
+    font-weight: 600; box-shadow: 0 2px 6px rgba(45,90,62,0.25);
+  }
+
+  /* Reflection */
+  .reflection-input {
+    width: 100%; border: none; outline: none;
+    font-family: 'Instrument Sans', sans-serif;
+    font-size: 14px; font-weight: 400;
+    color: var(--text2); background: transparent;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(224,217,206,0.25);
+    margin-bottom: 20px;
+  }
+  .reflection-input::placeholder { color: var(--muted); opacity: 0.5; }
+
+  /* Action button */
+  .btn-log {
+    width: 100%; padding: 14px;
+    background: linear-gradient(180deg, #3E7A55, #2D5A3E);
+    color: white; font-family: 'Instrument Sans', sans-serif;
+    font-size: 15px; font-weight: 700;
+    border: none; border-radius: 12px; cursor: pointer;
+    box-shadow: 0 2px 8px rgba(45,90,62,0.3);
+    transition: all 150ms cubic-bezier(0.2,0,0,1);
+  }
+  .btn-log:active { transform: scale(0.97); }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="page-title">Experience Log — Bottom Sheet</div>
+
+  <div class="phone">
+    <div class="phone-inner">
+      <div class="sb"><span>9:41</span><span style="font-size:12px;letter-spacing:2px">&#9679;&#9679;&#9679;</span></div>
+      <div class="di"></div>
+
+      <div class="backdrop">
+        <div class="dim"></div>
+        <div class="canvas-bg">
+          <div class="hr-label">7 AM</div>
+          <div class="bg-pill">
+            <div class="bg-pill-row">
+              <span class="bg-pill-icon">💪</span>
+              <div>
+                <div class="bg-pill-name done">Gym session</div>
+                <div class="bg-pill-mind">"Push through the last set"</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="hr-label" style="margin-top:8px">9 AM</div>
+          <div class="bg-pill">
+            <div class="bg-pill-row">
+              <span class="bg-pill-icon">🧠</span>
+              <div>
+                <div class="bg-pill-name">Sankalp work</div>
+                <div class="bg-pill-mind">"Serious about intent, playful..."</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="hr-label" style="margin-top:8px">12 PM</div>
+          <div class="bg-pill">
+            <div class="bg-pill-row">
+              <span class="bg-pill-icon">📰</span>
+              <div><div class="bg-pill-name">News: 30 min</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Log sheet -->
+      <div class="sheet">
+        <div class="handle"><div class="handle-bar"></div></div>
+
+        <!-- Activity header -->
+        <div class="log-header">
+          <div class="log-activity">
+            <span class="log-icon">💪</span>
+            <div class="log-info">
+              <div class="log-name">Gym session <span class="log-check">✓</span></div>
+              <div class="log-time">8:00 – 8:45 AM</div>
+            </div>
+          </div>
+          <div class="log-edit" title="Edit activity">
+            <svg viewBox="0 0 24 24">
+              <path d="M17 3a2.83 2.83 0 0 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Mood -->
+        <div class="log-label">Mood</div>
+        <div class="mood-row">
+          <div class="mood-item">
+            <div class="mood-circle">😞</div>
+            <span class="mood-text">Bad</span>
+          </div>
+          <div class="mood-item">
+            <div class="mood-circle">😕</div>
+            <span class="mood-text">Low</span>
+          </div>
+          <div class="mood-item">
+            <div class="mood-circle">😐</div>
+            <span class="mood-text">Okay</span>
+          </div>
+          <div class="mood-item">
+            <div class="mood-circle sel">🙂</div>
+            <span class="mood-text sel">Good</span>
+          </div>
+          <div class="mood-item">
+            <div class="mood-circle">😊</div>
+            <span class="mood-text">Great</span>
+          </div>
+        </div>
+
+        <!-- Energy -->
+        <div class="log-label">Energy</div>
+        <div class="energy-row">
+          <div class="energy-item">
+            <div class="energy-circle">🪫</div>
+            <span class="energy-text">Drained</span>
+          </div>
+          <div class="energy-item">
+            <div class="energy-circle">😴</div>
+            <span class="energy-text">Low</span>
+          </div>
+          <div class="energy-item">
+            <div class="energy-circle">😌</div>
+            <span class="energy-text">Steady</span>
+          </div>
+          <div class="energy-item">
+            <div class="energy-circle sel">⚡</div>
+            <span class="energy-text sel">High</span>
+          </div>
+          <div class="energy-item">
+            <div class="energy-circle">🔥</div>
+            <span class="energy-text">Peak</span>
+          </div>
+        </div>
+
+        <!-- Completion -->
+        <div class="log-label">Completion</div>
+        <div class="comp-row">
+          <div class="comp-chip">Skipped</div>
+          <div class="comp-chip">Half done</div>
+          <div class="comp-chip sel">Completed</div>
+        </div>
+
+        <!-- Reflection -->
+        <div class="log-label">Reflection</div>
+        <input class="reflection-input" placeholder="Any thoughts on how it went?" readonly>
+
+        <!-- Button -->
+        <button class="btn-log">Reflect & Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

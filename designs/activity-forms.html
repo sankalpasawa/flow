@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DayFlow — Activity Forms</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Geist+Mono:wght@400;500;600&display=swap');
+
+  :root {
+    --bg: #F5F0E8;
+    --page: #E8E2D8;
+    --text: #1A1714;
+    --text2: #4A4540;
+    --muted: #8C857D;
+    --border: #E0D9CE;
+    --primary: #2D5A3E;
+    --primary-soft: #E3ECE6;
+    --accent: #C4795B;
+    --terra: #B5634A;
+    --sage: #5A8C6A;
+    --slate: #3D5F80;
+    --mauve: #7D5A7C;
+    --amber: #A67B0A;
+    --danger: #C45B5B;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Instrument Sans', -apple-system, sans-serif;
+    background: var(--page);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    padding: 40px 20px 80px;
+    overflow-x: auto;
+  }
+
+  .page-title {
+    font-size: 13px; font-weight: 600; letter-spacing: 0.5px;
+    text-transform: uppercase; color: var(--muted); text-align: center;
+    margin-bottom: 32px;
+  }
+
+  .phones-row {
+    display: flex;
+    gap: 40px;
+    overflow-x: auto;
+    padding: 0 20px 40px;
+    justify-content: center;
+  }
+  .phones-row::-webkit-scrollbar { display: none; }
+
+  .phone-wrapper {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+  .phone-label {
+    font-size: 11px; font-weight: 600; letter-spacing: 0.8px;
+    text-transform: uppercase; color: var(--muted);
+  }
+
+  /* Phone frame */
+  .phone {
+    width: 393px; height: 852px;
+    background: var(--bg); border-radius: 48px; border: 6px solid #1a1714;
+    overflow: hidden; position: relative;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.08), 0 4px 8px rgba(0,0,0,0.08),
+                0 16px 40px rgba(26,23,20,0.18), 0 32px 80px rgba(26,23,20,0.12);
+  }
+  .phone-inner { height: 100%; display: flex; flex-direction: column; position: relative; }
+
+  /* Status bar */
+  .sb {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 14px 28px 0; font-size: 15px; font-weight: 600;
+  }
+  .di {
+    width: 126px; height: 36px; background: #1a1714; border-radius: 20px;
+    margin: -28px auto 0; position: relative; z-index: 5;
+  }
+
+  /* Dimmed backdrop */
+  .backdrop {
+    flex: 1; position: relative; overflow: hidden;
+    background: radial-gradient(ellipse 260px 180px at 55% 120px, rgba(45,90,62,0.04), transparent);
+  }
+  .dim { position: absolute; inset: 0; background: rgba(26,23,20,0.3); z-index: 1; }
+  .ghost-pills { padding: 24px 20px; }
+  .ghost {
+    height: 60px; margin-bottom: 8px;
+    background: rgba(255,255,255,0.3); border-radius: 14px;
+    border: 1px solid rgba(255,255,255,0.4); opacity: 0.4;
+    display: flex; align-items: center; padding: 0 12px; gap: 8px;
+  }
+  .ghost-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); }
+  .ghost-line { height: 10px; border-radius: 4px; background: var(--border); opacity: 0.5; }
+
+  /* Bottom sheet */
+  .sheet {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    background: rgba(255,255,255,0.88);
+    backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+    border-radius: 24px 24px 0 0;
+    border-top: 1px solid rgba(255,255,255,0.8);
+    z-index: 10;
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.08);
+    padding: 0 20px 34px;
+    overflow-y: auto;
+    max-height: 88%;
+  }
+  .sheet::-webkit-scrollbar { display: none; }
+
+  /* Drag handle */
+  .handle {
+    display: flex; justify-content: center; padding: 10px 0 6px;
+    position: sticky; top: 0; z-index: 2;
+    background: rgba(255,255,255,0.88);
+    backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+  }
+  .handle-bar { width: 36px; height: 4px; border-radius: 2px; background: var(--border); }
+
+  /* Title input */
+  .title-input {
+    width: 100%; border: none; outline: none;
+    font-family: 'Instrument Sans', sans-serif;
+    font-size: 20px; font-weight: 600;
+    color: var(--text); background: transparent;
+    padding: 4px 0 8px; letter-spacing: -0.3px;
+  }
+  .title-input::placeholder { color: var(--muted); font-weight: 500; }
+
+  /* Compact row for date/time/duration */
+  .datetime-row {
+    display: flex; gap: 8px; align-items: center;
+    padding: 0 0 4px;
+  }
+  .duration-row {
+    display: flex; gap: 6px; align-items: center;
+    padding: 0 0 8px;
+  }
+
+  /* Chips */
+  .chip {
+    display: inline-flex; align-items: center; justify-content: center;
+    padding: 6px 12px; border-radius: 10px;
+    font-size: 13px; font-weight: 500; color: var(--text2);
+    background: rgba(255,255,255,0.5);
+    border: 1px solid rgba(255,255,255,0.65);
+    cursor: pointer; white-space: nowrap;
+  }
+  .chip.sel {
+    background: var(--primary); color: white; border-color: var(--primary);
+    font-weight: 600; box-shadow: 0 2px 6px rgba(45,90,62,0.25);
+  }
+  .chip.muted-chip { color: var(--muted); }
+
+  /* Small duration chips */
+  .dur-chip {
+    display: inline-flex; align-items: center; justify-content: center;
+    padding: 5px 9px; border-radius: 8px;
+    font-size: 12px; font-weight: 500; color: var(--text2);
+    background: rgba(255,255,255,0.45);
+    border: 1px solid rgba(255,255,255,0.55);
+    cursor: pointer; white-space: nowrap;
+  }
+  .dur-chip.sel {
+    background: var(--primary); color: white; border-color: var(--primary);
+    font-weight: 600;
+  }
+  .dur-chip.muted-sel {
+    background: rgba(140,133,125,0.12); border-color: rgba(140,133,125,0.15);
+    color: var(--muted); box-shadow: none; font-weight: 500;
+  }
+
+  /* Duration separator */
+  .dur-sep {
+    width: 1px; height: 16px; background: var(--border); opacity: 0.4;
+    margin: 0 2px; flex-shrink: 0;
+  }
+
+  /* Repeat section */
+  .repeat-row { padding: 2px 0 4px; }
+
+  .repeat-chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 6px 12px; border-radius: 10px;
+    font-size: 13px; font-weight: 500; color: var(--muted);
+    background: rgba(255,255,255,0.5);
+    border: 1px solid rgba(255,255,255,0.65);
+    cursor: pointer;
+  }
+  .repeat-chip.sel {
+    background: var(--primary); color: white; border-color: var(--primary);
+    font-weight: 600;
+  }
+  .repeat-chevron { font-size: 10px; opacity: 0.7; }
+
+  /* Repeat expanded glass box */
+  .repeat-expanded {
+    background: rgba(255,255,255,0.3);
+    border-radius: 12px;
+    padding: 12px;
+    margin-top: 6px;
+  }
+  .repeat-expanded .freq-chips {
+    display: flex; flex-wrap: wrap; gap: 6px;
+  }
+  .repeat-expanded .freq-chip {
+    display: inline-flex; align-items: center; justify-content: center;
+    padding: 5px 10px; border-radius: 10px;
+    font-size: 12px; font-weight: 500; color: var(--text2);
+    background: rgba(255,255,255,0.5);
+    border: 1px solid rgba(255,255,255,0.65);
+    cursor: pointer;
+  }
+  .repeat-expanded .freq-chip.sel {
+    background: var(--primary); color: white; border-color: var(--primary);
+    font-weight: 600;
+  }
+
+  /* Day-of-week circles */
+  .dow-row { display: flex; gap: 6px; padding: 8px 0 4px; }
+  .dow {
+    width: 28px; height: 28px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 600; color: var(--text2);
+    background: var(--border); cursor: pointer;
+  }
+  .dow.sel {
+    background: var(--primary); color: white;
+    box-shadow: 0 2px 6px rgba(45,90,62,0.25);
+  }
+
+  /* Toggle row */
+  .toggle-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 6px 0 0;
+  }
+  .toggle-label { font-size: 12px; font-weight: 500; color: var(--text2); }
+  .toggle {
+    width: 38px; height: 22px; border-radius: 11px;
+    background: var(--border); position: relative; cursor: pointer;
+    transition: background 200ms; flex-shrink: 0;
+  }
+  .toggle.on { background: var(--primary); }
+  .toggle-knob {
+    width: 18px; height: 18px; border-radius: 50%; background: white;
+    position: absolute; top: 2px; left: 2px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+    transition: transform 200ms cubic-bezier(0.2,0,0,1);
+  }
+  .toggle.on .toggle-knob { transform: translateX(16px); }
+
+  /* Section titles */
+  .section-title {
+    font-size: 11px; font-weight: 600; letter-spacing: 0.5px;
+    text-transform: uppercase; color: var(--muted);
+    padding: 10px 0 2px;
+  }
+
+  /* Inline field (mindset, notes) */
+  .inline-field {
+    display: flex; align-items: center; gap: 8px;
+    border-bottom: 1px solid rgba(224,217,206,0.25);
+    padding: 4px 0 6px;
+    min-height: 36px;
+  }
+  .inline-field input {
+    flex: 1; border: none; outline: none;
+    font-family: 'Instrument Sans', sans-serif;
+    font-size: 13px; font-weight: 400;
+    color: var(--text2); background: transparent;
+  }
+  .inline-field input::placeholder { color: var(--muted); opacity: 0.6; }
+  .inline-field input.filled { color: var(--text2); }
+  .inline-field input.italic { font-style: italic; }
+
+  /* Sparkle button */
+  .sparkle-btn {
+    width: 24px; height: 24px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; border-radius: 6px;
+  }
+  .sparkle-btn svg { width: 18px; height: 18px; }
+
+  /* Category inline chips */
+  .cat-chips {
+    display: flex; gap: 6px; flex-wrap: wrap;
+    padding: 4px 0;
+  }
+  .cat-chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 6px 12px; border-radius: 10px;
+    font-size: 12px; font-weight: 500; color: var(--text2);
+    background: rgba(255,255,255,0.5);
+    border: 1px solid rgba(255,255,255,0.65);
+    cursor: pointer;
+    transition: all 150ms cubic-bezier(0.2,0,0,1);
+  }
+  .cat-chip:active { transform: scale(0.97); }
+  .cat-chip.sel {
+    background: var(--primary); color: white;
+    border-color: var(--primary);
+    font-weight: 600;
+    box-shadow: 0 2px 6px rgba(45,90,62,0.25);
+  }
+  .cat-chip .cat-emoji { font-size: 13px; }
+  .cat-chip-add {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 32px; height: 32px; border-radius: 10px;
+    font-size: 16px; font-weight: 400; color: var(--primary);
+    background: var(--primary-soft);
+    border: none; cursor: pointer;
+    font-size: 13px; font-weight: 600; color: var(--primary);
+    border-top: 1px solid rgba(224,217,206,0.2);
+    margin-top: 2px;
+  }
+
+  /* Subtasks */
+  .subtasks { padding: 6px 0 4px; }
+  .subtask-item { display: flex; align-items: center; gap: 8px; padding: 4px 0; }
+  .st-ck {
+    width: 18px; height: 18px; border-radius: 5px;
+    border: 1.5px solid var(--border); flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .st-ck.done { background: var(--primary); border-color: var(--primary); }
+  .st-text { font-size: 13px; font-weight: 500; color: var(--text2); }
+  .st-text.done { text-decoration: line-through; opacity: 0.4; }
+
+  /* Add subtask circle */
+  .st-add-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 4px 0;
+  }
+  .st-add-circle {
+    width: 24px; height: 24px; border-radius: 50%;
+    background: var(--primary-soft); color: var(--primary);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px; font-weight: 600; cursor: pointer;
+    line-height: 1;
+  }
+  .st-count {
+    font-family: 'Geist Mono', monospace;
+    font-size: 10px; font-weight: 600; color: var(--accent);
+  }
+
+  /* Subtask add label */
+  .st-add-label {
+    font-size: 13px; font-weight: 500; color: var(--primary);
+    cursor: pointer;
+  }
+
+  /* Conflict warning */
+  .conflict {
+    background: rgba(196,121,91,0.08);
+    border-radius: 10px;
+    padding: 8px 12px;
+    margin: 4px 0 8px;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .conflict-text {
+    font-size: 12px; font-weight: 500; color: var(--accent);
+    display: flex; align-items: center; gap: 4px;
+  }
+  .conflict-suggest {
+    display: flex; align-items: center; gap: 8px;
+  }
+  .conflict-try {
+    font-size: 12px; font-weight: 600; color: var(--primary);
+    background: var(--primary-soft);
+    padding: 4px 10px; border-radius: 8px;
+    cursor: pointer;
+  }
+  .conflict-calendar {
+    width: 24px; height: 24px; border-radius: 6px;
+    background: var(--primary-soft);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; cursor: pointer;
+  }
+
+  /* Action button */
+  .btn-action {
+    width: 100%; padding: 14px;
+    background: linear-gradient(180deg, #3E7A55, #2D5A3E);
+    color: white; font-family: 'Instrument Sans', sans-serif;
+    font-size: 15px; font-weight: 700;
+    border: none; border-radius: 12px; cursor: pointer;
+    box-shadow: 0 2px 8px rgba(45,90,62,0.3);
+    margin-top: 10px;
+  }
+
+  /* Delete link */
+  .delete-link {
+    text-align: center; padding: 10px 8px 0;
+    font-size: 13px; font-weight: 500; color: var(--danger);
+    cursor: pointer;
+  }
+</style>
+</head>
+<body>
+
+<div class="page-title">Activity Forms</div>
+
+<div class="phones-row">
+
+  <!-- ==================== SCREEN 1: BLANK ==================== -->
+  <div class="phone-wrapper">
+    <div class="phone-label">Blank</div>
+    <div class="phone">
+      <div class="phone-inner">
+        <div class="sb"><span>9:41</span><span style="font-size:12px;letter-spacing:2px">&#9679;&#9679;&#9679;</span></div>
+        <div class="di"></div>
+        <div class="backdrop">
+          <div class="dim"></div>
+          <div class="ghost-pills">
+            <div class="ghost"><div class="ghost-dot"></div><div class="ghost-line" style="width:40%"></div></div>
+            <div class="ghost" style="height:100px"><div class="ghost-dot"></div><div class="ghost-line" style="width:55%"></div></div>
+            <div class="ghost"><div class="ghost-dot"></div><div class="ghost-line" style="width:35%"></div></div>
+          </div>
+        </div>
+
+        <div class="sheet">
+          <div class="handle"><div class="handle-bar"></div></div>
+
+          <!-- Title -->
+          <input class="title-input" placeholder="What you want to do?" readonly>
+
+          <!-- Date + Time -->
+          <div class="datetime-row">
+            <div class="chip sel">Today</div>
+            <div class="chip muted-chip" style="font-size:15px; padding:5px 10px;">&#128336;</div>
+          </div>
+          <!-- Duration -->
+          <div class="duration-row">
+            <div class="dur-chip muted-sel">&mdash;</div>
+            <div class="dur-chip">15m</div>
+            <div class="dur-chip">30m</div>
+            <div class="dur-chip">1h</div>
+            <div class="dur-chip">2h</div>
+          </div>
+
+          <!-- Repeat -->
+          <div class="repeat-row">
+            <div class="repeat-chip">Once <span class="repeat-chevron">&#9662;</span></div>
+          </div>
+
+          <!-- Mindset -->
+          <div class="section-title">Mindset</div>
+          <div class="inline-field">
+            <input class="italic" placeholder="Set an intention..." readonly>
+            <div class="sparkle-btn">
+              <svg viewBox="0 0 24 24" fill="none"><path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5L12 2Z" fill="#C4795B"/></svg>
+            </div>
+          </div>
+
+          <!-- Notes -->
+          <div class="section-title">Notes</div>
+          <div class="inline-field">
+            <input placeholder="Add details..." readonly>
+          </div>
+
+          <!-- Category — inline chips, none selected -->
+          <div class="section-title">Category</div>
+          <div class="cat-chips">
+            <div class="cat-chip"><span class="cat-emoji">🧠</span> Deep Work</div>
+            <div class="cat-chip"><span class="cat-emoji">💪</span> Health</div>
+            <div class="cat-chip"><span class="cat-emoji">👥</span> Meetings</div>
+            <div class="cat-chip"><span class="cat-emoji">🎨</span> Creative</div>
+            <div class="cat-chip"><span class="cat-emoji">✨</span> Personal</div>
+            <div class="cat-chip"><span class="cat-emoji">😴</span> Rest</div>
+            <div class="cat-chip-add">+</div>
+          </div>
+
+          <!-- Subtasks — empty state: + icon with "Subtask" text -->
+          <div class="subtasks">
+            <div class="st-add-row">
+              <div class="st-add-circle">+</div>
+              <span class="st-add-label">Subtask</span>
+            </div>
+          </div>
+
+          <!-- Button -->
+          <button class="btn-action">Create</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== SCREEN 2: FILLED ==================== -->
+  <div class="phone-wrapper">
+    <div class="phone-label">Filled</div>
+    <div class="phone">
+      <div class="phone-inner">
+        <div class="sb"><span>9:41</span><span style="font-size:12px;letter-spacing:2px">&#9679;&#9679;&#9679;</span></div>
+        <div class="di"></div>
+        <div class="backdrop">
+          <div class="dim"></div>
+          <div class="ghost-pills">
+            <div class="ghost"><div class="ghost-dot"></div><div class="ghost-line" style="width:40%"></div></div>
+            <div class="ghost" style="height:100px"><div class="ghost-dot"></div><div class="ghost-line" style="width:55%"></div></div>
+            <div class="ghost"><div class="ghost-dot"></div><div class="ghost-line" style="width:35%"></div></div>
+          </div>
+        </div>
+
+        <div class="sheet">
+          <div class="handle"><div class="handle-bar"></div></div>
+
+          <!-- Title -->
+          <input class="title-input" value="Sankalp work" readonly>
+
+          <!-- Date + Time -->
+          <div class="datetime-row">
+            <div class="chip sel">Mon, Mar 31</div>
+            <div class="chip sel">10:30 AM</div>
+          </div>
+          <!-- Duration -->
+          <div class="duration-row">
+            <div class="dur-chip">&mdash;</div>
+            <div class="dur-chip">15m</div>
+            <div class="dur-chip">30m</div>
+            <div class="dur-chip">1h</div>
+            <div class="dur-chip sel">2h</div>
+          </div>
+
+          <!-- Conflict warning -->
+          <div class="conflict">
+            <div class="conflict-text">⚠️ Overlaps with Deep work (10:00 AM - 12:00 PM)</div>
+            <div class="conflict-suggest">
+              <div class="conflict-try">Try 12:30 PM?</div>
+            </div>
+          </div>
+
+          <!-- Repeat — expanded -->
+          <div class="repeat-row">
+            <div class="repeat-expanded">
+              <div class="freq-chips">
+                <div class="freq-chip">Once</div>
+                <div class="freq-chip">Daily</div>
+                <div class="freq-chip sel">Weekly</div>
+                <div class="freq-chip">Monthly</div>
+                <div class="freq-chip">Yearly</div>
+              </div>
+              <div class="dow-row">
+                <div class="dow">S</div>
+                <div class="dow">M</div>
+                <div class="dow sel">T</div>
+                <div class="dow">W</div>
+                <div class="dow sel">T</div>
+                <div class="dow">F</div>
+                <div class="dow">S</div>
+              </div>
+              <div class="toggle-row">
+                <span class="toggle-label">Never ends</span>
+                <div class="toggle on"><div class="toggle-knob"></div></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Mindset -->
+          <div class="section-title">Mindset</div>
+          <div class="inline-field">
+            <input class="italic filled" value="Serious about intent, playful execution..." readonly>
+            <div class="sparkle-btn">
+              <svg viewBox="0 0 24 24" fill="none"><path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5L12 2Z" fill="#C4795B"/></svg>
+            </div>
+          </div>
+
+          <!-- Notes -->
+          <div class="section-title">Notes</div>
+          <div class="inline-field">
+            <input class="filled" value="Check Figma comments before starting" readonly>
+          </div>
+
+          <!-- Category — inline chips, Deep Work selected -->
+          <div class="section-title">Category</div>
+          <div class="cat-chips">
+            <div class="cat-chip sel"><span class="cat-emoji">🧠</span> Deep Work</div>
+            <div class="cat-chip"><span class="cat-emoji">💪</span> Health</div>
+            <div class="cat-chip"><span class="cat-emoji">👥</span> Meetings</div>
+            <div class="cat-chip"><span class="cat-emoji">🎨</span> Creative</div>
+            <div class="cat-chip"><span class="cat-emoji">✨</span> Personal</div>
+            <div class="cat-chip"><span class="cat-emoji">😴</span> Rest</div>
+            <div class="cat-chip-add">+</div>
+          </div>
+
+          <!-- Subtasks -->
+          <div class="subtasks">
+            <div class="subtask-item">
+              <div class="st-ck done">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.5 6L5 8.5L9.5 4" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </div>
+              <span class="st-text done">Draft architecture</span>
+            </div>
+            <div class="subtask-item">
+              <div class="st-ck done">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.5 6L5 8.5L9.5 4" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </div>
+              <span class="st-text done">Review with team</span>
+            </div>
+            <div class="subtask-item">
+              <div class="st-ck"></div>
+              <span class="st-text">Write API spec</span>
+            </div>
+            <div class="subtask-item">
+              <div class="st-ck"></div>
+              <span class="st-text">Update docs</span>
+            </div>
+            <div class="subtask-item">
+              <div class="st-ck"></div>
+              <span class="st-text">Ship v1</span>
+            </div>
+            <div class="st-add-row">
+              <div class="st-add-circle">+</div>
+              <span class="st-count">2/5</span>
+            </div>
+          </div>
+
+          <!-- Button -->
+          <button class="btn-action">Create</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== SCREEN 3: EDIT ==================== -->
+  <div class="phone-wrapper">
+    <div class="phone-label">Edit</div>
+    <div class="phone">
+      <div class="phone-inner">
+        <div class="sb"><span>9:41</span><span style="font-size:12px;letter-spacing:2px">&#9679;&#9679;&#9679;</span></div>
+        <div class="di"></div>
+        <div class="backdrop">
+          <div class="dim"></div>
+          <div class="ghost-pills">
+            <div class="ghost"><div class="ghost-dot"></div><div class="ghost-line" style="width:40%"></div></div>
+            <div class="ghost" style="height:100px"><div class="ghost-dot"></div><div class="ghost-line" style="width:55%"></div></div>
+            <div class="ghost"><div class="ghost-dot"></div><div class="ghost-line" style="width:35%"></div></div>
+          </div>
+        </div>
+
+        <div class="sheet">
+          <div class="handle"><div class="handle-bar"></div></div>
+
+          <!-- Title -->
+          <input class="title-input" value="Morning routine + medicine" readonly>
+
+          <!-- Date + Time -->
+          <div class="datetime-row">
+            <div class="chip sel">Mon, Mar 31</div>
+            <div class="chip sel">7:00 AM</div>
+          </div>
+          <!-- Duration -->
+          <div class="duration-row">
+            <div class="dur-chip">&mdash;</div>
+            <div class="dur-chip">15m</div>
+            <div class="dur-chip">30m</div>
+            <div class="dur-chip sel">1h</div>
+            <div class="dur-chip">2h</div>
+          </div>
+
+          <!-- Repeat — collapsed, shows Daily -->
+          <div class="repeat-row">
+            <div class="repeat-chip sel">Daily <span class="repeat-chevron">&#9662;</span></div>
+          </div>
+
+          <!-- Mindset -->
+          <div class="section-title">Mindset</div>
+          <div class="inline-field">
+            <input class="italic filled" value="Feel the energy. Affirmations of loving self..." readonly>
+            <div class="sparkle-btn">
+              <svg viewBox="0 0 24 24" fill="none"><path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5L12 2Z" fill="#C4795B"/></svg>
+            </div>
+          </div>
+
+          <!-- Notes -->
+          <div class="section-title">Notes</div>
+          <div class="inline-field">
+            <input class="filled" value="Include prayer and mirror work" readonly>
+          </div>
+
+          <!-- Category — inline chips, Personal selected -->
+          <div class="section-title">Category</div>
+          <div class="cat-chips">
+            <div class="cat-chip"><span class="cat-emoji">🧠</span> Deep Work</div>
+            <div class="cat-chip"><span class="cat-emoji">💪</span> Health</div>
+            <div class="cat-chip"><span class="cat-emoji">👥</span> Meetings</div>
+            <div class="cat-chip"><span class="cat-emoji">🎨</span> Creative</div>
+            <div class="cat-chip sel"><span class="cat-emoji">✨</span> Personal</div>
+            <div class="cat-chip"><span class="cat-emoji">😴</span> Rest</div>
+            <div class="cat-chip-add">+</div>
+          </div>
+
+          <!-- Subtasks -->
+          <div class="subtasks">
+            <div class="subtask-item">
+              <div class="st-ck"></div>
+              <span class="st-text">Affirmations</span>
+            </div>
+            <div class="subtask-item">
+              <div class="st-ck"></div>
+              <span class="st-text">Mirror work</span>
+            </div>
+            <div class="st-add-row">
+              <div class="st-add-circle">+</div>
+            </div>
+          </div>
+
+          <!-- Button -->
+          <button class="btn-action">Save</button>
+          <div class="delete-link">Delete activity</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /phones-row -->
+
+</body>
+</html>
