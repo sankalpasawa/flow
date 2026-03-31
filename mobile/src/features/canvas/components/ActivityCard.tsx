@@ -390,7 +390,7 @@ const styles = StyleSheet.create({
   },
   // Row 2: mindset
   mindset: {
-    color: colors.text,
+    color: colors.text2,
     fontSize: 9.5,
     fontStyle: 'italic',
     opacity: 0.6,
