@@ -43,18 +43,18 @@ function TabNavigator() {
         tabBarShowLabel: true,
         tabBarIcon: ({ focused }) => {
           const icons: Record<string, string> = { Today: '◉', Plan: '◫', Insights: '◈', Settings: '⚙' };
-          return <Text style={{ fontSize: 18, color: focused ? '#2D4A3E' : '#C4BFB8' }}>{icons[route.name] ?? '•'}</Text>;
+          return <Text style={{ fontSize: 18, color: focused ? '#2D5A3E' : '#8C857D' }}>{icons[route.name] ?? '•'}</Text>;
         },
         tabBarStyle: {
-          backgroundColor: '#FFFFFF',
-          borderTopColor: '#F0EAE0',
+          backgroundColor: 'rgba(255,255,255,0.75)',
+          borderTopColor: 'rgba(224,217,206,0.5)',
           borderTopWidth: 0.5,
           height: 80,
           paddingBottom: 24,
           paddingTop: 6,
         },
-        tabBarActiveTintColor: '#2D4A3E',
-        tabBarInactiveTintColor: '#C4BFB8',
+        tabBarActiveTintColor: '#2D5A3E',
+        tabBarInactiveTintColor: '#8C857D',
         tabBarLabelStyle: { fontSize: 12, fontWeight: '600', letterSpacing: 0.2 },
       })}
     >
