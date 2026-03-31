@@ -33,7 +33,7 @@ export interface Activity {
   activity_type: ActivityType;
   title: string;
   description: string | null;
-  start_time: string; // ISO UTC
+  start_time: string | null; // ISO UTC — null for tasks/watermarks (v2)
   duration_minutes: number;
   category_id: string;
   assigned_date: string | null; // YYYY-MM-DD for tasks pinned to a day, null = someday

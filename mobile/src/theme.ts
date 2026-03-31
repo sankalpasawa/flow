@@ -2,7 +2,7 @@
 // Based on Sankalp's design spec
 
 export const colors = {
-  bg: '#FAF7F2',
+  bg: '#F5F0E8',
   surface: '#FFFFFF',
   surface2: '#F2EDE5',
   text: '#1A1A1A',
@@ -36,6 +36,23 @@ export const colors = {
   // Semantic
   danger: '#E53E3E',
   dangerLight: '#FFE4E1',
+  // v2 Glass morphism
+  glass: {
+    bg: 'rgba(255,255,255,0.65)',
+    border: 'rgba(255,255,255,0.75)',
+    blur: 20,
+    sheet: 'rgba(255,255,255,0.88)',
+    sheetBlur: 24,
+  },
+
+  // v2 Watermark chip
+  watermark: {
+    text: '#8B4A30',
+    bg: 'rgba(181,99,74,0.12)',
+  },
+
+  // v2 Category tint opacity for glass pill overlays
+  categoryTint: 0.06,
 } as const;
 
 // Map category IDs to color pairs
@@ -120,6 +137,13 @@ export const shadows = {
     shadowOpacity: 0.12,
     shadowRadius: 20,
     elevation: 16,
+  },
+  pill: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 3,
   },
 } as const;
 
