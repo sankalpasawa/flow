@@ -232,6 +232,11 @@ export function CanvasScreen({ navigation }: Props) {
 
       <DateStrip selectedDate={selectedDate} onSelectDate={setSelectedDate} />
 
+      {/* Pull handle */}
+      <View style={{ alignItems: 'center', paddingVertical: 6 }}>
+        <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: colors.border }} />
+      </View>
+
       {/* v2: Tasks moved to bottom bar */}
 
       {/* Canvas — single day, swipe left/right to change day */}
@@ -409,18 +414,22 @@ const styles = StyleSheet.create({
   hourLabel: {
     color: colors.muted, ...type.caption,
     width: HOUR_LABEL_WIDTH - 8, textAlign: 'right', marginRight: 8, marginTop: -14,
+    opacity: 0.35,
   },
-  hourNow: { color: colors.terra, fontWeight: '700' },
-  hourLine: { flex: 1, height: 1, backgroundColor: colors.border },
-  hourLinePast: { opacity: 0.5 },
+  hourNow: { color: colors.accent, fontWeight: '700', opacity: 1 },
+  hourLine: { flex: 1, height: 1, backgroundColor: colors.border, opacity: 0.2 },
+  hourLinePast: { opacity: 0.1 },
 
   nowIndicator: {
     position: 'absolute', left: HOUR_LABEL_WIDTH - 4, right: 0,
     flexDirection: 'row', alignItems: 'center',
     height: 0, overflow: 'visible', zIndex: 10,
   },
-  nowDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.terra, marginTop: -5, marginLeft: -5 },
-  nowLine: { flex: 1, height: 2, backgroundColor: colors.terra },
+  nowDot: {
+    width: 10, height: 10, borderRadius: 5, backgroundColor: colors.accent, marginTop: -5, marginLeft: -5,
+    shadowColor: '#C4795B', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.4, shadowRadius: 8,
+  },
+  nowLine: { flex: 1, height: 2, backgroundColor: colors.accent, opacity: 0.7 },
 
   emptyTap: {
     position: 'absolute', left: HOUR_LABEL_WIDTH, right: 12,
