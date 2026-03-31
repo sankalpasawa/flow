@@ -33,6 +33,9 @@ export const colors = {
   active: '#C4795B',
   planned: '#EDE8E1',
 
+  // Accent (warm amber — now indicator, active states)
+  accent: '#C4795B',
+
   // Semantic
   danger: '#E53E3E',
   dangerLight: '#FFE4E1',
