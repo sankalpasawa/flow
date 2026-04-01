@@ -94,11 +94,13 @@ export function setCurrentScreen(name: string) {
 
 export function captureOnNavigation(screenName: string) {
   setCurrentScreen(screenName);
-  // No auto-capture — only on demand
+  // Auto-capture on every navigation
+  setTimeout(() => captureAndUpload(`nav-${screenName}`), 800);
 }
 
-export function captureOnInteraction(_action: string) {
-  // No auto-capture — only on demand
+export function captureOnInteraction(action: string) {
+  // Auto-capture on interactions
+  setTimeout(() => captureAndUpload(`action-${action}`), 500);
 }
 
 export function DesignQAProvider({ children }: { children: React.ReactNode }) {
@@ -110,7 +112,10 @@ export function DesignQAProvider({ children }: { children: React.ReactNode }) {
     viewShotRef = ref;
     startPolling();
 
-    console.log('[DesignQA] 🟢 Ready. Captures triggered by Claude only.');
+    // Auto-capture on app load
+    setTimeout(() => captureAndUpload('app-load'), 3000);
+
+    console.log('[DesignQA] 🟢 Ready. Auto-capturing on every navigation.');
     console.log(`[DesignQA] 📡 Server: ${SERVER()}`);
 
     return () => {
