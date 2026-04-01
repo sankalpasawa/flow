@@ -234,7 +234,7 @@ export function CanvasScreen({ navigation }: Props) {
 
       {/* Pull handle */}
       <View style={{ alignItems: 'center', paddingVertical: 6 }}>
-        <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: colors.border }} />
+        <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: '#DED6CA' }} />
       </View>
 
       {/* v2: Tasks moved to bottom bar */}
@@ -427,7 +427,7 @@ const styles = StyleSheet.create({
   },
   nowDot: {
     width: 10, height: 10, borderRadius: 5, backgroundColor: colors.accent, marginTop: -5, marginLeft: -5,
-    shadowColor: '#C4795B', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.4, shadowRadius: 8,
+    shadowColor: '#C4795B', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.4, shadowRadius: 10,
   },
   nowLine: { flex: 1, height: 2, backgroundColor: colors.accent, opacity: 0.7 },
 

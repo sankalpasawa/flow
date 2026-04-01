@@ -313,11 +313,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#000',
   },
   expandedSheet: {
-    backgroundColor: 'rgba(255,255,255,0.88)',
+    backgroundColor: 'rgba(255,255,255,0.92)',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     paddingBottom: 34, // safe area bottom
-    ...shadows.modal,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 16,
   },
   dragHandleContainer: {
     alignItems: 'center',
@@ -327,7 +330,8 @@ const styles = StyleSheet.create({
     width: 36,
     height: 4,
     borderRadius: 2,
-    backgroundColor: colors.border,
+    backgroundColor: '#DED6CA',
+    marginBottom: 12,
   },
 
   // ---- Task rows ----
