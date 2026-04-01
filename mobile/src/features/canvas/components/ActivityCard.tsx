@@ -258,10 +258,10 @@ export function ActivityCard({ activity, log, onPress, onQuickComplete, onResche
               borderRadius: cardBorderRadius,
               // Multi-layer shadow (first layer)
               shadowColor: '#000',
-              shadowOffset: { width: 0, height: 3 },
-              shadowOpacity: 0.06,
-              shadowRadius: 8,
-              elevation: 3,
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.12,
+              shadowRadius: 12,
+              elevation: 4,
             },
             height !== undefined && { height, paddingVertical: compact ? 3 : 6 },
             isNow && styles.nowCard,
@@ -349,15 +349,14 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     paddingVertical: 10,
     paddingHorizontal: 12,
-    overflow: 'hidden',
     justifyContent: 'center',
   },
   nowCard: {
     // Amber glow for active activity — using shadow instead of border
-    shadowColor: colors.active,
+    shadowColor: '#C4795B',
     shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
     borderColor: 'rgba(196,121,91,0.35)',
   },
   doneCard: {
