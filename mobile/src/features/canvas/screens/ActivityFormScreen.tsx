@@ -136,7 +136,12 @@ export function ActivityFormScreen({ route, navigation }: Props) {
   const [tempMinute, setTempMinute] = useState(selectedMinute);
 
   useEffect(() => {
-    if (user) getCategories(user.id).then(setCategories).catch(console.error);
+    if (user) getCategories(user.id).then(dbCats => {
+      // Merge: system categories first, then any custom DB categories not already in the list
+      const systemIds = new Set(SYSTEM_CATEGORIES.map(c => c.id));
+      const customCats = dbCats.filter(c => !systemIds.has(c.id));
+      setCategories([...SYSTEM_CATEGORIES, ...customCats]);
+    }).catch(console.error);
   }, [user]);
 
   // --- Helpers ---
@@ -337,24 +342,23 @@ export function ActivityFormScreen({ route, navigation }: Props) {
 
           {/* 3. Duration row */}
           <View style={s.chipRow}>
-            {DURATION_OPTIONS.map(opt => (
-              <TouchableOpacity
-                key={opt.value}
-                style={[s.chipSmall, duration === opt.value && s.chipSelected]}
-                onPress={() => setDuration(opt.value)}
-                activeOpacity={0.7}
-              >
-                <Text style={[s.chipSmallText, duration === opt.value && s.chipTextSelected]}>
-                  {opt.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
+            {DURATION_OPTIONS.map(opt => {
+              const isSelected = duration === opt.value;
+              const isDash = opt.value === 0;
+              return (
+                <TouchableOpacity
+                  key={opt.value}
+                  style={[s.chipSmall, isSelected && (isDash ? s.chipMuted : s.chipSelected)]}
+                  onPress={() => setDuration(opt.value)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[s.chipSmallText, isSelected && (isDash ? s.chipTextMuted : s.chipTextSelected)]}>
+                    {opt.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
-
-          {/* Task hint */}
-          {isTask && (
-            <Text style={s.taskHint}>Saved as a Task</Text>
-          )}
 
           {/* 4. Repeat */}
           <View style={s.section}>
@@ -736,6 +740,12 @@ const s = StyleSheet.create({
   },
   chipTextSelected: {
     color: '#fff',
+  },
+  chipMuted: {
+    backgroundColor: 'rgba(140,133,125,0.12)',
+  },
+  chipTextMuted: {
+    color: colors.muted,
   },
 
   // Task hint
