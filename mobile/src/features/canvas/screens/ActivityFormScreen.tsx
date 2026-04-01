@@ -12,6 +12,7 @@ import { Category, RecurrenceType, Weekday, Subtask } from '../../../types';
 import { SYSTEM_CATEGORIES } from '../../categories/systemCategories';
 import { generateId } from '../../../lib/db/db';
 import { colors, radii, spacing } from '../../../theme';
+import { edgeFn } from '../../../lib/supabase';
 
 interface RouteParams {
   activityId?: string;
@@ -135,6 +136,69 @@ export function ActivityFormScreen({ route, navigation }: Props) {
   const [showMoreCategories, setShowMoreCategories] = useState(false);
   const [tempHour, setTempHour] = useState(selectedHour);
   const [tempMinute, setTempMinute] = useState(selectedMinute);
+  const [generatingMindset, setGeneratingMindset] = useState(false);
+
+  // --- AI Mindset Generation ---
+  const generateMindset = useCallback(async () => {
+    if (!title.trim()) {
+      Alert.alert('Add a title first', 'The AI needs to know what the activity is.');
+      return;
+    }
+    setGeneratingMindset(true);
+    try {
+      const catName = categories.find(c => c.id === categoryId)?.name ?? 'General';
+      const isPlaceholder = edgeFn('ai-mindset-prompt').includes('placeholder');
+
+      if (isPlaceholder) {
+        // Dev mode fallback — generate locally without API
+        const fallbacks: Record<string, string[]> = {
+          'Deep Work': ['Architecture first, details follow.', 'Ship something ugly today.', 'No Slack until the draft is done.'],
+          'Health': ['Start with stretches. Listen to your body.', 'Push through the last set.', 'Movement is medicine.'],
+          'Meetings': ['Listen more than you talk.', 'Ask why before suggesting how.', 'Be present, take notes.'],
+          'Creative': ['Make situations lighter.', 'Let the ideas flow, judge later.', 'Improv mindset — yes, and.'],
+          'Personal': ['Be present. No phone.', 'I am enough and I love the way I am.', 'Experience this fully.'],
+          'Learning': ['Stay curious. Take notes.', 'Knowledge compounds over time.', 'Understanding > memorizing.'],
+          'Rest': ['This is one of my first callings. Just enjoy it.', 'Recharge without guilt.', 'Spend time in the child zone.'],
+        };
+        const options = fallbacks[catName] || ['Give this your full attention.', 'Be intentional with this time.', 'Focus on what matters most.'];
+
+        if (mindset.trim()) {
+          // Enhance mode — make the user's text better
+          const enhanced = mindset.trim().endsWith('.') ? mindset.trim() : mindset.trim() + '.';
+          setMindset(enhanced + ' ' + options[Math.floor(Math.random() * options.length)]);
+        } else {
+          setMindset(options[Math.floor(Math.random() * options.length)]);
+        }
+      } else {
+        // Production — call the edge function
+        const res = await fetch(edgeFn('ai-mindset-prompt'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: title.trim(),
+            category: catName,
+            user_id: user?.id,
+            existing_text: mindset.trim() || undefined,
+            duration_minutes: duration || undefined,
+            time: hasTime ? `${selectedHour}:${selectedMinute.toString().padStart(2, '0')}` : undefined,
+          }),
+        });
+        const data = await res.json();
+        if (data.prompt) {
+          setMindset(data.prompt);
+        } else if (data.error === 'quota_exceeded') {
+          Alert.alert('Daily limit reached', 'You\'ve used all 20 AI generations for today.');
+        } else {
+          Alert.alert('Could not generate', 'Try again or write your own intention.');
+        }
+      }
+    } catch (err) {
+      console.error('[AI Mindset] Error:', err);
+      Alert.alert('Error', 'Could not generate mindset. Check your connection.');
+    } finally {
+      setGeneratingMindset(false);
+    }
+  }, [title, categoryId, categories, mindset, user, duration, hasTime, selectedHour, selectedMinute]);
 
   useEffect(() => {
     if (user) getCategories(user.id).then(dbCats => {
@@ -437,8 +501,12 @@ export function ActivityFormScreen({ route, navigation }: Props) {
                 onChangeText={setMindset}
                 maxLength={200}
               />
-              <TouchableOpacity style={s.sparkleBtn} activeOpacity={0.6}>
-                <Text style={s.sparkleText}>{'\u2728'}</Text>
+              <TouchableOpacity style={s.sparkleBtn} activeOpacity={0.6} onPress={generateMindset} disabled={generatingMindset}>
+                {generatingMindset ? (
+                  <ActivityIndicator size="small" color={colors.accent} />
+                ) : (
+                  <Text style={s.sparkleText}>{'\u2728'}</Text>
+                )}
               </TouchableOpacity>
             </View>
           </View>
