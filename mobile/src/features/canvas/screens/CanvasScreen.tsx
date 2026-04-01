@@ -429,7 +429,7 @@ const styles = StyleSheet.create({
     width: 10, height: 10, borderRadius: 5, backgroundColor: colors.accent, marginTop: -5, marginLeft: -5,
     shadowColor: '#C4795B', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.4, shadowRadius: 10,
   },
-  nowLine: { flex: 1, height: 2, backgroundColor: colors.accent, opacity: 0.7 },
+  nowLine: { flex: 1, height: 2, backgroundColor: colors.accent, opacity: 0.8 },
 
   emptyTap: {
     position: 'absolute', left: HOUR_LABEL_WIDTH, right: 12,

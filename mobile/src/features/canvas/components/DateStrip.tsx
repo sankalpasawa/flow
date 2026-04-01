@@ -242,7 +242,14 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
     borderRadius: radii.sm,
   },
-  chipSelected: { backgroundColor: colors.primary },
+  chipSelected: {
+    backgroundColor: colors.primary,
+    shadowColor: '#2D5A3E',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
   chipToday: { backgroundColor: colors.primaryBg },
   dayName: {
     ...type.micro, color: colors.muted,

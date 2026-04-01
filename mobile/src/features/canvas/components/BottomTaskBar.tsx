@@ -261,6 +261,11 @@ const styles = StyleSheet.create({
     borderTopColor: 'rgba(224,217,206,0.5)',
     justifyContent: 'center',
     paddingHorizontal: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
   collapsedContent: {
     flexDirection: 'row',

@@ -132,6 +132,7 @@ export function ActivityFormScreen({ route, navigation }: Props) {
   const [showCalendar, setShowCalendar] = useState(false);
   const [calendarMonth, setCalendarMonth] = useState(() => parseISO(initialDate + 'T00:00:00'));
   const [showTimePicker, setShowTimePicker] = useState(false);
+  const [showMoreCategories, setShowMoreCategories] = useState(false);
   const [tempHour, setTempHour] = useState(selectedHour);
   const [tempMinute, setTempMinute] = useState(selectedMinute);
 
@@ -459,7 +460,7 @@ export function ActivityFormScreen({ route, navigation }: Props) {
           <View style={s.section}>
             <Text style={s.sectionTitle}>CATEGORY</Text>
             <View style={s.categoryChipWrap}>
-              {categories.map(cat => (
+              {(showMoreCategories ? categories : categories.slice(0, 8)).map(cat => (
                 <TouchableOpacity
                   key={cat.id}
                   style={[s.categoryChip, categoryId === cat.id && s.categoryChipSelected]}
@@ -475,6 +476,17 @@ export function ActivityFormScreen({ route, navigation }: Props) {
                   </Text>
                 </TouchableOpacity>
               ))}
+              {categories.length > 8 && (
+                <TouchableOpacity
+                  style={s.categoryChip}
+                  onPress={() => setShowMoreCategories(prev => !prev)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={s.categoryChipName}>
+                    {showMoreCategories ? 'Less \u25B4' : 'More \u25BE'}
+                  </Text>
+                </TouchableOpacity>
+              )}
               <TouchableOpacity style={s.categoryAddChip} activeOpacity={0.7}>
                 <Text style={s.categoryAddText}>+</Text>
               </TouchableOpacity>

@@ -50,7 +50,7 @@ function glassTintBackground(catHex: string): string {
   const finalR = Math.round(baseR * (1 - tint) + r * tint);
   const finalG = Math.round(baseG * (1 - tint) + g * tint);
   const finalB = Math.round(baseB * (1 - tint) + b * tint);
-  return `rgba(${finalR},${finalG},${finalB},0.65)`;
+  return `rgba(${finalR},${finalG},${finalB},0.72)`;
 }
 
 export function ActivityCard({ activity, log, onPress, onQuickComplete, onReschedule, isNow, isOverdue, height }: Props) {
