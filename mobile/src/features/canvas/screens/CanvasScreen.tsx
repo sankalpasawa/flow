@@ -409,12 +409,12 @@ const styles = StyleSheet.create({
 
   hourRow: {
     position: 'absolute', left: 0, right: 0,
-    flexDirection: 'row', alignItems: 'center', paddingLeft: 8,
+    flexDirection: 'row', alignItems: 'center', paddingLeft: 4,
     height: 0, overflow: 'visible', zIndex: 1,
   },
   hourLabel: {
-    color: colors.muted, ...type.caption,
-    width: HOUR_LABEL_WIDTH - 8, textAlign: 'right', marginRight: 8, marginTop: -14,
+    color: colors.muted, fontSize: 11, fontWeight: '500' as const,
+    width: HOUR_LABEL_WIDTH, textAlign: 'right', marginRight: 6, marginTop: -14,
     opacity: 0.35,
   },
   hourNow: { color: colors.accent, fontWeight: '700', opacity: 1 },
