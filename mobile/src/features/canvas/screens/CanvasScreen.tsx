@@ -15,6 +15,7 @@ import { ActivityCard } from '../components/ActivityCard';
 // import { TaskSection } from '../components/TaskSection';
 import { BottomTaskBar } from '../components/BottomTaskBar';
 import { Activity } from '../../../types';
+import { captureOnContentChange } from '../../../debug/DesignQA';
 import { colors, shadows, spacing, type } from '../../../theme';
 import {
   HOUR_HEIGHT, START_HOUR, END_HOUR, HOUR_LABEL_WIDTH,

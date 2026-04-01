@@ -1,21 +1,18 @@
 /**
- * DayFlow Design QA System — On-Demand Only
+ * DayFlow Design QA — Smart Capture
  *
- * Screenshots are taken ONLY when Claude triggers them via the QA server.
- * No auto-capture. No constant uploading.
+ * OFF by default. Claude starts/stops QA mode via the server.
+ * While ON: captures once per unique screen. No duplicates.
  *
- * Flow:
- * 1. Claude sends POST http://<mac-ip>:9876/trigger to the QA server
- * 2. QA server sets a flag
- * 3. App polls the flag every 2 seconds (lightweight)
- * 4. When flag is set, app captures screenshot + uploads to QA server
- * 5. Claude reads the screenshot from disk
- *
- * DEV MODE ONLY.
+ * Server endpoints:
+ *   POST /qa/start — turn on QA mode
+ *   POST /qa/stop  — turn off QA mode
+ *   POST /trigger   — force capture of current screen
+ *   GET  /status    — check if QA is active
  */
 
 import React, { useRef, useEffect } from 'react';
-import { Platform, AppState } from 'react-native';
+import { Platform } from 'react-native';
 import ViewShot, { captureRef } from 'react-native-view-shot';
 import Constants from 'expo-constants';
 
@@ -23,6 +20,8 @@ const DEV_MODE = __DEV__;
 let viewShotRef: React.RefObject<ViewShot | null> | null = null;
 let currentScreen = 'Today';
 let captureCount = 0;
+let qaActive = false;
+const capturedScreens = new Set<string>(); // Track which screens we've already captured
 let pollInterval: ReturnType<typeof setInterval> | null = null;
 
 function getDevServerHost(): string {
@@ -39,9 +38,6 @@ function getDevServerHost(): string {
 
 const SERVER = () => `http://${getDevServerHost()}:9876`;
 
-/**
- * Take screenshot and upload to QA server
- */
 async function captureAndUpload(label: string): Promise<void> {
   if (!viewShotRef?.current) return;
 
@@ -61,29 +57,44 @@ async function captureAndUpload(label: string): Promise<void> {
       body: JSON.stringify({ filename, base64, screen: currentScreen, label }),
     });
 
-    console.log(`[DesignQA] 📸 Captured: ${filename}`);
+    console.log(`[DesignQA] 📸 ${filename}`);
   } catch (err) {
-    console.log(`[DesignQA] ⚠️ Capture failed: ${err}`);
+    console.log(`[DesignQA] ⚠️ ${err}`);
   }
 }
 
 /**
- * Poll the QA server for capture requests from Claude
+ * Poll server for QA mode changes and trigger requests
  */
 function startPolling() {
   if (pollInterval) return;
 
   pollInterval = setInterval(async () => {
     try {
-      const res = await fetch(`${SERVER()}/pending`);
+      const res = await fetch(`${SERVER()}/qa-state`);
       const data = await res.json();
-      if (data.pending) {
-        await captureAndUpload(data.label || 'triggered');
-        // Acknowledge
+
+      // QA mode toggled
+      if (data.active && !qaActive) {
+        qaActive = true;
+        capturedScreens.clear();
+        console.log('[DesignQA] 🟢 QA mode ON');
+        // Capture current screen immediately
+        await captureAndUpload('qa-start');
+        capturedScreens.add(currentScreen);
+      } else if (!data.active && qaActive) {
+        qaActive = false;
+        capturedScreens.clear();
+        console.log('[DesignQA] 🔴 QA mode OFF');
+      }
+
+      // Check for force trigger
+      if (data.forceTrigger) {
+        await captureAndUpload(data.triggerLabel || 'forced');
         await fetch(`${SERVER()}/ack`, { method: 'POST' });
       }
     } catch {
-      // Server not running, ignore silently
+      // Server not running
     }
   }, 2000);
 }
@@ -94,13 +105,33 @@ export function setCurrentScreen(name: string) {
 
 export function captureOnNavigation(screenName: string) {
   setCurrentScreen(screenName);
-  // Auto-capture on every navigation
-  setTimeout(() => captureAndUpload(`nav-${screenName}`), 800);
+
+  // Only capture if QA is active AND we haven't captured this screen yet
+  if (qaActive && !capturedScreens.has(screenName)) {
+    capturedScreens.add(screenName);
+    setTimeout(() => captureAndUpload(`nav-${screenName}`), 800);
+  }
 }
 
 export function captureOnInteraction(action: string) {
-  // Auto-capture on interactions
-  setTimeout(() => captureAndUpload(`action-${action}`), 500);
+  // Only capture if QA is active
+  if (qaActive) {
+    setTimeout(() => captureAndUpload(`action-${action}`), 500);
+  }
+}
+
+/**
+ * Call this when content changes on a dynamic screen
+ * (e.g. scroll position changes visible pills, sheet expands, etc.)
+ * Uses a content key to avoid duplicate captures of the same state
+ */
+const capturedContentKeys = new Set<string>();
+export function captureOnContentChange(contentKey: string) {
+  if (!qaActive) return;
+  const key = `${currentScreen}-${contentKey}`;
+  if (capturedContentKeys.has(key)) return;
+  capturedContentKeys.add(key);
+  setTimeout(() => captureAndUpload(`content-${contentKey}`), 600);
 }
 
 export function DesignQAProvider({ children }: { children: React.ReactNode }) {
@@ -112,11 +143,8 @@ export function DesignQAProvider({ children }: { children: React.ReactNode }) {
     viewShotRef = ref;
     startPolling();
 
-    // Auto-capture on app load
-    setTimeout(() => captureAndUpload('app-load'), 3000);
-
-    console.log('[DesignQA] 🟢 Ready. Auto-capturing on every navigation.');
-    console.log(`[DesignQA] 📡 Server: ${SERVER()}`);
+    console.log('[DesignQA] Ready. Waiting for QA mode to be activated.');
+    console.log(`[DesignQA] Server: ${SERVER()}`);
 
     return () => {
       if (pollInterval) {

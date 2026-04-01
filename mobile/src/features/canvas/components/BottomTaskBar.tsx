@@ -1,4 +1,5 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
+import { captureOnContentChange } from '../../../debug/DesignQA';
 import {
   View,
   Text,
@@ -45,6 +46,11 @@ export function BottomTaskBar({ tasks, onToggle, onPress, onQuickAdd }: BottomTa
 
   const nextTask = planned[0];
   const remainingCount = planned.length > 1 ? planned.length - 1 : 0;
+
+  // Capture on expand/collapse for QA
+  useEffect(() => {
+    captureOnContentChange(expanded ? 'taskbar-expanded' : 'taskbar-collapsed');
+  }, [expanded]);
 
   const expand = useCallback(() => {
     setExpanded(true);
