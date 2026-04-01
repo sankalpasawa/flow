@@ -1,14 +1,15 @@
 /**
- * DayFlow Design QA System — Expo Native → Mac Bridge
+ * DayFlow Design QA System — On-Demand Only
  *
- * Takes screenshots on iPhone, uploads them to a tiny HTTP server
- * running on the dev machine. Claude reads them from disk.
+ * Screenshots are taken ONLY when Claude triggers them via the QA server.
+ * No auto-capture. No constant uploading.
  *
  * Flow:
- * 1. App captures screenshots via ViewShot (on iPhone)
- * 2. Uploads base64 PNG to http://<dev-machine>:9876/upload
- * 3. Server saves to mobile/qa-screenshots/ on the Mac
- * 4. Claude reads them via the Read tool
+ * 1. Claude sends POST http://<mac-ip>:9876/trigger to the QA server
+ * 2. QA server sets a flag
+ * 3. App polls the flag every 2 seconds (lightweight)
+ * 4. When flag is set, app captures screenshot + uploads to QA server
+ * 5. Claude reads the screenshot from disk
  *
  * DEV MODE ONLY.
  */
@@ -22,33 +23,27 @@ const DEV_MODE = __DEV__;
 let viewShotRef: React.RefObject<ViewShot | null> | null = null;
 let currentScreen = 'Today';
 let captureCount = 0;
+let pollInterval: ReturnType<typeof setInterval> | null = null;
 
-// The dev server IP — Expo sets this in the manifest
 function getDevServerHost(): string {
   try {
-    // Expo Go provides the dev server URL in the manifest
     const debuggerHost = Constants.expoConfig?.hostUri
       || Constants.manifest?.debuggerHost
       || Constants.manifest2?.extra?.expoGo?.debuggerHost
       || '';
-    // Extract just the IP (remove port)
-    const ip = debuggerHost.split(':')[0];
-    return ip || 'localhost';
+    return debuggerHost.split(':')[0] || 'localhost';
   } catch {
     return 'localhost';
   }
 }
 
-const UPLOAD_URL = () => `http://${getDevServerHost()}:9876/upload`;
+const SERVER = () => `http://${getDevServerHost()}:9876`;
 
 /**
- * Take a screenshot and upload to dev machine
+ * Take screenshot and upload to QA server
  */
-export async function takeCapture(label: string = 'manual'): Promise<string | null> {
-  if (!DEV_MODE || !viewShotRef?.current) return null;
-
-  // Skip on web — web uses browse tool directly
-  if (Platform.OS === 'web') return null;
+async function captureAndUpload(label: string): Promise<void> {
+  if (!viewShotRef?.current) return;
 
   try {
     const base64 = await captureRef(viewShotRef, {
@@ -58,29 +53,39 @@ export async function takeCapture(label: string = 'manual'): Promise<string | nu
     });
 
     captureCount++;
-    const filename = `qa-${captureCount}-${currentScreen.replace(/[^a-zA-Z0-9]/g, '_')}-${label.replace(/[^a-zA-Z0-9]/g, '_')}.png`;
+    const filename = `qa-${captureCount}-${currentScreen}-${label}.png`.replace(/[^a-zA-Z0-9._-]/g, '_');
 
-    console.log(`[DesignQA] 📸 #${captureCount} ${currentScreen}/${label}`);
+    await fetch(`${SERVER()}/upload`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ filename, base64, screen: currentScreen, label }),
+    });
 
-    // Upload to dev machine
-    try {
-      const url = UPLOAD_URL();
-      await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ filename, base64, screen: currentScreen, label }),
-      });
-      console.log(`[DesignQA] ⬆️  Uploaded to dev machine: ${filename}`);
-    } catch (uploadErr) {
-      console.log(`[DesignQA] ⚠️  Upload failed (server not running?): ${uploadErr}`);
-      console.log(`[DesignQA] Run the QA server: node mobile/src/debug/qa-server.js`);
-    }
-
-    return filename;
+    console.log(`[DesignQA] 📸 Captured: ${filename}`);
   } catch (err) {
-    console.warn('[DesignQA] Capture failed:', err);
-    return null;
+    console.log(`[DesignQA] ⚠️ Capture failed: ${err}`);
   }
+}
+
+/**
+ * Poll the QA server for capture requests from Claude
+ */
+function startPolling() {
+  if (pollInterval) return;
+
+  pollInterval = setInterval(async () => {
+    try {
+      const res = await fetch(`${SERVER()}/pending`);
+      const data = await res.json();
+      if (data.pending) {
+        await captureAndUpload(data.label || 'triggered');
+        // Acknowledge
+        await fetch(`${SERVER()}/ack`, { method: 'POST' });
+      }
+    } catch {
+      // Server not running, ignore silently
+    }
+  }, 2000);
 }
 
 export function setCurrentScreen(name: string) {
@@ -89,24 +94,13 @@ export function setCurrentScreen(name: string) {
 
 export function captureOnNavigation(screenName: string) {
   setCurrentScreen(screenName);
-  setTimeout(() => takeCapture(`nav-${screenName}`), 800);
+  // No auto-capture — only on demand
 }
 
-export function captureOnInteraction(action: string) {
-  setTimeout(() => takeCapture(`action-${action}`), 500);
+export function captureOnInteraction(_action: string) {
+  // No auto-capture — only on demand
 }
 
-// Expose for debugger
-if (DEV_MODE && Platform.OS !== 'web') {
-  (global as any).__designQA = {
-    trigger: takeCapture,
-    status: () => ({ currentScreen, captureCount, platform: Platform.OS, uploadUrl: UPLOAD_URL() }),
-  };
-}
-
-/**
- * Provider — wrap your app
- */
 export function DesignQAProvider({ children }: { children: React.ReactNode }) {
   const ref = useRef<ViewShot>(null);
 
@@ -114,23 +108,16 @@ export function DesignQAProvider({ children }: { children: React.ReactNode }) {
     if (!DEV_MODE || Platform.OS === 'web') return;
 
     viewShotRef = ref;
+    startPolling();
 
-    // Auto-capture on app load
-    const timer = setTimeout(() => takeCapture('app-load'), 3000);
-
-    // Capture on foreground
-    const sub = AppState.addEventListener('change', (state) => {
-      if (state === 'active') {
-        setTimeout(() => takeCapture('foregrounded'), 1000);
-      }
-    });
-
-    console.log('[DesignQA] 🟢 Ready. Screenshots auto-upload to dev machine.');
-    console.log(`[DesignQA] 📡 Upload URL: ${UPLOAD_URL()}`);
+    console.log('[DesignQA] 🟢 Ready. Captures triggered by Claude only.');
+    console.log(`[DesignQA] 📡 Server: ${SERVER()}`);
 
     return () => {
-      clearTimeout(timer);
-      sub.remove();
+      if (pollInterval) {
+        clearInterval(pollInterval);
+        pollInterval = null;
+      }
     };
   }, []);
 
