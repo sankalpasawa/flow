@@ -240,7 +240,7 @@ export function CanvasScreen({ navigation }: Props) {
   const composedGesture = Gesture.Simultaneous(pinchGesture, swipeGesture);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>
@@ -536,7 +536,7 @@ const styles = StyleSheet.create({
   },
   hourLabel: {
     color: colors.muted, fontSize: 10, fontWeight: '600' as const,
-    width: HOUR_LABEL_WIDTH, textAlign: 'right', marginRight: 6,
+    width: HOUR_LABEL_WIDTH - 4, textAlign: 'right', marginRight: 4,
     opacity: 0.35,
     fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
   },
