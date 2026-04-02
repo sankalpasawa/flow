@@ -66,9 +66,23 @@ export async function getActivitiesForDay(userId: string, dateStr: string): Prom
   const virtualInstances = generateRecurringInstances(recurringActivities, targetDate);
 
   // 4. Filter out virtual instances that already have an explicit entry on this date
-  //    (to avoid duplicates — the original instance for its own date is already in explicitActivities)
-  const explicitTitles = new Set(explicitActivities.map(a => a.title));
-  const deduped = virtualInstances.filter(v => !explicitTitles.has(v.title));
+  //    Deduplicate by: original activity ID (virtual IDs contain the original ID prefix)
+  //    AND by title (in case seed created separate rows for the same recurring activity)
+  const explicitOriginalIds = new Set(recurringActivities
+    .filter(a => {
+      const aDate = a.start_time ? a.start_time.substring(0, 10) : '';
+      return aDate === dateStr;
+    })
+    .map(a => a.id)
+  );
+  const explicitTitles = new Set(explicitActivities.map(a => a.title.trim().toLowerCase()));
+  const deduped = virtualInstances.filter(v => {
+    // Extract original ID from virtual ID (format: "originalId_date")
+    const originalId = v.id.split('_')[0];
+    if (explicitOriginalIds.has(originalId)) return false;
+    if (explicitTitles.has(v.title.trim().toLowerCase())) return false;
+    return true;
+  });
 
   // 5. Merge and sort by start_time
   const all = [...explicitActivities, ...deduped];

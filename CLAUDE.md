@@ -107,6 +107,25 @@ Read `TODO.md` for the full list. Top priorities:
 - Web: `npx expo start --web` then open http://localhost:8081
 - SDK 54 for Expo Go compatibility
 
+## Fundamental Principle: Full Automation
+The user's time and energy are sacred. Do NOT ask for collaboration, input, or manual steps unless absolutely necessary (security credentials, design taste decisions).
+
+Rules:
+- Automate everything: testing, QA, screenshots, deployment, debugging
+- Don't ask the user to click, navigate, paste, or run commands
+- If something needs manual input, try at least 2 automated approaches first
+- For design QA: control the app yourself, navigate screens, take screenshots
+- For errors: read logs yourself, diagnose, fix, verify
+- For git: push automatically after commits
+- Only escalate to the user when genuinely blocked (auth, taste decisions, business logic ambiguity)
+
+This applies to: QA testing, debugging, deployment, git operations, design review, and all development tasks.
+
+## Target Platform: iPhone via Expo Go Only
+- Web is out of scope. Don't test, optimize, or build for web.
+- All QA must happen via the DesignQA system (iPhone captures) or by controlling the app programmatically
+- Native-first: use react-native-safe-area-context, native gestures, iOS-specific optimizations
+
 ## Living Documentation Rule
 Whenever a critical decision, philosophy, direction, or framework is decided during a session, immediately update the relevant document:
 
