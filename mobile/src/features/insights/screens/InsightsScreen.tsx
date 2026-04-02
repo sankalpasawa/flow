@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   View, Text, ScrollView, Pressable, StyleSheet,
-  SafeAreaView, ActivityIndicator, Animated, LayoutAnimation,
+ActivityIndicator, Animated, LayoutAnimation,
   Platform, UIManager,
 } from 'react-native';
 import { format, subDays, isSameDay, parseISO } from 'date-fns';

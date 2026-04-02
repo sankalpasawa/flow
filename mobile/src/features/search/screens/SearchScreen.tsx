@@ -1,7 +1,8 @@
 import React, { useState, useCallback, useRef } from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   View, Text, TextInput, FlatList, TouchableOpacity,
-  StyleSheet, SafeAreaView, ActivityIndicator,
+  StyleSheet, ActivityIndicator,
 } from 'react-native';
 import { format, parseISO } from 'date-fns';
 import { useAuthStore } from '../../../store/authStore';

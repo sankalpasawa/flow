@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useCallback, useMemo, useState } from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  SafeAreaView, ActivityIndicator, Platform, RefreshControl, useWindowDimensions,
+  ActivityIndicator, Platform, RefreshControl, useWindowDimensions,
 } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { runOnJS } from 'react-native-reanimated';

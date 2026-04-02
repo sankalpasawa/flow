@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   View, Text, FlatList, TouchableOpacity, TextInput,
-  StyleSheet, SafeAreaView, Modal, SectionList,
+  StyleSheet, Modal, SectionList,
 } from 'react-native';
 import { format, addDays } from 'date-fns';
 import { useAuthStore } from '../../../store/authStore';

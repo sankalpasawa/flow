@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
-  View, Text, TouchableOpacity, StyleSheet, SafeAreaView, Platform,
+  View, Text, TouchableOpacity, StyleSheet, Platform,
   ScrollView, Switch,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';

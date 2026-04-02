@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   View, Text, TouchableOpacity, StyleSheet, ScrollView,
-  SafeAreaView, Platform,
+Platform,
 } from 'react-native';
 import { format, parseISO, addMinutes } from 'date-fns';
 import { useActivitiesStore } from '../../../store/activitiesStore';
