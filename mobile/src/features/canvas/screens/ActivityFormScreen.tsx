@@ -29,38 +29,37 @@ interface Props {
 
 const PRESET_DURATIONS = [0, 15, 30, 60];
 
-function buildDurationOptions(currentDuration: number): { label: string; value: number }[] {
-  const options: { label: string; value: number }[] = [
+// Minutes values for the scroll picker (5 min increments up to 3 hours)
+const SCROLL_MINUTES = [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 75, 90, 105, 120, 150, 180];
+const SCROLL_ITEM_HEIGHT = 40;
+
+function formatDurationLabel(min: number): string {
+  if (min === 0) return '\u2014';
+  if (min >= 60 && min % 60 === 0) return `${min / 60}h`;
+  if (min >= 60) return `${Math.floor(min / 60)}h${min % 60}m`;
+  return `${min}m`;
+}
+
+function buildDurationChips(currentDuration: number): { label: string; value: number }[] {
+  const chips: { label: string; value: number }[] = [
     { label: '\u2014', value: 0 },
   ];
 
-  // If current duration is custom (not in presets and > 0), insert it in sorted position
-  if (currentDuration > 0 && !PRESET_DURATIONS.includes(currentDuration)) {
-    const customLabel = currentDuration >= 60
-      ? `${Math.floor(currentDuration / 60)}h${currentDuration % 60 > 0 ? `${currentDuration % 60}m` : ''}`
-      : `${currentDuration}m`;
-
-    // Build sorted list with custom value inserted
-    const all = [15, 30, 60, currentDuration].sort((a, b) => a - b);
+  // If custom duration exists (not a preset), insert it sorted
+  const isCustom = currentDuration > 0 && ![15, 30, 60].includes(currentDuration);
+  if (isCustom) {
+    const all = [currentDuration, 15, 30, 60].sort((a, b) => a - b);
     const unique = [...new Set(all)];
     for (const v of unique) {
-      if (v === currentDuration) {
-        options.push({ label: customLabel, value: v });
-      } else if (v >= 60) {
-        options.push({ label: `${v / 60}h`, value: v });
-      } else {
-        options.push({ label: `${v}m`, value: v });
-      }
+      chips.push({ label: formatDurationLabel(v), value: v });
     }
   } else {
-    options.push({ label: '15m', value: 15 });
-    options.push({ label: '30m', value: 30 });
-    options.push({ label: '1h', value: 60 });
+    chips.push({ label: '15m', value: 15 });
+    chips.push({ label: '30m', value: 30 });
+    chips.push({ label: '1h', value: 60 });
   }
 
-  // Always add custom button at end
-  options.push({ label: '…', value: -1 });
-  return options;
+  return chips;
 }
 
 const REPEAT_LABELS: Record<string, string> = {
@@ -140,7 +139,6 @@ export function ActivityFormScreen({ route, navigation }: Props) {
   // Duration
   const [duration, setDuration] = useState(existingActivity?.duration_minutes ?? (backlog ? 0 : 0));
   const [showCustomDuration, setShowCustomDuration] = useState(false);
-  const [customDurationText, setCustomDurationText] = useState('');
 
   // Category — not mandatory, empty string = none
   const [categoryId, setCategoryId] = useState(existingActivity?.category_id ?? '');
@@ -456,52 +454,75 @@ export function ActivityFormScreen({ route, navigation }: Props) {
             </TouchableOpacity>
           </View>
 
-          {/* 3. Duration row */}
+          {/* 3. Duration row — chips + pencil icon */}
           <View style={s.chipRow}>
-            {buildDurationOptions(duration).map(opt => {
-              const isCustomBtn = opt.value === -1;
-              const isSelected = isCustomBtn
-                ? showCustomDuration
-                : duration === opt.value && !showCustomDuration;
-              const isDash = opt.value === 0;
+            {buildDurationChips(duration).map(chip => {
+              const isSelected = duration === chip.value && !showCustomDuration;
+              const isDash = chip.value === 0;
               return (
                 <TouchableOpacity
-                  key={`dur-${opt.value}-${opt.label}`}
+                  key={`dur-${chip.value}`}
                   style={[s.chipSmall, isSelected && (isDash ? s.chipMuted : s.chipSelected)]}
                   onPress={() => {
-                    if (isCustomBtn) {
-                      setShowCustomDuration(true);
-                      setCustomDurationText(duration > 0 ? String(duration) : '');
-                    } else {
-                      setShowCustomDuration(false);
-                      setDuration(opt.value);
-                    }
+                    setShowCustomDuration(false);
+                    setDuration(chip.value);
                   }}
                   activeOpacity={0.7}
                 >
                   <Text style={[s.chipSmallText, isSelected && (isDash ? s.chipTextMuted : s.chipTextSelected)]}>
-                    {opt.label}
+                    {chip.label}
                   </Text>
                 </TouchableOpacity>
               );
             })}
+            {/* Pencil icon — always visible */}
+            <TouchableOpacity
+              style={[s.chipSmall, showCustomDuration && s.chipSelected]}
+              onPress={() => setShowCustomDuration(!showCustomDuration)}
+              activeOpacity={0.7}
+            >
+              <Text style={[s.chipSmallText, showCustomDuration && s.chipTextSelected, { fontSize: 14 }]}>
+                ✎
+              </Text>
+            </TouchableOpacity>
           </View>
+
+          {/* Inline scroll wheel — slides open when pencil tapped */}
           {showCustomDuration && (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8 }}>
-              <TextInput
-                style={[s.lineInput, { flex: 0, width: 60, textAlign: 'center' }]}
-                placeholder="min"
-                placeholderTextColor={colors.muted}
-                keyboardType="number-pad"
-                value={customDurationText}
-                onChangeText={(t) => {
-                  setCustomDurationText(t);
-                  const num = parseInt(t, 10);
-                  if (!isNaN(num) && num > 0) setDuration(num);
+            <View style={s.scrollPickerContainer}>
+              <ScrollView
+                style={s.scrollPickerWheel}
+                contentContainerStyle={{ paddingVertical: SCROLL_ITEM_HEIGHT * 2 }}
+                showsVerticalScrollIndicator={false}
+                snapToInterval={SCROLL_ITEM_HEIGHT}
+                decelerationRate="fast"
+                onMomentumScrollEnd={(e) => {
+                  const idx = Math.round(e.nativeEvent.contentOffset.y / SCROLL_ITEM_HEIGHT);
+                  const val = SCROLL_MINUTES[Math.min(idx, SCROLL_MINUTES.length - 1)];
+                  if (val) setDuration(val);
                 }}
-                autoFocus
-              />
-              <Text style={{ fontSize: 13, color: colors.muted }}>minutes</Text>
+                contentOffset={{ x: 0, y: Math.max(0, SCROLL_MINUTES.indexOf(duration > 0 ? duration : 15)) * SCROLL_ITEM_HEIGHT }}
+              >
+                {SCROLL_MINUTES.map((min) => (
+                  <View key={min} style={s.scrollPickerItem}>
+                    <Text style={[
+                      s.scrollPickerText,
+                      duration === min && s.scrollPickerTextActive,
+                    ]}>
+                      {formatDurationLabel(min)}
+                    </Text>
+                  </View>
+                ))}
+              </ScrollView>
+              <View style={s.scrollPickerHighlight} pointerEvents="none" />
+              <Text style={s.scrollPickerLabel}>minutes</Text>
+              <TouchableOpacity
+                style={s.scrollPickerDone}
+                onPress={() => setShowCustomDuration(false)}
+                activeOpacity={0.8}
+              >
+                <Text style={s.scrollPickerDoneText}>Done</Text>
+              </TouchableOpacity>
             </View>
           )}
 
@@ -1316,5 +1337,66 @@ const s = StyleSheet.create({
     fontWeight: '700',
     marginTop: 16,
     marginBottom: 4,
+  },
+
+  // Duration scroll picker
+  scrollPickerContainer: {
+    marginTop: 10,
+    backgroundColor: colors.glass.bg,
+    borderWidth: 1,
+    borderColor: colors.glass.border,
+    borderRadius: 14,
+    padding: 12,
+    alignItems: 'center',
+  },
+  scrollPickerWheel: {
+    height: SCROLL_ITEM_HEIGHT * 3,
+    width: 100,
+    overflow: 'hidden',
+  },
+  scrollPickerItem: {
+    height: SCROLL_ITEM_HEIGHT,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  scrollPickerText: {
+    fontSize: 20,
+    fontWeight: '500',
+    color: colors.border,
+  },
+  scrollPickerTextActive: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  scrollPickerHighlight: {
+    position: 'absolute',
+    top: 12 + SCROLL_ITEM_HEIGHT * 2,
+    left: 12,
+    right: 12,
+    height: SCROLL_ITEM_HEIGHT,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: 'rgba(45,90,62,0.15)',
+    backgroundColor: 'rgba(45,90,62,0.04)',
+    borderRadius: 0,
+  },
+  scrollPickerLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.muted,
+    marginTop: 8,
+  },
+  scrollPickerDone: {
+    backgroundColor: colors.primary,
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 32,
+    marginTop: 10,
+  },
+  scrollPickerDoneText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
   },
 });
