@@ -159,10 +159,11 @@ export function AppNavigator() {
               name="ActivityForm"
               component={ActivityFormScreen}
               options={{
-                presentation: 'transparentModal',
+                presentation: 'modal',
                 headerShown: false,
                 animation: 'slide_from_bottom',
                 gestureEnabled: true,
+                gestureDirection: 'vertical',
               }}
             />
             <Stack.Screen
@@ -202,10 +203,11 @@ export function AppNavigator() {
               name="ExperienceLog"
               component={ExperienceLogScreen as any}
               options={{
-                presentation: 'transparentModal',
+                presentation: 'modal',
                 headerShown: false,
                 animation: 'slide_from_bottom',
                 gestureEnabled: true,
+                gestureDirection: 'vertical',
               }}
             />
             <Stack.Screen

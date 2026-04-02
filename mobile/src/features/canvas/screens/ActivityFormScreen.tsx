@@ -145,23 +145,28 @@ export function ActivityFormScreen({ route, navigation }: Props) {
     const newStart = new Date(`${dateStr}T${String(selectedHour).padStart(2,'0')}:${String(selectedMinute).padStart(2,'0')}:00`);
     const newEnd = new Date(newStart.getTime() + (duration || 30) * 60000);
 
-    for (const act of activities) {
-      if (act.id === existingActivity?.id) continue; // skip self when editing
-      if (!act.start_time) continue;
-      const actStart = new Date(act.start_time);
-      const actEnd = new Date(actStart.getTime() + act.duration_minutes * 60000);
-      const actDate = act.start_time.substring(0, 10);
-      if (actDate !== dateStr) continue;
+    // Find ALL occupied slots on this date
+    const occupiedSlots = activities
+      .filter(a => a.start_time && a.start_time.substring(0,10) === dateStr && a.id !== existingActivity?.id)
+      .map(a => ({
+        start: new Date(a.start_time!).getTime(),
+        end: new Date(a.start_time!).getTime() + a.duration_minutes * 60000,
+        title: a.title,
+      }))
+      .sort((a, b) => a.start - b.start);
 
-      // Check overlap
-      if (newStart < actEnd && newEnd > actStart) {
-        // Find next free slot
-        const suggestedTime = actEnd;
-        return {
-          activity: act,
-          suggestedHour: suggestedTime.getHours(),
-          suggestedMinute: suggestedTime.getMinutes(),
-        };
+    // Check if new activity overlaps any
+    for (const slot of occupiedSlots) {
+      if (newStart.getTime() < slot.end && newEnd.getTime() > slot.start) {
+        // Find FIRST free slot after all conflicts
+        let suggestedStart = slot.end;
+        for (const other of occupiedSlots) {
+          if (other.start <= suggestedStart && other.end > suggestedStart) {
+            suggestedStart = other.end;
+          }
+        }
+        const suggested = new Date(suggestedStart);
+        return { activity: { title: slot.title } as any, suggestedHour: suggested.getHours(), suggestedMinute: suggested.getMinutes() };
       }
     }
     return null;
@@ -545,14 +550,14 @@ export function ActivityFormScreen({ route, navigation }: Props) {
             <Text style={s.sectionTitle}>MINDSET</Text>
             <View style={s.inputRow}>
               <TextInput
-                style={s.lineInput}
+                style={[s.lineInput, { minHeight: 44, fontSize: 15, lineHeight: 22 }]}
                 placeholder="Set an intention..."
                 placeholderTextColor={colors.muted}
                 value={mindset}
                 onChangeText={setMindset}
                 maxLength={200}
                 multiline
-                numberOfLines={1}
+                numberOfLines={2}
                 textAlignVertical="top"
               />
               <TouchableOpacity style={s.sparkleBtn} activeOpacity={0.6} onPress={generateMindset} disabled={generatingMindset}>

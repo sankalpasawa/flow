@@ -176,17 +176,16 @@ export function CanvasScreen({ navigation }: Props) {
   const navigateToActivity = useCallback((activity: Activity) => {
     const shouldLog =
       activity.status === 'COMPLETED' ||
-      activity.status === 'SKIPPED' ||
-      (activity.start_time && (() => {
-        const actEnd = new Date(parseISO(activity.start_time!).getTime() + activity.duration_minutes * 60000);
-        return isToday && actEnd < now && activity.status === 'PLANNED';
-      })());
+      activity.status === 'SKIPPED';
     if (shouldLog) {
-      navigation.navigate('ExperienceLog', { activityId: activity.id });
+      // Virtual recurring instance IDs (e.g. "id_2026-04-02") won't match in DB,
+      // so pass the original ID for lookup
+      const originalId = activity.id.includes('_') ? activity.id.split('_')[0] : activity.id;
+      navigation.navigate('ExperienceLog', { activityId: originalId });
     } else {
       navigation.navigate('ActivityForm', { activityId: activity.id });
     }
-  }, [navigation, isToday, now]);
+  }, [navigation]);
 
   const nowY = (now.getHours() + now.getMinutes() / 60) * effectiveHourHeight;
 
@@ -352,7 +351,7 @@ export function CanvasScreen({ navigation }: Props) {
                     style={[
                       styles.activityBlock,
                       { top, height, left: leftOffset, width: colWidth, right: undefined },
-                      isPast && { opacity: 0.7 },
+                      (activity.status === 'COMPLETED' || activity.status === 'SKIPPED') && { opacity: 0.5 },
                     ]}
                   >
                     <ActivityCard
