@@ -251,32 +251,24 @@ export const useActivitiesStore = create<ActivitiesState>((set, get) => ({
 
   editActivity: async (id, updates) => {
     try {
-      // Strip virtual instance suffix to get the real DB id
-      const realId = id.includes('_') ? id.split('_')[0] : id;
+      // Virtual recurring instances have IDs like "realId_2026-04-03"
+      // The real DB id is everything before the last _YYYY-MM-DD suffix
+      const datePattern = /_\d{4}-\d{2}-\d{2}$/;
+      const realId = datePattern.test(id) ? id.replace(datePattern, '') : id;
+
       await updateActivity(realId, updates);
 
-      // Reload the full day to pick up changes (handles recurring virtual instances)
+      // Refresh: reload the day to regenerate virtual instances from updated DB
       const { selectedDate } = get();
-      const userId = get().activities[0]?.user_id || get().untimedTasks[0]?.user_id;
-      if (userId && selectedDate) {
-        await get().loadDay(userId, selectedDate);
-      } else {
-        // Fallback: patch in-memory array
-        const updated = await import('../lib/db/activities').then(m => m.getActivity(realId));
-        if (updated) {
-          set((s) => ({
-            activities: s.activities.map((a) =>
-              a.id === id || a.id === realId || a.id.startsWith(realId + '_') ? updated : a
-            ),
-          }));
-        }
+      const user = get().activities.find(a => a.user_id)?.user_id
+        || get().untimedTasks.find(a => a.user_id)?.user_id;
+      if (user && selectedDate) {
+        await get().loadDay(user, selectedDate);
       }
 
-      if (updates.start_time || updates.duration_minutes) {
+      if (updates.start_time || updates.duration_minutes !== undefined) {
         const act = await import('../lib/db/activities').then(m => m.getActivity(realId));
-        if (act) scheduleLogNudge(act).catch((err) =>
-          console.warn('[DayFlow] Failed to reschedule nudge:', err)
-        );
+        if (act) scheduleLogNudge(act).catch(() => {});
       }
     } catch (err) {
       console.error('[DayFlow] Failed to edit activity:', err);
@@ -330,7 +322,10 @@ export const useActivitiesStore = create<ActivitiesState>((set, get) => ({
       const now = new Date().toISOString();
       const updates: UpdateActivityInput = { status: newStatus };
       if (newStatus === 'COMPLETED') updates.actual_end = now;
-      await updateActivity(id, updates);
+      // Strip virtual instance date suffix for DB update
+      const datePattern = /_\d{4}-\d{2}-\d{2}$/;
+      const realId = datePattern.test(id) ? id.replace(datePattern, '') : id;
+      await updateActivity(realId, updates);
       const updateList = (list: Activity[]) =>
         list.map(a => a.id === id ? { ...a, status: newStatus, ...updates } as Activity : a);
       set(s => ({
