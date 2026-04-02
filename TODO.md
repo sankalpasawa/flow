@@ -8,6 +8,14 @@
 - [x] **Activity form as bottom sheet**: Per design spec, creation/editing should use iOS-style bottom sheets with drag handles, not full-screen navigation.
 - [ ] **Unit tests**: Add tests for new features — search, carry-forward, task creation, activity type switching, overdue logic. Existing test infra in `src/__tests__/`.
 
+## Upcoming (from latest session)
+
+- [ ] **Pulse bar**: Micro-habit layer between date strip and canvas. Tap to mark done. See `designs/pulse-bar-mockup.html`.
+- [ ] **Search screen redesign**: Results as activity cards (same style as day view pills). LLM-enhanced: text search first, then LLM picks up anything beyond basic search. Add TODO to refine search logic later.
+- [ ] **Categories → Tags**: Decide whether to switch from single category to multiple tags per activity. Currently categories with emoji+name+color.
+- [ ] **Duration picker custom button**: Pencil icon (✏️) replaces "2h" in duration chips. Opens inline number input for any custom duration in minutes.
+- [ ] **Play screen voice**: Real speech-to-text requires dev build (not Expo Go). Wire when switching from Expo Go.
+
 ## Goals Feature Follow-up
 
 - [ ] **Seed goals data**: Add sample goals to seed.ts and seedDemo.ts so new installs show example goals

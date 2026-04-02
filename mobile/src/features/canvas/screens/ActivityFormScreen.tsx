@@ -32,7 +32,7 @@ const DURATION_OPTIONS: { label: string; value: number }[] = [
   { label: '15m', value: 15 },
   { label: '30m', value: 30 },
   { label: '1h', value: 60 },
-  { label: '2h', value: 120 },
+  { label: '✏️', value: -1 },  // -1 = custom input (pencil icon)
 ];
 
 const REPEAT_LABELS: Record<string, string> = {
@@ -111,6 +111,8 @@ export function ActivityFormScreen({ route, navigation }: Props) {
 
   // Duration
   const [duration, setDuration] = useState(existingActivity?.duration_minutes ?? (backlog ? 0 : 0));
+  const [showCustomDuration, setShowCustomDuration] = useState(false);
+  const [customDurationText, setCustomDurationText] = useState('');
 
   // Category — not mandatory, empty string = none
   const [categoryId, setCategoryId] = useState(existingActivity?.category_id ?? '');
@@ -429,22 +431,53 @@ export function ActivityFormScreen({ route, navigation }: Props) {
           {/* 3. Duration row */}
           <View style={s.chipRow}>
             {DURATION_OPTIONS.map(opt => {
-              const isSelected = duration === opt.value;
+              const isCustom = opt.value === -1;
+              const isSelected = isCustom
+                ? showCustomDuration || ![0, 15, 30, 60].includes(duration)
+                : duration === opt.value && !showCustomDuration;
               const isDash = opt.value === 0;
               return (
                 <TouchableOpacity
-                  key={opt.value}
+                  key={opt.label}
                   style={[s.chipSmall, isSelected && (isDash ? s.chipMuted : s.chipSelected)]}
-                  onPress={() => setDuration(opt.value)}
+                  onPress={() => {
+                    if (isCustom) {
+                      setShowCustomDuration(true);
+                      setCustomDurationText(duration > 0 ? String(duration) : '');
+                    } else {
+                      setShowCustomDuration(false);
+                      setDuration(opt.value);
+                    }
+                  }}
                   activeOpacity={0.7}
                 >
                   <Text style={[s.chipSmallText, isSelected && (isDash ? s.chipTextMuted : s.chipTextSelected)]}>
-                    {opt.label}
+                    {isCustom && ![0, 15, 30, 60].includes(duration) && duration > 0
+                      ? `${duration}m`
+                      : opt.label}
                   </Text>
                 </TouchableOpacity>
               );
             })}
           </View>
+          {showCustomDuration && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8 }}>
+              <TextInput
+                style={[s.lineInput, { flex: 0, width: 60, textAlign: 'center' }]}
+                placeholder="min"
+                placeholderTextColor={colors.muted}
+                keyboardType="number-pad"
+                value={customDurationText}
+                onChangeText={(t) => {
+                  setCustomDurationText(t);
+                  const num = parseInt(t, 10);
+                  if (!isNaN(num) && num > 0) setDuration(num);
+                }}
+                autoFocus
+              />
+              <Text style={{ fontSize: 13, color: colors.muted }}>minutes</Text>
+            </View>
+          )}
 
           {/* Conflict warning */}
           {conflict && (
