@@ -17,7 +17,7 @@ import { ActivityCard } from '../components/ActivityCard';
 import { BottomTaskBar } from '../components/BottomTaskBar';
 import { Activity } from '../../../types';
 import { captureOnContentChange } from '../../../debug/DesignQA';
-import { colors, shadows, spacing, type } from '../../../theme';
+import { colors, shadows, spacing, type, getCategoryColor } from '../../../theme';
 import {
   HOUR_HEIGHT, START_HOUR, END_HOUR, HOUR_LABEL_WIDTH,
   MIN_BLOCK_HEIGHT, getActivityPosition, formatHour,
@@ -155,7 +155,7 @@ export function CanvasScreen({ navigation }: Props) {
 
   // Watermark activities: no start_time AND recurring (recurrence_type !== 'NONE')
   const watermarkActivities = useMemo(() =>
-    activities.filter((a) => !a.start_time && a.recurrence_type !== 'NONE'),
+    activities.filter((a) => (!a.start_time || a.start_time === '') && a.recurrence_type !== 'NONE'),
     [activities]
   );
 
@@ -302,23 +302,51 @@ export function CanvasScreen({ navigation }: Props) {
               keyExtractor={item => item.id}
               contentContainerStyle={{ padding: 16 }}
               refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
-              renderItem={({ item }) => (
-                <TouchableOpacity style={styles.listItem} onPress={() => navigateToActivity(item)} activeOpacity={0.7}>
-                  <Text style={styles.listIcon}>{item.category?.icon ?? '\u2728'}</Text>
-                  <View style={styles.listContent}>
-                    <Text style={styles.listTitle}>{item.title}</Text>
-                    {item.start_time && (
-                      <Text style={styles.listTime}>
-                        {format(parseISO(item.start_time), 'h:mm a')} \u00B7 {item.duration_minutes}m
-                      </Text>
-                    )}
-                    {item.mindset_prompt && <Text style={styles.listMindset}>{item.mindset_prompt}</Text>}
+              renderItem={({ item }) => {
+                const isDone = item.status === 'COMPLETED' || item.status === 'SKIPPED';
+                const catColor = getCategoryColor(item.category_id);
+                return (
+                  <View style={styles.listItem}>
+                    {/* Circle checkbox */}
+                    <TouchableOpacity
+                      style={[styles.listCircle, isDone && styles.listCircleDone]}
+                      onPress={() => quickToggleComplete(item.id)}
+                      activeOpacity={0.6}
+                    >
+                      {isDone && <Text style={styles.listCircleCheck}>{'\u2713'}</Text>}
+                    </TouchableOpacity>
+
+                    {/* Content — tap to open */}
+                    <TouchableOpacity style={styles.listContent} onPress={() => navigateToActivity(item)} activeOpacity={0.7}>
+                      {/* Row 1: Icon + Title */}
+                      <View style={styles.listTitleRow}>
+                        <Text style={styles.listIcon}>{item.category?.icon ?? '\u2728'}</Text>
+                        <Text style={[styles.listTitle, isDone && styles.listTitleDone]} numberOfLines={2}>{item.title}</Text>
+                      </View>
+                      {/* Row 2: Mindset */}
+                      {item.mindset_prompt && <Text style={styles.listMindset} numberOfLines={2}>{item.mindset_prompt}</Text>}
+                      {/* Row 3: Time · Duration · Category */}
+                      <View style={styles.listMeta}>
+                        {item.start_time ? (
+                          <Text style={styles.listTime}>{format(parseISO(item.start_time), 'h:mm a')}</Text>
+                        ) : null}
+                        {item.duration_minutes > 0 && (
+                          <>
+                            <Text style={styles.listDot}>{'\u00B7'}</Text>
+                            <Text style={styles.listTime}>{item.duration_minutes < 60 ? `${item.duration_minutes}m` : `${Math.floor(item.duration_minutes / 60)}h${item.duration_minutes % 60 ? ` ${item.duration_minutes % 60}m` : ''}`}</Text>
+                          </>
+                        )}
+                        {item.category?.name && (
+                          <>
+                            <Text style={styles.listDot}>{'\u00B7'}</Text>
+                            <Text style={[styles.listCat, { color: catColor.solid, backgroundColor: catColor.light }]}>{item.category.name}</Text>
+                          </>
+                        )}
+                      </View>
+                    </TouchableOpacity>
                   </View>
-                  {(item.status === 'COMPLETED' || item.status === 'SKIPPED') && (
-                    <Text style={styles.listCheck}>{'\u2713'}</Text>
-                  )}
-                </TouchableOpacity>
-              )}
+                );
+              }}
               ListEmptyComponent={<Text style={styles.listEmpty}>No activities today</Text>}
             />
           )}
@@ -547,7 +575,15 @@ const styles = StyleSheet.create({
   toggleTextActive: { color: colors.text, fontWeight: '600' as const },
 
   // List view items
-  listItem: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(224,217,206,0.3)' },
+  listItem: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: colors.border },
+  listCircle: { width: 24, height: 24, borderRadius: 12, borderWidth: 2, borderColor: colors.border, alignItems: 'center', justifyContent: 'center', marginTop: 2 },
+  listCircleDone: { backgroundColor: colors.primary, borderColor: colors.primary },
+  listCircleCheck: { color: '#fff', fontSize: 12, fontWeight: '700' as const },
+  listTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  listTitleDone: { textDecorationLine: 'line-through', color: colors.muted },
+  listMeta: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },
+  listDot: { fontSize: 10, color: colors.muted, fontWeight: '700' as const },
+  listCat: { fontSize: 11, fontWeight: '600' as const, paddingHorizontal: 7, paddingVertical: 1, borderRadius: 4, overflow: 'hidden' as const },
   listIcon: { fontSize: 20 },
   listContent: { flex: 1 },
   listTitle: { fontSize: 15, fontWeight: '600' as const, color: colors.text },
