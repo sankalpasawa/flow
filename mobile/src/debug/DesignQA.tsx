@@ -252,22 +252,22 @@ export function DesignQAProvider({ children }: { children: React.ReactNode }) {
       {children}
       {bannerVisible && (Platform.OS === 'ios' || Platform.OS === 'android') && (
         <>
-          {/* Touch blocker — prevents user interaction during QA */}
-          <View style={{ position: 'absolute', top: 56, left: 0, right: 0, bottom: 0, zIndex: 9998, backgroundColor: 'rgba(0,0,0,0.02)' }} pointerEvents="box-only" />
-
-          {/* QA Banner with exit button */}
+          {/* QA Banner with exit button — MUST be above the touch blocker */}
           <TouchableOpacity
-            style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 56, backgroundColor: 'rgba(196,121,91,0.95)', zIndex: 9999, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingTop: 28 }}
-            onPress={async () => {
-              try { await fetch(`${SERVER()}/qa/stop`, { method: 'POST' }); } catch {}
+            style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 56, backgroundColor: 'rgba(196,121,91,0.95)', zIndex: 10000, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingTop: 28 }}
+            onPress={() => {
+              fetch(`${SERVER()}/qa/stop`, { method: 'POST' }).catch(() => {});
               qaActive = false;
-              setBannerVisible(false);
+              qaActiveListener?.(false);
             }}
-            activeOpacity={0.8}
+            activeOpacity={0.6}
           >
-            <Text style={{ color: 'white', fontSize: 11, fontWeight: '600' }}>QA Testing — Tap to Exit</Text>
-            <Text style={{ color: 'white', fontSize: 14, fontWeight: '700', marginLeft: 8 }}>✕</Text>
+            <Text style={{ color: 'white', fontSize: 12, fontWeight: '600' }}>QA Testing — Tap to Exit</Text>
+            <Text style={{ color: 'white', fontSize: 16, fontWeight: '700', marginLeft: 10 }}>✕</Text>
           </TouchableOpacity>
+
+          {/* Touch blocker — prevents user interaction during QA (below banner) */}
+          <View style={{ position: 'absolute', top: 56, left: 0, right: 0, bottom: 0, zIndex: 9998, backgroundColor: 'rgba(0,0,0,0.02)' }} pointerEvents="box-only" />
         </>
       )}
     </ViewShot>
