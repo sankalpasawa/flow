@@ -1,7 +1,7 @@
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, LayoutAnimation, Platform, UIManager, FlatList } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Animated, Platform, UIManager, FlatList } from 'react-native';
 import type { ViewToken } from 'react-native';
-import { format, addDays, subDays, isSameDay, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, addMonths, subMonths } from 'date-fns';
+import { format, addDays, isSameDay, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, addMonths, subMonths } from 'date-fns';
 import * as Haptics from 'expo-haptics';
 import { colors, radii, spacing, type } from '../../../theme';
 
@@ -12,7 +12,7 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 const CHIP_WIDTH = 48;
 const CHIP_HEIGHT = 60;
 const TOTAL_DAYS = 21;
-const TODAY_INDEX = 7; // 7 past days, today at index 7, then 13 future
+const TODAY_INDEX = 7;
 
 interface Props {
   selectedDate: Date;
@@ -36,35 +36,35 @@ export function DateStrip({ selectedDate, onSelectDate }: Props) {
   const hasScrolledRef = useRef(false);
   const isUserScrollingRef = useRef(false);
 
+  // Animation values
+  const stripOpacity = useRef(new Animated.Value(1)).current;
+  const calendarOpacity = useRef(new Animated.Value(0)).current;
+  const calendarHeight = useRef(new Animated.Value(0)).current;
+
   const dates = useMemo(() => buildDates(selectedDate), [selectedDate]);
 
-  // Find the index of selectedDate in the list (should be TODAY_INDEX when freshly built)
   const selectedIndex = useMemo(() => {
     const idx = dates.findIndex((d) => isSameDay(d, selectedDate));
     return idx >= 0 ? idx : TODAY_INDEX;
   }, [dates, selectedDate]);
 
-  // Auto-scroll to center the selected date on mount and when selection changes
   useEffect(() => {
-    if (flatListRef.current) {
-      // Small delay to ensure layout is ready
+    if (flatListRef.current && !calendarOpen) {
       const timer = setTimeout(() => {
         flatListRef.current?.scrollToIndex({
           index: selectedIndex,
           animated: hasScrolledRef.current,
-          viewPosition: 0.5, // center in viewport
+          viewPosition: 0.5,
         });
         hasScrolledRef.current = true;
       }, hasScrolledRef.current ? 0 : 100);
       return () => clearTimeout(timer);
     }
-  }, [selectedIndex]);
+  }, [selectedIndex, calendarOpen]);
 
   const onViewableItemsChanged = useCallback(
     ({ viewableItems }: { viewableItems: Array<ViewToken> }) => {
       if (!isUserScrollingRef.current || viewableItems.length === 0) return;
-
-      // Pick the item closest to the center of visible items
       const middleIdx = Math.floor(viewableItems.length / 2);
       const centerItem = viewableItems[middleIdx];
       if (centerItem?.item && !isSameDay(centerItem.item as Date, selectedDate)) {
@@ -81,15 +81,38 @@ export function DateStrip({ selectedDate, onSelectDate }: Props) {
   }).current;
 
   function toggleCalendar() {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setCalendarOpen(!calendarOpen);
-    if (!calendarOpen) setCalendarMonth(selectedDate);
+    if (!calendarOpen) {
+      // Opening: fade out strip, fade in calendar
+      setCalendarMonth(selectedDate);
+      setCalendarOpen(true);
+      Animated.parallel([
+        Animated.timing(stripOpacity, { toValue: 0, duration: 150, useNativeDriver: false }),
+        Animated.timing(calendarOpacity, { toValue: 1, duration: 250, useNativeDriver: false }),
+        Animated.spring(calendarHeight, { toValue: 1, damping: 15, stiffness: 200, useNativeDriver: false }),
+      ]).start();
+    } else {
+      // Closing: fade out calendar, fade in strip
+      Animated.parallel([
+        Animated.timing(calendarOpacity, { toValue: 0, duration: 150, useNativeDriver: false }),
+        Animated.timing(stripOpacity, { toValue: 1, duration: 250, useNativeDriver: false }),
+        Animated.spring(calendarHeight, { toValue: 0, damping: 15, stiffness: 200, useNativeDriver: false }),
+      ]).start(() => {
+        setCalendarOpen(false);
+      });
+    }
   }
 
   function pickDate(date: Date) {
     onSelectDate(date);
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setCalendarOpen(false);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    // Close calendar
+    Animated.parallel([
+      Animated.timing(calendarOpacity, { toValue: 0, duration: 150, useNativeDriver: false }),
+      Animated.timing(stripOpacity, { toValue: 1, duration: 250, useNativeDriver: false }),
+      Animated.spring(calendarHeight, { toValue: 0, damping: 15, stiffness: 200, useNativeDriver: false }),
+    ]).start(() => {
+      setCalendarOpen(false);
+    });
   }
 
   const renderDateChip = useCallback(
@@ -143,10 +166,16 @@ export function DateStrip({ selectedDate, onSelectDate }: Props) {
   const gridEnd = endOfWeek(monthEnd, { weekStartsOn: 1 });
   const calendarDays = eachDayOfInterval({ start: gridStart, end: gridEnd });
 
+  // Interpolate calendar container height (0 = collapsed, 1 = expanded ~320px)
+  const animatedCalHeight = calendarHeight.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 320],
+  });
+
   return (
     <View>
-      {/* Swipeable date strip */}
-      <View style={styles.wrapper}>
+      {/* Horizontal date strip — visible when calendar closed */}
+      <Animated.View style={[styles.stripContainer, { opacity: stripOpacity }]} pointerEvents={calendarOpen ? 'none' : 'auto'}>
         <FlatList
           ref={flatListRef}
           data={dates}
@@ -164,19 +193,13 @@ export function DateStrip({ selectedDate, onSelectDate }: Props) {
           onMomentumScrollEnd={() => { isUserScrollingRef.current = false; }}
           contentContainerStyle={styles.listContent}
           onScrollToIndexFailed={() => {
-            // Fallback: scroll to beginning if index fails
             flatListRef.current?.scrollToOffset({ offset: 0, animated: false });
           }}
         />
-      </View>
+      </Animated.View>
 
-      {/* Expand/collapse toggle */}
-      <TouchableOpacity style={styles.toggleBar} onPress={toggleCalendar} activeOpacity={0.7}>
-        <View style={[styles.toggleHandle, calendarOpen && styles.toggleHandleOpen]} />
-      </TouchableOpacity>
-
-      {/* Expanded calendar */}
-      {calendarOpen && (
+      {/* Month calendar — visible when expanded */}
+      <Animated.View style={[styles.calendarContainer, { height: animatedCalHeight, opacity: calendarOpacity }]} pointerEvents={calendarOpen ? 'auto' : 'none'}>
         <View style={styles.calendar}>
           <View style={styles.calHeader}>
             <TouchableOpacity onPress={() => setCalendarMonth(subMonths(calendarMonth, 1))} style={styles.calNav}>
@@ -218,20 +241,24 @@ export function DateStrip({ selectedDate, onSelectDate }: Props) {
             })}
           </View>
 
-          {/* Today shortcut */}
           {!isSameDay(selectedDate, new Date()) && (
             <TouchableOpacity style={styles.todayBtn} onPress={() => pickDate(new Date())}>
               <Text style={styles.todayBtnText}>Go to Today</Text>
             </TouchableOpacity>
           )}
         </View>
-      )}
+      </Animated.View>
+
+      {/* Pull handle — toggles between strip and calendar */}
+      <TouchableOpacity style={styles.toggleBar} onPress={toggleCalendar} activeOpacity={0.7}>
+        <View style={[styles.toggleHandle, calendarOpen && styles.toggleHandleOpen]} />
+      </TouchableOpacity>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  wrapper: {
+  stripContainer: {
     paddingVertical: 4,
   },
   listContent: {
@@ -240,7 +267,7 @@ const styles = StyleSheet.create({
   chip: {
     width: CHIP_WIDTH, height: CHIP_HEIGHT,
     alignItems: 'center', justifyContent: 'center',
-    borderRadius: radii.lg,  // 16px per DESIGN.md
+    borderRadius: radii.lg,
   },
   chipSelected: {
     backgroundColor: colors.primary,
@@ -262,7 +289,7 @@ const styles = StyleSheet.create({
 
   // Toggle bar
   toggleBar: {
-    alignItems: 'center', paddingVertical: 8,
+    alignItems: 'center', paddingVertical: 6,
   },
   toggleHandle: {
     width: 36, height: 4,
@@ -273,10 +300,13 @@ const styles = StyleSheet.create({
     backgroundColor: colors.muted,
   },
 
-  // Calendar
+  // Calendar container
+  calendarContainer: {
+    overflow: 'hidden',
+  },
   calendar: {
     paddingHorizontal: spacing.screen,
-    paddingBottom: 12,
+    paddingBottom: 8,
   },
   calHeader: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',

@@ -154,8 +154,10 @@ export const shadows = {
 export const typography = {
   display: { fontSize: 32, fontWeight: '700' as const, letterSpacing: -0.5 },
   heading: { fontSize: 22, fontWeight: '700' as const, letterSpacing: -0.3 },
+  headline: { fontSize: 22, fontWeight: '700' as const, letterSpacing: -0.3 },  // alias for heading
   title: { fontSize: 14, fontWeight: '700' as const },
   body: { fontSize: 13, fontWeight: '500' as const, lineHeight: 18 },
+  bodySmall: { fontSize: 11, fontWeight: '500' as const, lineHeight: 16 },  // alias for small
   small: { fontSize: 11, fontWeight: '500' as const },
   caption: { fontSize: 10, fontWeight: '600' as const, letterSpacing: 0.3 },  // Geist Mono
   micro: { fontSize: 9, fontWeight: '600' as const },  // Geist Mono, watermark chips

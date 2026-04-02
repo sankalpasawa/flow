@@ -292,7 +292,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   collapsedBarEmpty: {
-    height: 36,
+    height: COLLAPSED_HEIGHT,
   },
   collapsedContent: {
     flexDirection: 'row',

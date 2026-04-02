@@ -28,6 +28,7 @@ import { SearchScreen } from '../features/search/screens/SearchScreen';
 import { BacklogScreen } from '../features/backlog/screens/BacklogScreen';
 import { CategoryListScreen } from '../features/categories/screens/CategoryListScreen';
 import { InsightsScreen } from '../features/insights/screens/InsightsScreen';
+import { PlayScreen } from '../features/play/screens/PlayScreen';
 import { GoalFormScreen } from '../features/goals/screens/GoalFormScreen';
 import { GoalEditScreen } from '../features/goals/screens/GoalEditScreen';
 import { ExperienceLogScreen } from '../features/canvas/screens/ExperienceLogScreen';
@@ -46,7 +47,7 @@ function TabNavigator() {
         tabBarHideOnKeyboard: true,
         tabBarShowLabel: true,
         tabBarIcon: ({ focused }) => {
-          const icons: Record<string, string> = { Today: '◉', Plan: '◫', Insights: '◈', Settings: '⚙' };
+          const icons: Record<string, string> = { Today: '◉', Play: '▶', Plan: '◫', Insights: '◈', Settings: '⚙' };
           return <Text style={{ fontSize: 18, color: focused ? '#2D5A3E' : '#8C857D', transform: [{ scale: focused ? 1 : 0.88 }] }}>{icons[route.name] ?? '•'}</Text>;
         },
         tabBarStyle: {
@@ -63,6 +64,7 @@ function TabNavigator() {
       })}
     >
       <Tab.Screen name="Today" component={CanvasScreen} />
+      <Tab.Screen name="Play" component={PlayScreen} />
       <Tab.Screen name="Plan" component={PlanScreen} />
       <Tab.Screen name="Insights" component={InsightsScreen} />
       <Tab.Screen name="Settings" component={SettingsScreen} />

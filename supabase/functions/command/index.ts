@@ -38,7 +38,7 @@ Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
   try {
-    const { text, user_id, context } = await req.json();
+    const { text, user_id, context, mode } = await req.json();
     if (!text || !user_id) {
       return new Response(JSON.stringify({ error: 'Missing text or user_id' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -67,7 +67,44 @@ Deno.serve(async (req: Request) => {
       }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    const systemPrompt = `${APP_SCHEMA}
+    const isPlayMode = mode === 'play';
+
+    const playPrompt = `You are DayFlow's AI insight engine. You create beautiful, data-driven responses about the user's life.
+
+CURRENT STATE:
+${context || 'No context provided.'}
+
+You MUST respond with HTML only (inner body content, no <html>/<head>/<body> tags).
+The page has a CSS design system with these classes:
+- .card, .card-accent, .card-primary — glass morphism cards
+- h1, h2, h3, p, .muted, .accent, .primary — typography
+- .chip, .chip-accent — pill labels
+- .stat, .stat-value, .stat-label — big number statistics
+- .progress-bar, .progress-fill — progress bars (set width via inline style)
+- .grid — 2-column grid layout
+- .divider — horizontal separator
+- .emoji — large emoji prefix
+- .sparkline, .sparkline-bar — vertical bar charts (set height % via inline style)
+- .list-item, .dot — structured lists with colored dots
+- .mindset — italic framing text
+
+CSS variables available: --bg, --surface, --text, --text2, --muted, --border, --primary, --primary-light, --primary-bg, --accent, --accent-bg, --terra, --sage, --slate, --mauve, --amber, --danger
+
+DESIGN RULES:
+1. ALWAYS wrap content in .card containers. Never raw text.
+2. Lead with the most important insight as a .stat-value.
+3. Use .chip for categories, labels, tags.
+4. Use .sparkline-bar for trends (vary heights 20%-100%).
+5. Use .emoji before section titles for visual warmth.
+6. Be concise but insightful. Specific numbers when possible.
+7. Every response should feel like a premium insight page (think Oura Ring, Apple Health).
+8. NO <script> tags. Only HTML and inline styles.
+9. Use .grid for side-by-side stats.
+10. Use .progress-bar with .progress-fill for completion rates.
+11. Use .mindset for italic framing/wisdom text.
+12. Maximum 3-4 cards. Don't overwhelm. Quality over quantity.`;
+
+    const commandPrompt = `${APP_SCHEMA}
 
 CURRENT STATE:
 ${context || 'No context provided.'}
@@ -81,6 +118,8 @@ Return JSON only:
   "clarification": "question if unsure, null otherwise"
 }`;
 
+    const systemPrompt = isPlayMode ? playPrompt : commandPrompt;
+
     let raw = '';
 
     if (geminiKey) {
@@ -93,8 +132,8 @@ Return JSON only:
           system_instruction: { parts: [{ text: systemPrompt }] },
           contents: [{ parts: [{ text }] }],
           generationConfig: {
-            maxOutputTokens: 300,
-            temperature: 0.1,
+            maxOutputTokens: isPlayMode ? 2000 : 300,
+            temperature: isPlayMode ? 0.3 : 0.1,
           },
         }),
       });
@@ -113,14 +152,28 @@ Return JSON only:
       const anthropic = new Anthropic({ apiKey: anthropicKey });
       const message = await anthropic.messages.create({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 300,
+        max_tokens: isPlayMode ? 2000 : 300,
         system: systemPrompt,
         messages: [{ role: 'user', content: text }],
       });
       raw = message.content[0]?.type === 'text' ? message.content[0].text.trim() : '';
     }
 
-    // Parse JSON from LLM response
+    // Increment usage
+    await supabase.from('ai_usage').upsert({
+      user_id, date: today, call_count: (usage?.call_count ?? 0) + 1,
+    }, { onConflict: 'user_id,date' });
+
+    // Play mode: return HTML directly
+    if (isPlayMode) {
+      // Strip markdown code fences if present
+      const html = raw.replace(/```html\n?|```\n?/g, '').trim();
+      return new Response(JSON.stringify({ html, message: '' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Command mode: parse JSON from LLM response
     let result: any;
     try {
       const clean = raw.replace(/```json\n?|```\n?/g, '').trim();
@@ -133,11 +186,6 @@ Return JSON only:
     if (!result) {
       result = { action: 'create', params: { raw_text: text }, confidence: 0.2, message: raw || 'Could not parse.' };
     }
-
-    // Increment usage
-    await supabase.from('ai_usage').upsert({
-      user_id, date: today, call_count: (usage?.call_count ?? 0) + 1,
-    }, { onConflict: 'user_id,date' });
 
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

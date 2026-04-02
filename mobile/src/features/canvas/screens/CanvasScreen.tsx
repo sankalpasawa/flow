@@ -282,11 +282,6 @@ export function CanvasScreen({ navigation }: Props) {
 
       <DateStrip selectedDate={selectedDate} onSelectDate={setSelectedDate} />
 
-      {/* Pull handle */}
-      <View style={{ alignItems: 'center', paddingVertical: 6 }}>
-        <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: colors.border }} />
-      </View>
-
       {/* v2: Tasks moved to bottom bar */}
 
       {/* Canvas / List — toggle between hourly canvas and flat list */}
@@ -438,15 +433,18 @@ export function CanvasScreen({ navigation }: Props) {
                   const isOverdue = activity.status === 'PLANNED' && actStart < now && !isSameDay(actStart, now);
 
                   const itemLayout = overlapLayout.get(activity.id);
-                  const colWidth = itemLayout ? availableWidth / itemLayout.totalColumns : availableWidth;
-                  const leftOffset = itemLayout ? HOUR_LABEL_WIDTH + itemLayout.column * colWidth : HOUR_LABEL_WIDTH;
+                  const GAP = itemLayout && itemLayout.totalColumns > 1 ? 4 : 0;
+                  const colWidth = itemLayout ? (availableWidth - GAP * (itemLayout.totalColumns - 1)) / itemLayout.totalColumns : availableWidth;
+                  const leftOffset = itemLayout ? HOUR_LABEL_WIDTH + itemLayout.column * (colWidth + GAP) : HOUR_LABEL_WIDTH;
 
                   return (
                     <View
                       key={activity.id}
                       style={[
                         styles.activityBlock,
-                        { top, height, left: leftOffset, width: colWidth, right: undefined },
+                        itemLayout && itemLayout.totalColumns > 1
+                          ? { top, height, left: leftOffset, width: colWidth, right: 'auto' as any }
+                          : { top, height },
                         (activity.status === 'COMPLETED' || activity.status === 'SKIPPED') && { opacity: 0.5 },
                       ]}
                     >
@@ -534,12 +532,12 @@ const styles = StyleSheet.create({
   hourRow: {
     position: 'absolute', left: 0, right: 0,
     flexDirection: 'row', alignItems: 'center', paddingLeft: 4,
-    height: 0, overflow: 'visible', zIndex: 1,
+    height: 20, marginTop: -10, zIndex: 1,
   },
   hourLabel: {
     color: colors.muted, fontSize: 10, fontWeight: '600' as const,
-    width: HOUR_LABEL_WIDTH, textAlign: 'right', marginRight: 6, marginTop: -7,
-    opacity: 0.35, overflow: 'visible',
+    width: HOUR_LABEL_WIDTH, textAlign: 'right', marginRight: 6,
+    opacity: 0.35,
     fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
   },
   hourNow: { color: colors.accent, fontWeight: '700', opacity: 1 },

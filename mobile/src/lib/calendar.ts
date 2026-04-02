@@ -1,7 +1,7 @@
 export const HOUR_HEIGHT = 88;
 export const START_HOUR = 0;
 export const END_HOUR = 24;
-export const HOUR_LABEL_WIDTH = 54;
+export const HOUR_LABEL_WIDTH = 58;
 export const MIN_BLOCK_HEIGHT = 44;
 export const TOTAL_CANVAS_HEIGHT = 24 * HOUR_HEIGHT;
 
