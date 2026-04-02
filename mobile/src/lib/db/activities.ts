@@ -1,6 +1,7 @@
 import { getDb, generateId, nowISO } from './db';
 type SQLiteBindValue = string | number | null | boolean;
 import { Activity, ActivityType, ActivityStatus, ActivityPriority, RecurrenceType, Subtask, Weekday } from '../../types';
+import { generateRecurringInstances } from '../recurrence';
 
 export interface CreateActivityInput {
   user_id: string;
@@ -38,6 +39,8 @@ export interface UpdateActivityInput {
 
 export async function getActivitiesForDay(userId: string, dateStr: string): Promise<Activity[]> {
   const db = await getDb();
+
+  // 1. Get activities explicitly on this date
   const rows = await db.getAllAsync<Record<string, unknown>>(
     `SELECT a.*, c.name as cat_name, c.color as cat_color, c.icon as cat_icon
      FROM activities a
@@ -46,7 +49,32 @@ export async function getActivitiesForDay(userId: string, dateStr: string): Prom
      ORDER BY a.start_time ASC`,
     [userId, dateStr, 1]
   );
-  return rows.map(mapRow);
+  const explicitActivities = rows.map(mapRow);
+
+  // 2. Get all recurring activities (the original instances) to generate virtual copies
+  const recurringRows = await db.getAllAsync<Record<string, unknown>>(
+    `SELECT a.*, c.name as cat_name, c.color as cat_color, c.icon as cat_icon
+     FROM activities a
+     LEFT JOIN categories c ON a.category_id = c.id
+     WHERE a.user_id = ? AND a.recurrence_type != 'NONE' AND a.is_scheduled = ? AND a.deleted = 0`,
+    [userId, 1]
+  );
+  const recurringActivities = recurringRows.map(mapRow);
+
+  // 3. Generate virtual recurring instances for this date
+  const targetDate = new Date(dateStr + 'T00:00:00');
+  const virtualInstances = generateRecurringInstances(recurringActivities, targetDate);
+
+  // 4. Filter out virtual instances that already have an explicit entry on this date
+  //    (to avoid duplicates — the original instance for its own date is already in explicitActivities)
+  const explicitTitles = new Set(explicitActivities.map(a => a.title));
+  const deduped = virtualInstances.filter(v => !explicitTitles.has(v.title));
+
+  // 5. Merge and sort by start_time
+  const all = [...explicitActivities, ...deduped];
+  all.sort((a, b) => (a.start_time ?? '').localeCompare(b.start_time ?? ''));
+
+  return all;
 }
 
 // Get overdue PLANNED tasks from before the given date (carry-over)
