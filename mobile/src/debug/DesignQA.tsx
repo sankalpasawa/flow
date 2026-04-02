@@ -254,7 +254,7 @@ export function DesignQAProvider({ children }: { children: React.ReactNode }) {
         <>
           {/* QA Banner with exit button — MUST be above the touch blocker */}
           <TouchableOpacity
-            style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 56, backgroundColor: 'rgba(196,121,91,0.95)', zIndex: 10000, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingTop: 28 }}
+            style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 72, backgroundColor: 'rgba(196,121,91,0.95)', zIndex: 10000, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingTop: 36 }}
             onPress={() => {
               fetch(`${SERVER()}/qa/stop`, { method: 'POST' }).catch(() => {});
               qaActive = false;
@@ -267,7 +267,7 @@ export function DesignQAProvider({ children }: { children: React.ReactNode }) {
           </TouchableOpacity>
 
           {/* Touch blocker — prevents user interaction during QA (below banner) */}
-          <View style={{ position: 'absolute', top: 56, left: 0, right: 0, bottom: 0, zIndex: 9998, backgroundColor: 'rgba(0,0,0,0.02)' }} pointerEvents="box-only" />
+          <View style={{ position: 'absolute', top: 72, left: 0, right: 0, bottom: 0, zIndex: 9998, backgroundColor: 'rgba(0,0,0,0.02)' }} pointerEvents="box-only" />
         </>
       )}
     </ViewShot>
