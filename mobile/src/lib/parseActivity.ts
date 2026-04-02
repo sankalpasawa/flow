@@ -117,19 +117,27 @@ export function parseActivityText(
 
   // ── 1. Time extraction ──
 
-  // "at 7am" / "at 7:30pm" / "at 15:00"
-  const atTime = /\bat\s+(\d{1,2})(?::(\d{2}))?\s*(am|pm)?\b/i;
-  const atMatch = remaining.match(atTime);
-  if (atMatch && time === null) {
-    let hours = parseInt(atMatch[1], 10);
-    const minutes = atMatch[2] ? parseInt(atMatch[2], 10) : 0;
-    const meridian = atMatch[3]?.toLowerCase();
+  // "at 7am" / "at 7:30pm" / "at 15:00" / "for 2:45 pm" / bare "2:45 pm" / "2:45pm"
+  const timePatterns = [
+    /\b(?:at|for)\s+(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b/i,    // "at 7am", "for 2:45 pm"
+    /\b(\d{1,2}):(\d{2})\s*(am|pm)\b/i,                       // "2:45pm", "2:45 pm"
+    /\b(\d{1,2})\s*(am|pm)\b/i,                                // "7am", "3pm"
+    /\b(?:at|for)\s+(\d{1,2})(?::(\d{2}))?\b/i,               // "at 15:00" (24hr)
+  ];
+  for (const timePattern of timePatterns) {
+    const atMatch = remaining.match(timePattern);
+    if (atMatch && time === null) {
+      let hours = parseInt(atMatch[1], 10);
+      const minutes = atMatch[2] ? parseInt(atMatch[2], 10) : 0;
+      const meridian = atMatch[3]?.toLowerCase();
 
-    if (meridian === 'pm' && hours < 12) hours += 12;
-    if (meridian === 'am' && hours === 12) hours = 0;
+      if (meridian === 'pm' && hours < 12) hours += 12;
+      if (meridian === 'am' && hours === 12) hours = 0;
 
-    time = `${pad(hours)}:${pad(minutes)}`;
-    remaining = strip(remaining, atTime);
+      time = `${pad(hours)}:${pad(minutes)}`;
+      remaining = strip(remaining, timePattern);
+      break;
+    }
   }
 
   // Time-of-day keywords (only if time not already set)
@@ -266,8 +274,10 @@ export function parseActivityText(
 
   // ── 6. Title extraction ──
 
-  // Clean up: collapse whitespace, trim
+  // Clean up: strip command prefixes, collapse whitespace, trim
   let title = remaining
+    .replace(/^(?:add|create|schedule|set|put|make|do)\s+/i, '')  // Strip "add lunch" → "lunch"
+    .replace(/^(?:an?\s+)/i, '')  // Strip "a" / "an"
     .replace(/\s+/g, ' ')
     .trim();
 
