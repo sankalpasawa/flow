@@ -27,13 +27,41 @@ interface Props {
   navigation: { goBack: () => void; navigate: (screen: string, params?: Record<string, unknown>) => void };
 }
 
-const DURATION_OPTIONS: { label: string; value: number }[] = [
-  { label: '\u2014', value: 0 },
-  { label: '15m', value: 15 },
-  { label: '30m', value: 30 },
-  { label: '1h', value: 60 },
-  { label: '✏️', value: -1 },  // -1 = custom input (pencil icon)
-];
+const PRESET_DURATIONS = [0, 15, 30, 60];
+
+function buildDurationOptions(currentDuration: number): { label: string; value: number }[] {
+  const options: { label: string; value: number }[] = [
+    { label: '\u2014', value: 0 },
+  ];
+
+  // If current duration is custom (not in presets and > 0), insert it in sorted position
+  if (currentDuration > 0 && !PRESET_DURATIONS.includes(currentDuration)) {
+    const customLabel = currentDuration >= 60
+      ? `${Math.floor(currentDuration / 60)}h${currentDuration % 60 > 0 ? `${currentDuration % 60}m` : ''}`
+      : `${currentDuration}m`;
+
+    // Build sorted list with custom value inserted
+    const all = [15, 30, 60, currentDuration].sort((a, b) => a - b);
+    const unique = [...new Set(all)];
+    for (const v of unique) {
+      if (v === currentDuration) {
+        options.push({ label: customLabel, value: v });
+      } else if (v >= 60) {
+        options.push({ label: `${v / 60}h`, value: v });
+      } else {
+        options.push({ label: `${v}m`, value: v });
+      }
+    }
+  } else {
+    options.push({ label: '15m', value: 15 });
+    options.push({ label: '30m', value: 30 });
+    options.push({ label: '1h', value: 60 });
+  }
+
+  // Always add custom button at end
+  options.push({ label: '…', value: -1 });
+  return options;
+}
 
 const REPEAT_LABELS: Record<string, string> = {
   NONE: 'Once',
@@ -430,18 +458,18 @@ export function ActivityFormScreen({ route, navigation }: Props) {
 
           {/* 3. Duration row */}
           <View style={s.chipRow}>
-            {DURATION_OPTIONS.map(opt => {
-              const isCustom = opt.value === -1;
-              const isSelected = isCustom
-                ? showCustomDuration || ![0, 15, 30, 60].includes(duration)
+            {buildDurationOptions(duration).map(opt => {
+              const isCustomBtn = opt.value === -1;
+              const isSelected = isCustomBtn
+                ? showCustomDuration
                 : duration === opt.value && !showCustomDuration;
               const isDash = opt.value === 0;
               return (
                 <TouchableOpacity
-                  key={opt.label}
+                  key={`dur-${opt.value}-${opt.label}`}
                   style={[s.chipSmall, isSelected && (isDash ? s.chipMuted : s.chipSelected)]}
                   onPress={() => {
-                    if (isCustom) {
+                    if (isCustomBtn) {
                       setShowCustomDuration(true);
                       setCustomDurationText(duration > 0 ? String(duration) : '');
                     } else {
@@ -452,9 +480,7 @@ export function ActivityFormScreen({ route, navigation }: Props) {
                   activeOpacity={0.7}
                 >
                   <Text style={[s.chipSmallText, isSelected && (isDash ? s.chipTextMuted : s.chipTextSelected)]}>
-                    {isCustom && ![0, 15, 30, 60].includes(duration) && duration > 0
-                      ? `${duration}m`
-                      : opt.label}
+                    {opt.label}
                   </Text>
                 </TouchableOpacity>
               );
