@@ -81,7 +81,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: spacing.screen, paddingTop: 20, paddingBottom: 12,
   },
-  headerTitle: { color: colors.text, fontSize: 28, fontWeight: '600' },
+  headerTitle: { color: colors.text, fontSize: 22, fontWeight: '700', letterSpacing: -0.3 },
   headerSubtitle: { color: colors.muted, fontSize: 13, marginTop: 2 },
   emptyContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 },
   emptyEmoji: { fontSize: 56, marginBottom: 16 },

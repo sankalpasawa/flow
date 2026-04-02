@@ -506,7 +506,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: spacing.screen, paddingTop: 12, paddingBottom: 2,
   },
-  headerTitle: { color: colors.text, ...type.h1 },
+  headerTitle: { color: colors.text, fontSize: 22, fontWeight: '700', letterSpacing: -0.3 },
   todayBtn: {
     width: 36, height: 36, borderRadius: 12,
     alignItems: 'center', justifyContent: 'flex-start',
@@ -536,7 +536,7 @@ const styles = StyleSheet.create({
   },
   hourLabel: {
     color: colors.muted, fontSize: 10, fontWeight: '600' as const,
-    width: HOUR_LABEL_WIDTH - 4, textAlign: 'right', marginRight: 4,
+    width: HOUR_LABEL_WIDTH - 8, textAlign: 'right', marginRight: 8,
     opacity: 0.35,
     fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
   },

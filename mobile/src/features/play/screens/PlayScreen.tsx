@@ -484,10 +484,10 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   headerTitle: {
-    fontSize: 32,
+    fontSize: 22,
     fontWeight: '700',
     color: colors.text,
-    letterSpacing: -0.5,
+    letterSpacing: -0.3,
   },
   clearBtn: {
     fontSize: 14,

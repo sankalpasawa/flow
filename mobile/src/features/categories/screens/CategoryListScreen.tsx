@@ -265,7 +265,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: spacing.screen, paddingTop: 20, paddingBottom: 12,
   },
-  headerTitle: { color: colors.text, fontSize: 28, fontWeight: '600', flex: 1 },
+  headerTitle: { color: colors.text, fontSize: 22, fontWeight: '700', letterSpacing: -0.3, flex: 1 },
   backBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center', marginRight: 8 },
   backText: { color: colors.text, fontSize: 22 },
   countBadge: { color: colors.muted, fontSize: 14, fontWeight: '600' },
