@@ -11,8 +11,8 @@
  *   GET  /status    — check if QA is active
  */
 
-import React, { useRef, useEffect } from 'react';
-import { Platform } from 'react-native';
+import React, { useRef, useEffect, useState } from 'react';
+import { Platform, View, Text } from 'react-native';
 import ViewShot, { captureRef } from 'react-native-view-shot';
 import Constants from 'expo-constants';
 
@@ -23,6 +23,68 @@ let captureCount = 0;
 let qaActive = false;
 const capturedScreens = new Set<string>(); // Track which screens we've already captured
 let pollInterval: ReturnType<typeof setInterval> | null = null;
+let lastCommandId: string | null = null;
+let qaActiveListener: ((active: boolean) => void) | null = null;
+
+// Global navigation ref for remote control
+let navigationRef: any = null;
+
+export function setNavigationRef(ref: any) {
+  navigationRef = ref;
+}
+
+// Global task bar control callbacks (set by BottomTaskBar)
+let taskBarExpandFn: (() => void) | null = null;
+let taskBarCollapseFn: (() => void) | null = null;
+
+export function registerTaskBarControls(expand: () => void, collapse: () => void) {
+  taskBarExpandFn = expand;
+  taskBarCollapseFn = collapse;
+}
+
+export function unregisterTaskBarControls() {
+  taskBarExpandFn = null;
+  taskBarCollapseFn = null;
+}
+
+function executeCommand(command: string) {
+  if (!command) return;
+
+  console.log(`[DesignQA] Executing command: ${command}`);
+
+  if (command.startsWith('navigate:')) {
+    const target = command.slice('navigate:'.length);
+    if (!navigationRef) {
+      console.log('[DesignQA] No navigation ref available');
+      return;
+    }
+    if (target === 'Main') {
+      // Go back to the main tab navigator
+      navigationRef.reset({ index: 0, routes: [{ name: 'Main' }] });
+    } else if (target.startsWith('ExperienceLog:')) {
+      const activityId = target.slice('ExperienceLog:'.length);
+      navigationRef.navigate('ExperienceLog', { activityId });
+    } else {
+      navigationRef.navigate(target);
+    }
+  } else if (command.startsWith('tab:')) {
+    const tabName = command.slice('tab:'.length);
+    if (!navigationRef) {
+      console.log('[DesignQA] No navigation ref available');
+      return;
+    }
+    // Navigate to Main first, then switch tab
+    navigationRef.navigate('Main', { screen: tabName });
+  } else if (command === 'expandTaskBar') {
+    if (taskBarExpandFn) taskBarExpandFn();
+    else console.log('[DesignQA] TaskBar expand not registered');
+  } else if (command === 'collapseTaskBar') {
+    if (taskBarCollapseFn) taskBarCollapseFn();
+    else console.log('[DesignQA] TaskBar collapse not registered');
+  } else {
+    console.log(`[DesignQA] Unknown command: ${command}`);
+  }
+}
 
 function getDevServerHost(): string {
   try {
@@ -77,6 +139,7 @@ function startPolling() {
       // QA mode toggled
       if (data.active && !qaActive) {
         qaActive = true;
+        qaActiveListener?.(true);
         capturedScreens.clear();
         console.log('[DesignQA] 🟢 QA mode ON');
         // Capture current screen immediately
@@ -84,8 +147,21 @@ function startPolling() {
         capturedScreens.add(currentScreen);
       } else if (!data.active && qaActive) {
         qaActive = false;
+        qaActiveListener?.(false);
         capturedScreens.clear();
         console.log('[DesignQA] 🔴 QA mode OFF');
+      }
+
+      // Check for remote command
+      if (data.command && data.commandId && data.commandId !== lastCommandId) {
+        lastCommandId = data.commandId;
+        executeCommand(data.command);
+        setTimeout(() => captureAndUpload(`cmd-${data.command}`), 1000);
+        await fetch(`${SERVER()}/ack-cmd`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ commandId: data.commandId }),
+        });
       }
 
       // Check for force trigger
@@ -136,17 +212,20 @@ export function captureOnContentChange(contentKey: string) {
 
 export function DesignQAProvider({ children }: { children: React.ReactNode }) {
   const ref = useRef<ViewShot>(null);
+  const [bannerVisible, setBannerVisible] = useState(false);
 
   useEffect(() => {
     if (!DEV_MODE || Platform.OS === 'web') return;
 
     viewShotRef = ref;
+    qaActiveListener = setBannerVisible;
     startPolling();
 
     console.log('[DesignQA] Ready. Waiting for QA mode to be activated.');
     console.log(`[DesignQA] Server: ${SERVER()}`);
 
     return () => {
+      qaActiveListener = null;
       if (pollInterval) {
         clearInterval(pollInterval);
         pollInterval = null;
@@ -161,6 +240,11 @@ export function DesignQAProvider({ children }: { children: React.ReactNode }) {
   return (
     <ViewShot ref={ref} style={{ flex: 1 }} options={{ format: 'png', quality: 0.9 }}>
       {children}
+      {bannerVisible && Platform.OS === 'ios' || Platform.OS === 'android' && (
+        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 20, backgroundColor: 'rgba(196,121,91,0.9)', zIndex: 9999, alignItems: 'center', justifyContent: 'center' }}>
+          <Text style={{ color: 'white', fontSize: 10, fontWeight: '600' }}>QA Testing</Text>
+        </View>
+      )}
     </ViewShot>
   );
 }

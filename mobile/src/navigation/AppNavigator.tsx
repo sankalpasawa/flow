@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -11,6 +11,7 @@ import { requestNotificationPermission, addNotificationResponseListener } from '
 import {
   hasCompletedOnboarding, markOnboardingComplete, OnboardingScreen,
 } from '../features/onboarding/screens/OnboardingScreen';
+import { setNavigationRef } from '../debug/DesignQA';
 
 // Screens
 import { SignInScreen } from '../features/auth/screens/SignInScreen';

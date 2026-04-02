@@ -42,7 +42,7 @@ describe('Seed Data Verification', () => {
 
   test('CSV data exists and has rows', () => {
     expect(csvData.length).toBeGreaterThan(0);
-    const lines = csvData.split('\n').filter(l => l.trim());
+    const lines = csvData.split('\n').filter((l: any) => l.trim());
     expect(lines.length).toBeGreaterThan(10);
     console.log(`CSV has ${lines.length} rows (including header)`);
   });
@@ -56,7 +56,7 @@ describe('Seed Data Verification', () => {
   });
 
   test('Category mapping covers all CSV categories', () => {
-    const lines = csvData.split('\n').slice(1).filter(l => l.trim());
+    const lines = csvData.split('\n').slice(1).filter((l: any) => l.trim());
     const categories = new Set<string>();
 
     for (const line of lines) {
@@ -82,7 +82,7 @@ describe('Seed Data Verification', () => {
   });
 
   test('No extremely long task names (> 200 chars)', () => {
-    const lines = csvData.split('\n').slice(1).filter(l => l.trim());
+    const lines = csvData.split('\n').slice(1).filter((l: any) => l.trim());
     for (const line of lines) {
       const name = line.split(',')[0].replace(/"/g, '');
       if (name.length > 200) {
@@ -93,7 +93,7 @@ describe('Seed Data Verification', () => {
   });
 
   test('Repeat frequencies are valid', () => {
-    const lines = csvData.split('\n').slice(1).filter(l => l.trim());
+    const lines = csvData.split('\n').slice(1).filter((l: any) => l.trim());
     const validFreqs = ['None', 'Daily', 'Weekly', 'Monthly', 'Yearly', ''];
 
     for (const line of lines) {

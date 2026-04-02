@@ -24,6 +24,8 @@ if (!fs.existsSync(SAVE_DIR)) fs.mkdirSync(SAVE_DIR, { recursive: true });
 let qaActive = false;
 let forceTrigger = false;
 let triggerLabel = '';
+let pendingCommand = null;   // { command, commandId }
+let commandCounter = 0;
 
 const server = http.createServer((req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -65,10 +67,57 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  // POST /command — Claude sends a navigation/control command
+  if (req.method === 'POST' && url === '/command') {
+    let body = '';
+    req.on('data', c => body += c);
+    req.on('end', () => {
+      try {
+        const { command } = JSON.parse(body);
+        commandCounter++;
+        const commandId = `cmd-${commandCounter}`;
+        pendingCommand = { command, commandId };
+        console.log(`🎮 Command queued: "${command}" (${commandId})`);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: true, commandId }));
+      } catch (err) {
+        res.writeHead(400);
+        res.end(JSON.stringify({ error: err.message }));
+      }
+    });
+    return;
+  }
+
   // GET /qa-state — app polls this
   if (req.method === 'GET' && url === '/qa-state') {
+    const response = { active: qaActive, forceTrigger, triggerLabel };
+    if (pendingCommand) {
+      response.command = pendingCommand.command;
+      response.commandId = pendingCommand.commandId;
+    }
     res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ active: qaActive, forceTrigger, triggerLabel }));
+    res.end(JSON.stringify(response));
+    return;
+  }
+
+  // POST /ack-cmd — app acknowledges command execution
+  if (req.method === 'POST' && url === '/ack-cmd') {
+    let body = '';
+    req.on('data', c => body += c);
+    req.on('end', () => {
+      try {
+        const { commandId } = JSON.parse(body);
+        if (pendingCommand && pendingCommand.commandId === commandId) {
+          console.log(`✅ Command acknowledged: ${commandId}`);
+          pendingCommand = null;
+        }
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: true }));
+      } catch (err) {
+        res.writeHead(400);
+        res.end(JSON.stringify({ error: err.message }));
+      }
+    });
     return;
   }
 
@@ -135,5 +184,9 @@ server.listen(PORT, '0.0.0.0', () => {
   console.log(`\nClaude commands:`);
   console.log(`  POST /qa/start  — start capturing`);
   console.log(`  POST /qa/stop   — stop capturing`);
-  console.log(`  POST /trigger   — force one capture\n`);
+  console.log(`  POST /trigger   — force one capture`);
+  console.log(`  POST /command   — send navigation command`);
+  console.log(`    { "command": "navigate:ActivityForm" }`);
+  console.log(`    { "command": "tab:Plan" }`);
+  console.log(`    { "command": "expandTaskBar" }\n`);
 });

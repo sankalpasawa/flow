@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator,
@@ -137,6 +137,35 @@ export function ActivityFormScreen({ route, navigation }: Props) {
   const [tempHour, setTempHour] = useState(selectedHour);
   const [tempMinute, setTempMinute] = useState(selectedMinute);
   const [generatingMindset, setGeneratingMindset] = useState(false);
+
+  // --- Conflict Detection ---
+  const conflict = useMemo(() => {
+    if (!hasTime) return null;
+    const dateStr = selectedDateStr;
+    const newStart = new Date(`${dateStr}T${String(selectedHour).padStart(2,'0')}:${String(selectedMinute).padStart(2,'0')}:00`);
+    const newEnd = new Date(newStart.getTime() + (duration || 30) * 60000);
+
+    for (const act of activities) {
+      if (act.id === existingActivity?.id) continue; // skip self when editing
+      if (!act.start_time) continue;
+      const actStart = new Date(act.start_time);
+      const actEnd = new Date(actStart.getTime() + act.duration_minutes * 60000);
+      const actDate = act.start_time.substring(0, 10);
+      if (actDate !== dateStr) continue;
+
+      // Check overlap
+      if (newStart < actEnd && newEnd > actStart) {
+        // Find next free slot
+        const suggestedTime = actEnd;
+        return {
+          activity: act,
+          suggestedHour: suggestedTime.getHours(),
+          suggestedMinute: suggestedTime.getMinutes(),
+        };
+      }
+    }
+    return null;
+  }, [hasTime, selectedDateStr, selectedHour, selectedMinute, duration, activities, existingActivity]);
 
   // --- AI Mindset Generation ---
   const generateMindset = useCallback(async () => {
@@ -425,6 +454,27 @@ export function ActivityFormScreen({ route, navigation }: Props) {
               );
             })}
           </View>
+
+          {/* Conflict warning */}
+          {conflict && (
+            <View style={s.conflictBanner}>
+              <Text style={s.conflictText}>
+                ⚠️ Overlaps with {conflict.activity.title}
+              </Text>
+              <TouchableOpacity
+                style={s.conflictSuggestion}
+                onPress={() => {
+                  setSelectedHour(conflict.suggestedHour);
+                  setSelectedMinute(conflict.suggestedMinute);
+                  setHasTime(true);
+                }}
+              >
+                <Text style={s.conflictSuggestionText}>
+                  Try {format(new Date(0,0,0,conflict.suggestedHour,conflict.suggestedMinute), 'h:mm a')}?
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
 
           {/* 4. Repeat */}
           <View style={s.section}>
@@ -832,6 +882,34 @@ const s = StyleSheet.create({
   },
   chipTextMuted: {
     color: colors.muted,
+  },
+
+  // Conflict banner
+  conflictBanner: {
+    backgroundColor: 'rgba(196,121,91,0.08)',
+    borderRadius: 10,
+    padding: 8,
+    paddingHorizontal: 12,
+    marginTop: 4,
+    marginBottom: 8,
+  },
+  conflictText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#C4795B',
+  },
+  conflictSuggestion: {
+    marginTop: 4,
+    backgroundColor: '#E3ECE6',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+  },
+  conflictSuggestionText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#2D5A3E',
   },
 
   // Task hint

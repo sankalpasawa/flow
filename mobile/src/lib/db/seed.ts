@@ -572,35 +572,60 @@ function buildActivities(): { activities: SeedActivity[]; logs: SeedLog[] } {
     return 30; // default
   }
 
-  // --- PAST 7 DAYS: Completed activities ---
+  // --- RECURRING ACTIVITIES: ONE row each (recurrence engine generates other days) ---
+  // --- NON-RECURRING PAST: distributed across days -7 to -1 as COMPLETED ---
+  // --- NON-RECURRING TODAY: some completed, some in-progress, rest planned ---
+  // --- NON-RECURRING FUTURE: distributed across days +1 to +7 ---
 
-  // Distribute past-due tasks across days -7 to -1
-  // Use daily recurring tasks each day, plus rotate others
-  const dailyTasks = pastDueTasks.filter(t =>
-    t.repeatFreq === 'Daily'
-  );
-  const nonDailyPastTasks = pastDueTasks.filter(t =>
-    t.repeatFreq !== 'Daily'
-  );
+  // Separate recurring from non-recurring among past-due tasks
+  const recurringPastTasks = pastDueTasks.filter(t => mapFrequency(t.repeatFreq) !== 'NONE');
+  const nonRecurringPastTasks = pastDueTasks.filter(t => mapFrequency(t.repeatFreq) === 'NONE');
 
-  // Daily tasks appear every day from -7 to -1
-  for (let day = -7; day <= -1; day++) {
-    for (const task of dailyTasks) {
-      const act = addScheduledActivity(task, day, 'COMPLETED', true);
-      activities.push(act);
+  // Separate recurring from non-recurring among today tasks
+  const recurringTodayTasks = todayTasks.filter(t => mapFrequency(t.repeatFreq) !== 'NONE');
+  const nonRecurringTodayTasks = todayTasks.filter(t => mapFrequency(t.repeatFreq) === 'NONE');
+
+  // Separate recurring from non-recurring among future tasks
+  const recurringFutureTasks = futureDueTasks.filter(t => mapFrequency(t.repeatFreq) !== 'NONE');
+  const nonRecurringFutureTasks = futureDueTasks.filter(t => mapFrequency(t.repeatFreq) === 'NONE');
+
+  // --- RECURRING: Create exactly ONE row per recurring activity ---
+  // Place it on the earliest sensible day so the recurrence engine covers other days.
+  const allRecurringTasks = [...recurringPastTasks, ...recurringTodayTasks, ...recurringFutureTasks];
+  const seenRecurringTitles = new Set<string>();
+
+  for (const task of allRecurringTasks) {
+    const titleKey = task.title.trim().toLowerCase();
+    if (seenRecurringTitles.has(titleKey)) continue;
+    seenRecurringTitles.add(titleKey);
+
+    const freq = mapFrequency(task.repeatFreq);
+    let dayOff: number;
+
+    if (freq === 'DAILY' || freq === 'WEEKDAYS') {
+      // Place original instance on day -7 so recurrence generates days -6 through today+
+      dayOff = -7;
+    } else if (freq === 'WEEKLY' || freq === 'BIWEEKLY') {
+      // Place on day -7 (one week ago) so recurrence can generate this week's instance
+      dayOff = -7;
+    } else {
+      // MONTHLY, BIMONTHLY, QUARTERLY, YEARLY — place on day -7
+      dayOff = -7;
     }
+
+    const act = addScheduledActivity(task, dayOff, 'COMPLETED', true);
+    activities.push(act);
   }
 
-  // Non-daily past tasks: distribute evenly across past 7 days
-  nonDailyPastTasks.forEach((task, idx) => {
+  // --- NON-RECURRING PAST: distribute across days -7 to -1 as COMPLETED ---
+  nonRecurringPastTasks.forEach((task, idx) => {
     const day = -7 + (idx % 7);
     const act = addScheduledActivity(task, day, 'COMPLETED', true);
     activities.push(act);
   });
 
-  // --- TODAY: today-due tasks + carry-forward of some past tasks ---
-  // First few as completed, a couple in-progress, rest as planned
-  todayTasks.forEach((task, idx) => {
+  // --- NON-RECURRING TODAY: some completed, some in-progress, rest planned ---
+  nonRecurringTodayTasks.forEach((task, idx) => {
     let status = 'PLANNED';
     let completed = false;
     if (idx < 2) { status = 'COMPLETED'; completed = true; }
@@ -609,25 +634,15 @@ function buildActivities(): { activities: SeedActivity[]; logs: SeedLog[] } {
     activities.push(act);
   });
 
-  // Carry forward: some past-due non-daily tasks also appear on today as planned
-  const carryForward = nonDailyPastTasks.slice(0, 5);
+  // Carry forward: some past-due non-recurring tasks also appear on today as planned
+  const carryForward = nonRecurringPastTasks.slice(0, 5);
   for (const task of carryForward) {
     const act = addScheduledActivity(task, 0, 'PLANNED', false);
     activities.push(act);
   }
 
-  // Daily tasks also appear today
-  for (const task of dailyTasks) {
-    // Check if already added from todayTasks
-    const alreadyAdded = todayTasks.some(t => t.title.trim() === task.title.trim());
-    if (!alreadyAdded) {
-      const act = addScheduledActivity(task, 0, 'PLANNED', false);
-      activities.push(act);
-    }
-  }
-
-  // --- FUTURE: distribute future tasks across days +1 to +7 ---
-  futureDueTasks.forEach((task, idx) => {
+  // --- NON-RECURRING FUTURE: distribute across days +1 to +7 ---
+  nonRecurringFutureTasks.forEach((task, idx) => {
     const day = 1 + (simpleHash(task.title + idx) % 7);
     const act = addScheduledActivity(task, day, 'PLANNED', false);
     activities.push(act);
@@ -662,6 +677,63 @@ function buildActivities(): { activities: SeedActivity[]; logs: SeedLog[] } {
     if (subtasks) act.subtasks = subtasks;
     activities.push(act);
   }
+
+  // --- WATERMARK TEST DATA: untimed recurring activities (no start_time) ---
+  // These appear as watermark chips (recurrence_type !== 'NONE' && start_time === '')
+  const watermarkActivities: SeedActivity[] = [
+    {
+      id: uuid(),
+      activity_type: 'TASK',
+      title: 'Drink water',
+      description: null,
+      start_time: '',
+      duration_minutes: 0,
+      category_id: 'sys-health',
+      assigned_date: null,
+      is_scheduled: false,
+      status: 'PLANNED',
+      priority: 'MEDIUM',
+      recurrence_type: 'DAILY',
+      mindset_prompt: 'Stay hydrated',
+      actual_start: null,
+      actual_end: null,
+    },
+    {
+      id: uuid(),
+      activity_type: 'TASK',
+      title: 'Stand and stretch',
+      description: null,
+      start_time: '',
+      duration_minutes: 0,
+      category_id: 'sys-health',
+      assigned_date: null,
+      is_scheduled: false,
+      status: 'PLANNED',
+      priority: 'MEDIUM',
+      recurrence_type: 'DAILY',
+      mindset_prompt: 'Movement is medicine',
+      actual_start: null,
+      actual_end: null,
+    },
+    {
+      id: uuid(),
+      activity_type: 'TASK',
+      title: 'Gratitude moment',
+      description: null,
+      start_time: '',
+      duration_minutes: 0,
+      category_id: 'sys-personal',
+      assigned_date: null,
+      is_scheduled: false,
+      status: 'PLANNED',
+      priority: 'MEDIUM',
+      recurrence_type: 'DAILY',
+      mindset_prompt: 'Notice what\'s good',
+      actual_start: null,
+      actual_end: null,
+    },
+  ];
+  activities.push(...watermarkActivities);
 
   // --- EXPERIENCE LOGS for completed activities ---
   const reflections = [
@@ -732,7 +804,7 @@ function buildGoals(): SeedGoal[] {
 }
 
 export async function seedDummyData(): Promise<void> {
-  const SEED_VERSION = '15';
+  const SEED_VERSION = '16';
   const isWeb = typeof localStorage !== 'undefined';
 
   // Check if already seeded

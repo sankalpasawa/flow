@@ -107,6 +107,19 @@ Read `TODO.md` for the full list. Top priorities:
 - Web: `npx expo start --web` then open http://localhost:8081
 - SDK 54 for Expo Go compatibility
 
+## Ask Logging (PRD Updates)
+Every 5-10 significant user requests, update the "User Asks Log" table in PLAN.md.
+Log: date, what was asked, status (Done/In progress/TODO), and outcome.
+This ensures nothing is forgotten and the product direction is tracked.
+
+**When to log:**
+- After completing a batch of fixes
+- When the user gives a new direction or priority shift
+- At the end of a session
+- When a major decision is made (design, architecture, scope)
+
+**Logic:** Count user messages since last log update. If >= 5 significant asks, append to the table. A "significant ask" is a feature request, bug report, design feedback, or direction change — not a "yes", "done", "continue".
+
 ## Fundamental Principle: Full Automation
 The user's time and energy are sacred. Do NOT ask for collaboration, input, or manual steps unless absolutely necessary (security credentials, design taste decisions).
 

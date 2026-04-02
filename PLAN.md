@@ -928,3 +928,43 @@ Flagged in Phase 1 (CEO temporal interrogation), Phase 2 (Design — F13), and P
 **CROSS-PHASE:** 3 themes spanning multiple phases (offline, log-vs-canvas hierarchy, timezone).
 **UNRESOLVED:** 0 (all auto-decided)
 **VERDICT:** CEO + DESIGN + ENG reviewed — all issues auto-resolved. Plan ready for implementation with amendments.
+
+## User Asks Log (v2 Design Sprint, March-April 2026)
+
+This log captures every significant user request chronologically. Updated automatically during conversations.
+
+| Date | Ask | Status | Outcome |
+|------|-----|--------|---------|
+| Mar 30 | Today screen pills look ugly, fix scroll/date bug, calendar pull-down, today button, bottom cutoff, pill text sizes | Done | 5 fixes committed, v2 design sprint started |
+| Mar 30 | Design consultation: research competitors, propose design system | Done | DESIGN.md created, glass morphism chosen, warm cream palette |
+| Mar 30 | Use Family app as interaction inspiration | Done | Spring physics, clean surfaces, micro-interactions adopted |
+| Mar 31 | Glass pills, not solid fills. Category as tint not accent bar | Done | ActivityCard rewritten with glass treatment |
+| Mar 31 | Watermark/rhythm chips on timeline (right-aligned, warm color) | Done | Watermark rendering implemented |
+| Mar 31 | Bottom task bar instead of task card. Drag to schedule. | Done | BottomTaskBar component created |
+| Mar 31 | Activity form: simplify. One concept = Activity. Time optional. | Done | ActivityFormScreen rewritten |
+| Mar 31 | Experience log: bottom sheet, mood emojis, energy emojis, "Done" button | Done | ExperienceLogScreen created |
+| Mar 31 | Mindset always shown on pills, even compact | Done | overflow:hidden removed, mindset visible |
+| Mar 31 | Seed data from real Any.do CSV export | Done | 174 tasks imported from anydo_all_open_tasks.csv |
+| Mar 31 | AI mindset generation: sparkle button, enhance mode | Done | Edge function deployed, local fallback working |
+| Apr 1 | Fix swipe conflict: pill complete vs day change | Done | Thresholds adjusted (15px pill, 80px page) |
+| Apr 1 | Experience log as proper bottom sheet, swipe dismiss | Done | Full rewrite with PanResponder |
+| Apr 1 | Categories: only show ones from data, remove Deep Work etc | Done | System categories filtered to 4 |
+| Apr 1 | Mindset + Notes auto-expand (multiline) | Done | TextInput multiline enabled |
+| Apr 1 | Recurring activities should appear on every scheduled day | Done | recurrence.ts instance generator |
+| Apr 2 | Pill sizes too small, pinch-to-zoom calendar | Done | HOUR_HEIGHT 88, pinch gesture 0.7x-2.0x |
+| Apr 2 | Fix duplicate recurring entries (bedtime water, call mummy) | In progress | Dedup improved, needs verification |
+| Apr 2 | Automated QA: don't ask user to click/navigate, automate everything | In progress | DesignQA system + automation principle in CLAUDE.md |
+| Apr 2 | iPhone only, web out of scope | Done | Added to CLAUDE.md and memory |
+| Apr 2 | Add asks to PRD at regular intervals | Done | This log created |
+| Apr 2 | Bottom task bar "+" UX needs rethinking | TODO | Future scope |
+
+## Implementation Focus (Active)
+
+Only working on:
+- Today screen (canvas, pills, watermarks, now indicator)
+- Activity form (create/edit)
+- Experience log (post-activity)
+- Bottom task bar
+- Data integrity (seed, recurrence)
+
+NOT working on: Plan tab, Insights tab, Settings tab, Dark mode, Push notifications
