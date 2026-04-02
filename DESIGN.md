@@ -283,6 +283,15 @@ Bottom sheet that opens when tapping a completed or past activity pill. Logging 
 
 **Design reference:** `designs/experience-log.html`
 
+### Universal Bottom Sheet Rule
+EVERY screen that slides up from the bottom MUST have:
+1. **Swipe down to dismiss** — `presentation: 'modal'`, `gestureEnabled: true`, `gestureDirection: 'vertical'`
+2. **Tap outside to dismiss** — dim overlay that calls `navigation.goBack()` on press
+3. **Drag handle** — 36x4px gray bar at the top
+4. **Slide from bottom animation** — `animation: 'slide_from_bottom'`, `animationDuration: 250`
+
+No exceptions. Never use `transparentModal` — it breaks swipe gesture on iOS. Always use `modal`.
+
 ## Data Model Simplification
 - **Everything is an Activity.** One concept.
 - **Has time → pill on canvas**

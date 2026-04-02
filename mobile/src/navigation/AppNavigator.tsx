@@ -172,7 +172,7 @@ export function AppNavigator() {
               name="QuickAdd"
               component={QuickAddScreen}
               options={{
-                presentation: 'transparentModal',
+                presentation: 'modal',
                 headerShown: false,
                 animation: 'slide_from_bottom',
                 animationDuration: 250,
@@ -184,31 +184,49 @@ export function AppNavigator() {
               name="GoalForm"
               component={GoalFormScreen}
               options={{
-                presentation: 'transparentModal',
+                presentation: 'modal',
                 headerShown: false,
                 animation: 'slide_from_bottom',
                 animationDuration: 250,
+                gestureEnabled: true,
+                gestureDirection: 'vertical',
               }}
             />
             <Stack.Screen
               name="GoalEdit"
               component={GoalEditScreen as any}
               options={{
-                presentation: 'transparentModal',
+                presentation: 'modal',
                 headerShown: false,
                 animation: 'slide_from_bottom',
                 animationDuration: 250,
+                gestureEnabled: true,
+                gestureDirection: 'vertical',
               }}
             />
             <Stack.Screen
               name="ActivityDetail"
               component={ActivityDetailScreen}
-              options={{ title: 'Activity', animationDuration: 250 }}
+              options={{
+                presentation: 'modal',
+                headerShown: false,
+                animation: 'slide_from_bottom',
+                animationDuration: 250,
+                gestureEnabled: true,
+                gestureDirection: 'vertical',
+              }}
             />
             <Stack.Screen
               name="LogForm"
               component={LogFormScreen}
-              options={{ title: 'Log Experience', animation: 'slide_from_bottom', animationDuration: 250 }}
+              options={{
+                presentation: 'modal',
+                headerShown: false,
+                animation: 'slide_from_bottom',
+                animationDuration: 250,
+                gestureEnabled: true,
+                gestureDirection: 'vertical',
+              }}
             />
             <Stack.Screen
               name="Search"
