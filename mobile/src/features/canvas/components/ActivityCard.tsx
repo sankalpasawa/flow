@@ -133,8 +133,9 @@ export function ActivityCard({ activity, log, onPress, onQuickComplete, onResche
       hasPassedThreshold.value = false;
     });
 
-  // Vertical pan — drag to reschedule
+  // Vertical pan — drag to reschedule (activates after long press)
   const verticalPan = Gesture.Pan()
+    .activateAfterLongPress(400)
     .activeOffsetY([-15, 15])
     .failOffsetX([-20, 20])
     .enabled(!!onReschedule)
@@ -176,13 +177,21 @@ export function ActivityCard({ activity, log, onPress, onQuickComplete, onResche
     });
 
   const longPressGesture = Gesture.LongPress()
-    .minDuration(500)
+    .minDuration(400)
     .onStart(() => {
-      runOnJS(triggerCompleteHaptic)();
-      runOnJS(onPress)();
+      // Haptic feedback + visual lift only — drag handled by verticalPan
+      runOnJS(triggerLightHaptic)();
+      scale.value = withSpring(1.03, { damping: 15, stiffness: 200 });
+    })
+    .onFinalize(() => {
+      scale.value = withSpring(1, { damping: 15, stiffness: 200 });
     });
 
-  const composed = Gesture.Race(horizontalPan, verticalPan, longPressGesture, tapGesture);
+  const composed = Gesture.Exclusive(
+    horizontalPan,
+    verticalPan,
+    Gesture.Exclusive(longPressGesture, tapGesture),
+  );
 
   const cardAnimStyle = useAnimatedStyle(() => ({
     transform: [

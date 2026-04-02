@@ -190,6 +190,84 @@ The activity form is a bottom sheet. Ultra-compact. No section labels, no divide
 
 **Design reference:** `designs/activity-forms.html`
 
+### AI Text-to-Action
+The "+" button opens a dual-mode creation flow. The default experience is a free-form text input where the user types natural language and the system interprets it into a structured activity. This is the future direction of the product: zero-friction capture that feels like texting yourself.
+
+**1. Dual-mode creation:**
+- **Quick text mode (default):** Large text input at the top. User types natural language. AI parses it into structured activity fields.
+- **Full form mode:** The structured form (existing Activity Form). User can switch via a toggle.
+
+**2. Text input UI:**
+- Full-width text input, 20px Instrument Sans 500, placeholder "What do you want to do?"
+- Glass surface background, consistent with existing bottom sheet treatment
+- Below the input: a subtle "or fill form manually" link (13px, muted color #8C857D, tappable). Tapping switches to the full Activity Form.
+- As the user types, an AI preview appears below the input:
+  - Parsed fields shown as small chips in a horizontal wrap layout: title, time, duration, category, recurrence
+  - Chips use the existing glass pill treatment (frosted bg + subtle border) with category tint when applicable
+  - Each chip is tappable — tap to adjust that specific field inline (opens a small editor)
+  - A "Create" button below the chips, full-width green gradient (same as existing form action button)
+  - If parsing fails or is incomplete, only the recognized chips appear. Missing fields are not shown (not "Unknown" placeholders).
+
+**3. AI parsing (Supabase edge function):**
+- **Input:** raw text string + user context (list of existing category names and IDs, recent activity titles for pattern matching)
+- **Output:** `{ title: string, date: string|null, time: string|null, duration: number|null, category_id: string|null, recurrence: string|null, mindset_prompt: string|null }`
+- **Model:** Claude Haiku (optimized for speed and cost — sub-500ms response target)
+- **Prompt strategy:** System prompt defines the output JSON schema and includes the user's category list. The model maps free-form text to structured fields. It also generates a one-line mindset prompt when the activity type suggests one (e.g., "Gym" gets "Push through the discomfort. Every rep counts.").
+- **Error handling:** If the edge function fails (network error, timeout, rate limit), fall back to local regex parsing silently. No error toast shown to the user — the experience just becomes slightly less smart.
+- **Debounce:** 600ms after the user stops typing before sending to the edge function. Show a subtle loading shimmer on the chip area during the API call.
+
+**4. Local parsing patterns (no API needed, runs client-side as fallback):**
+These regex patterns handle common natural language scheduling expressions. They run instantly and cover the majority of quick-entry cases. The local parser is also used to provide instant preview while the AI response is in flight.
+
+- **Time:** "at 7am" → 07:00, "at 3:30pm" → 15:30, "morning" → 07:00, "afternoon" → 13:00, "evening" → 18:00, "night" → 21:00
+- **Duration:** "for 30 min" → 30, "for 1 hour" → 60, "for 2 hours" → 120, "30m" → 30, "1h" → 60, "1.5h" → 90
+- **Date:** "today" → current date, "tomorrow" → +1 day, "next Monday" → next occurrence of Monday, "next week" → +7 days
+- **Recurrence:** "every day" / "daily" → FREQ=DAILY, "every week" / "weekly" → FREQ=WEEKLY, "every morning" → FREQ=DAILY + time 07:00, "every evening" → FREQ=DAILY + time 18:00, "every Monday" → FREQ=WEEKLY;BYDAY=MO
+- **Category:** fuzzy match against existing user category names. "gym" / "workout" / "exercise" → Health category, "read" / "study" → Learning category. Match is case-insensitive and uses the category's keyword aliases.
+- **Title extraction:** Everything that is not a recognized time/duration/date/recurrence pattern becomes the title. "Gym at 7am every morning for 1 hour" → title is "Gym".
+
+**5. Preview chip behavior:**
+- Chips animate in with spring physics (stiffness 200, damping 15) as fields are parsed
+- Local parsing chips appear instantly as user types
+- When the AI response arrives, chips update smoothly (crossfade, 150ms) if the AI interpretation differs from local parsing
+- Chip colors: time chips use muted style, category chips use their category tint, recurrence chips use accent amber
+- Tapping a chip opens an inline editor: time chip opens time picker, duration chip shows duration options (15m/30m/1h/2h), category chip shows category selector, recurrence chip shows recurrence popup (reusing existing repeat popup from Activity Form)
+
+**6. Example flows:**
+
+User types: `Gym at 7am every morning for 1 hour`
+AI parses: `{ title: "Gym", time: "07:00", duration: 60, recurrence: "FREQ=DAILY", category_id: "sys-health", mindset_prompt: "Show up. The hardest part is starting." }`
+Preview shows: **[Gym]** [7:00 AM] [1h] [Health] [Daily]
+User taps Create → activity created, sheet dismisses with spring animation.
+
+User types: `Call mom every evening`
+AI parses: `{ title: "Call mom", time: "18:00", recurrence: "FREQ=DAILY", category_id: "sys-personal", mindset_prompt: "Be present. Listen more than you speak." }`
+Preview shows: **[Call mom]** [6:00 PM] [Personal] [Daily]
+User taps Create → done.
+
+User types: `Read for 30 min`
+AI parses: `{ title: "Read", duration: 30, category_id: "sys-learning" }`
+Preview shows: **[Read]** [30m] [Learning]
+No time set — saved as a task (consistent with existing "no time = task" rule).
+
+User types: `Cancel the meeting`
+AI recognizes intent: modification, not creation. Returns: `{ action: "cancel", search: "meeting" }`
+System searches today's activities for "meeting", shows a confirmation: "Cancel 'Team meeting' at 2:00 PM?" with Confirm/Cancel buttons.
+
+**7. Architecture notes:**
+- The edge function endpoint: `POST /functions/v1/parse-activity`
+- Request body: `{ text: string, categories: Array<{id, name, emoji}>, recent_titles: string[] }`
+- Response: `{ parsed: ActivityFields, confidence: number, action: "create" | "modify" | "cancel" }`
+- The `confidence` field (0-1) determines whether to show the preview immediately (>0.7) or show a "Did you mean...?" disambiguation (0.3-0.7) or fall back to just using the title as-is (<0.3)
+- Modification actions ("cancel the meeting", "move gym to 8am") are future scope — v1 focuses on creation only
+- The local parser and AI parser produce the same output shape, so the UI code is identical regardless of which parser produced the result
+
+**8. Interaction with existing form:**
+- If the user switches from quick text mode to full form mode, any already-parsed fields carry over and pre-fill the form
+- If the user switches back from form to text mode, the text input retains what was typed
+- The bottom sheet height adjusts with spring animation when switching modes
+- Quick text mode sheet is shorter (just input + chips + button). Full form mode expands to the existing form height.
+
 ### Experience Log (Post-Activity)
 Bottom sheet that opens when tapping a completed or past activity pill. Logging takes precedence over editing for past activities.
 
@@ -258,3 +336,4 @@ All saved in `designs/` folder:
 | 2026-03-31 | Experience log: bottom sheet | Mood (5 emojis), Energy (5 emojis), Completion (3 chips), Reflection (1-line input). Button: "Reflect & Close". Pencil icon for edit. No skip button. |
 | 2026-03-31 | Energy uses emoji icons not numbers | 🪫 Drained, 😴 Low, 😌 Steady, ⚡ High, 🔥 Peak. More expressive than 1-5 numbers. |
 | 2026-03-31 | Subtask empty state: "+" circle + "Subtask" text | When no subtasks, show plus icon with label. When items exist, just the plus icon. |
+| 2026-04-02 | AI text-to-action as default creation mode | FAB opens free-form text input first. Natural language parsed by Claude Haiku into structured activity. Local regex fallback for offline/speed. Dual-mode: quick text (default) + full form (toggle). |

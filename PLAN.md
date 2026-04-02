@@ -957,6 +957,7 @@ This log captures every significant user request chronologically. Updated automa
 | Apr 2 | iPhone only, web out of scope | Done | Added to CLAUDE.md and memory |
 | Apr 2 | Add asks to PRD at regular intervals | Done | This log created |
 | Apr 2 | Bottom task bar "+" UX needs rethinking | TODO | Future scope |
+| Apr 2 | AI text-to-action: free-form text input parsed by Claude into structured activity | Spec created | Design spec in DESIGN.md |
 
 ## Implementation Focus (Active)
 

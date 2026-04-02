@@ -22,7 +22,7 @@
  */
 
 import React, { useRef, useEffect, useState } from 'react';
-import { Platform, View, Text } from 'react-native';
+import { Platform, View, Text, TouchableOpacity } from 'react-native';
 import ViewShot, { captureRef } from 'react-native-view-shot';
 import Constants from 'expo-constants';
 
@@ -251,9 +251,24 @@ export function DesignQAProvider({ children }: { children: React.ReactNode }) {
     <ViewShot ref={ref} style={{ flex: 1 }} options={{ format: 'png', quality: 0.9 }}>
       {children}
       {bannerVisible && (Platform.OS === 'ios' || Platform.OS === 'android') && (
-        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 20, backgroundColor: 'rgba(196,121,91,0.9)', zIndex: 9999, alignItems: 'center', justifyContent: 'center' }}>
-          <Text style={{ color: 'white', fontSize: 10, fontWeight: '600' }}>QA Testing</Text>
-        </View>
+        <>
+          {/* Touch blocker — prevents user interaction during QA */}
+          <View style={{ position: 'absolute', top: 32, left: 0, right: 0, bottom: 0, zIndex: 9998, backgroundColor: 'rgba(0,0,0,0.02)' }} pointerEvents="box-only" />
+
+          {/* QA Banner with exit button */}
+          <TouchableOpacity
+            style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 32, backgroundColor: 'rgba(196,121,91,0.95)', zIndex: 9999, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingTop: 4 }}
+            onPress={async () => {
+              try { await fetch(`${SERVER()}/qa/stop`, { method: 'POST' }); } catch {}
+              qaActive = false;
+              setBannerVisible(false);
+            }}
+            activeOpacity={0.8}
+          >
+            <Text style={{ color: 'white', fontSize: 11, fontWeight: '600' }}>QA Testing — Tap to Exit</Text>
+            <Text style={{ color: 'white', fontSize: 14, fontWeight: '700', marginLeft: 8 }}>✕</Text>
+          </TouchableOpacity>
+        </>
       )}
     </ViewShot>
   );

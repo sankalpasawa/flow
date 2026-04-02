@@ -162,6 +162,7 @@ export function AppNavigator() {
                 presentation: 'modal',
                 headerShown: false,
                 animation: 'slide_from_bottom',
+                animationDuration: 250,
                 gestureEnabled: true,
                 gestureDirection: 'vertical',
               }}
@@ -173,6 +174,7 @@ export function AppNavigator() {
                 presentation: 'transparentModal',
                 headerShown: false,
                 animation: 'slide_from_bottom',
+                animationDuration: 250,
               }}
             />
             <Stack.Screen
@@ -182,22 +184,23 @@ export function AppNavigator() {
                 presentation: 'transparentModal',
                 headerShown: false,
                 animation: 'slide_from_bottom',
+                animationDuration: 250,
               }}
             />
             <Stack.Screen
               name="ActivityDetail"
               component={ActivityDetailScreen}
-              options={{ title: 'Activity' }}
+              options={{ title: 'Activity', animationDuration: 250 }}
             />
             <Stack.Screen
               name="LogForm"
               component={LogFormScreen}
-              options={{ title: 'Log Experience' }}
+              options={{ title: 'Log Experience', animation: 'slide_from_bottom', animationDuration: 250 }}
             />
             <Stack.Screen
               name="Search"
               component={SearchScreen}
-              options={{ headerShown: false }}
+              options={{ headerShown: false, animation: 'fade', animationDuration: 200 }}
             />
             <Stack.Screen
               name="ExperienceLog"
@@ -206,6 +209,7 @@ export function AppNavigator() {
                 presentation: 'modal',
                 headerShown: false,
                 animation: 'slide_from_bottom',
+                animationDuration: 250,
                 gestureEnabled: true,
                 gestureDirection: 'vertical',
               }}
@@ -213,7 +217,7 @@ export function AppNavigator() {
             <Stack.Screen
               name="CategoryList"
               component={CategoryListScreen}
-              options={{ title: 'Categories' }}
+              options={{ title: 'Categories', animationDuration: 250 }}
             />
           </>
         )}

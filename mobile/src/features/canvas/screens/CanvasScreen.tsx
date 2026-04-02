@@ -88,6 +88,7 @@ export function CanvasScreen({ navigation }: Props) {
   const { user } = useAuthStore();
   const { activities, untimedTasks, logs, loading, selectedDate, setSelectedDate, loadDay, quickToggleComplete, addTask, editActivity } = useActivitiesStore();
   const scrollRef = useRef<ScrollView>(null);
+  const hasAutoScrolled = useRef(false);
   const { width: windowWidth } = useWindowDimensions();
   const [refreshing, setRefreshing] = useState(false);
   const [hourScale, setHourScale] = useState(1.0);
@@ -122,9 +123,16 @@ export function CanvasScreen({ navigation }: Props) {
     document.head.appendChild(style);
   }, []);
 
-  // Scroll to current hour when viewing today
+  // Reset auto-scroll flag when the date changes
+  useEffect(() => {
+    hasAutoScrolled.current = false;
+  }, [selectedDate]);
+
+  // Scroll to current hour when viewing today (only on initial load or date change)
   useEffect(() => {
     if (!isSameDay(selectedDate, new Date())) return;
+    if (hasAutoScrolled.current) return;
+    hasAutoScrolled.current = true;
     const timer = setTimeout(() => {
       const y = Math.max(0, (new Date().getHours() - 2) * effectiveHourHeight);
       scrollRef.current?.scrollTo({ y, animated: false });
@@ -277,11 +285,11 @@ export function CanvasScreen({ navigation }: Props) {
           <ScrollView
             ref={scrollRef}
             style={styles.canvas}
-            contentContainerStyle={{ height: END_HOUR * effectiveHourHeight + 120 }}
+            contentContainerStyle={{ height: (END_HOUR - START_HOUR) * effectiveHourHeight + 160 }}
             showsVerticalScrollIndicator={false}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
           >
-            <View style={[styles.timeline, { height: END_HOUR * effectiveHourHeight }]}>
+            <View style={[styles.timeline, { height: (END_HOUR - START_HOUR) * effectiveHourHeight }]}>
               {/* Hour grid */}
               {hours.map((h) => {
                 const y = (h - START_HOUR) * effectiveHourHeight;
@@ -442,7 +450,7 @@ const styles = StyleSheet.create({
   hourLabel: {
     color: colors.muted, fontSize: 11, fontWeight: '500' as const,
     width: HOUR_LABEL_WIDTH, textAlign: 'right', marginRight: 6, marginTop: -7,
-    opacity: 0.35,
+    opacity: 0.35, overflow: 'visible',
   },
   hourNow: { color: colors.accent, fontWeight: '700', opacity: 1 },
   hourLine: { flex: 1, height: 1, backgroundColor: colors.border, opacity: 0.2 },

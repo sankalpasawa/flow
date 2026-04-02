@@ -49,7 +49,10 @@ const server = http.createServer((req, res) => {
   // POST /qa/stop
   if (req.method === 'POST' && url === '/qa/stop') {
     qaActive = false;
-    console.log('🔴 QA mode OFF');
+    pendingCommand = null;
+    forceTrigger = false;
+    triggerLabel = '';
+    console.log('🔴 QA mode OFF — pending commands cleared');
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ active: false }));
     return;
