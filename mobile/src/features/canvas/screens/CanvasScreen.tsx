@@ -404,7 +404,7 @@ export function CanvasScreen({ navigation }: Props) {
       {/* FAB */}
       <TouchableOpacity
         style={styles.fab}
-        onPress={() => navigation.navigate('ActivityForm', { date: format(selectedDate, 'yyyy-MM-dd') })}
+        onPress={() => navigation.navigate('QuickAdd', { date: format(selectedDate, 'yyyy-MM-dd') })}
         activeOpacity={0.85}
       >
         <Text style={styles.fabText}>+</Text>

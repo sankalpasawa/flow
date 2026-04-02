@@ -30,6 +30,7 @@ import { InsightsScreen } from '../features/insights/screens/InsightsScreen';
 import { GoalFormScreen } from '../features/goals/screens/GoalFormScreen';
 import { GoalEditScreen } from '../features/goals/screens/GoalEditScreen';
 import { ExperienceLogScreen } from '../features/canvas/screens/ExperienceLogScreen';
+import { QuickAddScreen } from '../features/canvas/screens/QuickAddScreen';
 import { captureOnNavigation } from '../debug/DesignQA';
 
 const Stack = createNativeStackNavigator();
@@ -160,6 +161,18 @@ export function AppNavigator() {
               component={ActivityFormScreen}
               options={{
                 presentation: 'modal',
+                headerShown: false,
+                animation: 'slide_from_bottom',
+                animationDuration: 250,
+                gestureEnabled: true,
+                gestureDirection: 'vertical',
+              }}
+            />
+            <Stack.Screen
+              name="QuickAdd"
+              component={QuickAddScreen}
+              options={{
+                presentation: 'transparentModal',
                 headerShown: false,
                 animation: 'slide_from_bottom',
                 animationDuration: 250,
