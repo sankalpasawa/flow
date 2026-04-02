@@ -251,17 +251,32 @@ export const useActivitiesStore = create<ActivitiesState>((set, get) => ({
 
   editActivity: async (id, updates) => {
     try {
-      await updateActivity(id, updates);
-      const updated = await import('../lib/db/activities').then(m => m.getActivity(id));
-      if (updated) {
-        set((s) => ({
-          activities: s.activities.map((a) => (a.id === id ? updated : a)),
-        }));
-        if (updates.start_time || updates.duration_minutes) {
-          scheduleLogNudge(updated).catch((err) =>
-            console.warn('[DayFlow] Failed to reschedule nudge:', err)
-          );
+      // Strip virtual instance suffix to get the real DB id
+      const realId = id.includes('_') ? id.split('_')[0] : id;
+      await updateActivity(realId, updates);
+
+      // Reload the full day to pick up changes (handles recurring virtual instances)
+      const { selectedDate } = get();
+      const userId = get().activities[0]?.user_id || get().untimedTasks[0]?.user_id;
+      if (userId && selectedDate) {
+        await get().loadDay(userId, selectedDate);
+      } else {
+        // Fallback: patch in-memory array
+        const updated = await import('../lib/db/activities').then(m => m.getActivity(realId));
+        if (updated) {
+          set((s) => ({
+            activities: s.activities.map((a) =>
+              a.id === id || a.id === realId || a.id.startsWith(realId + '_') ? updated : a
+            ),
+          }));
         }
+      }
+
+      if (updates.start_time || updates.duration_minutes) {
+        const act = await import('../lib/db/activities').then(m => m.getActivity(realId));
+        if (act) scheduleLogNudge(act).catch((err) =>
+          console.warn('[DayFlow] Failed to reschedule nudge:', err)
+        );
       }
     } catch (err) {
       console.error('[DayFlow] Failed to edit activity:', err);
