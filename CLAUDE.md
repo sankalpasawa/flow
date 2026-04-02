@@ -202,3 +202,19 @@ Key routing rules:
 - Design system, brand → invoke design-consultation
 - Visual audit, design polish → invoke design-review
 - Architecture review → invoke plan-eng-review
+
+## Autonomous Org
+
+DayFlow runs like a company with AI CXO agents. See `org/ORG.md` for full structure.
+
+**Daily standup**: When the user says "standup" or at the start of each session, run the standup protocol from `org/STANDUP-PROTOCOL.md`. Launch parallel agents for Quality, Design, Engineering, and Data checks. Synthesize with CEO agent. Write report to `org/standup/{date}.md`.
+
+**Weekly strategy**: On Mondays or when user says "strategy", run the CEO weekly review. Include Security and Growth agents.
+
+**Agent files**: `org/agents/{role}.md` — instruction sets for each CXO agent.
+
+**Decision log**: Every significant decision goes to `org/decisions/{date}-{topic}.md`.
+
+**When adding features**: Before implementing, check with CPO (is this the right priority?), CDO (what's the design spec?), CTO (does this fit the architecture?), CQO (what tests are needed?). After implementing, run CDO and CQO checks.
+
+**Daily work should span ALL departments**, not just product and engineering. Check the standup report for cross-department action items.
