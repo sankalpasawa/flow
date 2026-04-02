@@ -90,6 +90,7 @@ export function CanvasScreen({ navigation }: Props) {
   const scrollRef = useRef<ScrollView>(null);
   const { width: windowWidth } = useWindowDimensions();
   const [refreshing, setRefreshing] = useState(false);
+  const [hourScale, setHourScale] = useState(1.0);
 
   const load = useCallback(async (date: Date) => {
     if (!user) return;
@@ -108,6 +109,8 @@ export function CanvasScreen({ navigation }: Props) {
     if (user) await loadDay(user.id, selectedDate);
   }, [editActivity, loadDay, user, selectedDate]);
 
+  const effectiveHourHeight = HOUR_HEIGHT * hourScale;
+
   // CSS fix for web scroll containment
   useEffect(() => {
     if (Platform.OS !== 'web' || typeof document === 'undefined') return;
@@ -123,11 +126,11 @@ export function CanvasScreen({ navigation }: Props) {
   useEffect(() => {
     if (!isSameDay(selectedDate, new Date())) return;
     const timer = setTimeout(() => {
-      const y = Math.max(0, (new Date().getHours() - 2) * HOUR_HEIGHT);
+      const y = Math.max(0, (new Date().getHours() - 2) * effectiveHourHeight);
       scrollRef.current?.scrollTo({ y, animated: false });
     }, 100);
     return () => clearTimeout(timer);
-  }, [selectedDate]);
+  }, [selectedDate, effectiveHourHeight]);
 
   const now = new Date();
   const isToday = isSameDay(selectedDate, now);
@@ -154,10 +157,10 @@ export function CanvasScreen({ navigation }: Props) {
     return watermarkActivities.map((a, i) => {
       const minuteOffset = i * WATERMARK_INTERVAL_MIN;
       const hour = WATERMARK_START_HOUR + minuteOffset / 60;
-      const top = hour * HOUR_HEIGHT;
+      const top = hour * effectiveHourHeight;
       return { activity: a, top };
     });
-  }, [watermarkActivities]);
+  }, [watermarkActivities, effectiveHourHeight]);
 
   const overlapLayout = useMemo(() => computeOverlapLayout(timedActivities), [timedActivities]);
 
@@ -185,7 +188,7 @@ export function CanvasScreen({ navigation }: Props) {
     }
   }, [navigation, isToday, now]);
 
-  const nowY = (now.getHours() + now.getMinutes() / 60) * HOUR_HEIGHT;
+  const nowY = (now.getHours() + now.getMinutes() / 60) * effectiveHourHeight;
 
   // Horizontal swipe to change day
   const swipeGesture = Gesture.Pan()
@@ -204,6 +207,20 @@ export function CanvasScreen({ navigation }: Props) {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setSelectedDate(newDate);
   }
+
+  const baseScale = useRef(1.0);
+  const pinchGesture = Gesture.Pinch()
+    .onBegin(() => {
+      'worklet';
+      baseScale.current = hourScale;
+    })
+    .onUpdate((e) => {
+      'worklet';
+      const newScale = Math.min(2.0, Math.max(0.7, baseScale.current * e.scale));
+      runOnJS(setHourScale)(newScale);
+    });
+
+  const composedGesture = Gesture.Simultaneous(pinchGesture, swipeGesture);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -242,7 +259,7 @@ export function CanvasScreen({ navigation }: Props) {
       {/* v2: Tasks moved to bottom bar */}
 
       {/* Canvas — single day, swipe left/right to change day */}
-      <GestureDetector gesture={swipeGesture}>
+      <GestureDetector gesture={composedGesture}>
       <View nativeID="canvas-wrapper" style={styles.canvasWrapper}>
         {loading && !refreshing ? (
           <View style={styles.loadingContainer}>
@@ -252,14 +269,14 @@ export function CanvasScreen({ navigation }: Props) {
           <ScrollView
             ref={scrollRef}
             style={styles.canvas}
-            contentContainerStyle={{ height: TOTAL_CANVAS_HEIGHT + 120 }}
+            contentContainerStyle={{ height: END_HOUR * effectiveHourHeight + 120 }}
             showsVerticalScrollIndicator={false}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
           >
             <View style={styles.timeline}>
               {/* Hour grid */}
               {hours.map((h) => {
-                const y = (h - START_HOUR) * HOUR_HEIGHT;
+                const y = (h - START_HOUR) * effectiveHourHeight;
                 const isPastHour = isToday && h < now.getHours();
                 return (
                   <View key={h} style={[styles.hourRow, { top: y }]} pointerEvents="none">
@@ -273,11 +290,11 @@ export function CanvasScreen({ navigation }: Props) {
 
               {/* Empty hour tap targets */}
               {hours.map((h) => {
-                const y = (h - START_HOUR) * HOUR_HEIGHT;
+                const y = (h - START_HOUR) * effectiveHourHeight;
                 return (
                   <TouchableOpacity
                     key={`empty-${h}`}
-                    style={[styles.emptyTap, { top: y, height: HOUR_HEIGHT }]}
+                    style={[styles.emptyTap, { top: y, height: effectiveHourHeight }]}
                     onPress={() => navigation.navigate('ActivityForm', { startHour: `${h}:00`, date: format(selectedDate, 'yyyy-MM-dd') })}
                     activeOpacity={0.3}
                   />
@@ -415,7 +432,7 @@ const styles = StyleSheet.create({
   },
   hourLabel: {
     color: colors.muted, fontSize: 11, fontWeight: '500' as const,
-    width: HOUR_LABEL_WIDTH, textAlign: 'right', marginRight: 6, marginTop: -14,
+    width: HOUR_LABEL_WIDTH, textAlign: 'right', marginRight: 6, marginTop: -7,
     opacity: 0.35,
   },
   hourNow: { color: colors.accent, fontWeight: '700', opacity: 1 },

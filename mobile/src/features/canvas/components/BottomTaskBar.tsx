@@ -46,6 +46,7 @@ export function BottomTaskBar({ tasks, onToggle, onPress, onQuickAdd }: BottomTa
 
   const nextTask = planned[0];
   const remainingCount = planned.length > 1 ? planned.length - 1 : 0;
+  const isEmpty = planned.length === 0;
 
   // Capture on expand/collapse for QA
   useEffect(() => {
@@ -102,13 +103,10 @@ export function BottomTaskBar({ tasks, onToggle, onPress, onQuickAdd }: BottomTa
 
   // ---- Collapsed bar ----
   const renderCollapsedBar = () => (
-    <TouchableOpacity
-      style={styles.collapsedBar}
-      onPress={expand}
-      activeOpacity={0.7}
+    <View
+      style={[styles.collapsedBar, isEmpty && styles.collapsedBarEmpty]}
     >
       <View style={styles.collapsedContent}>
-        {/* Checkbox */}
         {nextTask ? (
           <>
             <TouchableOpacity
@@ -121,20 +119,34 @@ export function BottomTaskBar({ tasks, onToggle, onPress, onQuickAdd }: BottomTa
             >
               <View style={styles.collapsedCheckboxInner} />
             </TouchableOpacity>
-            <Text style={styles.collapsedTitle} numberOfLines={1}>
-              {nextTask.title}
-            </Text>
+            <TouchableOpacity style={{ flex: 1 }} onPress={expand} activeOpacity={0.7}>
+              <Text style={styles.collapsedTitle} numberOfLines={1}>
+                {nextTask.title}
+              </Text>
+            </TouchableOpacity>
             {remainingCount > 0 && (
-              <View style={styles.countBadge}>
-                <Text style={styles.countBadgeText}>+{remainingCount}</Text>
-              </View>
+              <TouchableOpacity onPress={expand} activeOpacity={0.7}>
+                <View style={styles.countBadge}>
+                  <Text style={styles.countBadgeText}>+{remainingCount}</Text>
+                </View>
+              </TouchableOpacity>
             )}
           </>
         ) : (
-          <Text style={styles.collapsedEmptyText}>✓ All done</Text>
+          <>
+            <Text style={styles.collapsedEmptyText}>✓ All done</Text>
+            <TouchableOpacity
+              style={styles.collapsedAddCircle}
+              onPress={expand}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.collapsedAddCircleText}>+</Text>
+            </TouchableOpacity>
+          </>
         )}
       </View>
-    </TouchableOpacity>
+    </View>
   );
 
   // ---- Expanded task row ----
@@ -273,6 +285,9 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
+  collapsedBarEmpty: {
+    height: 36,
+  },
   collapsedContent: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -300,8 +315,21 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
     color: colors.muted,
-    textAlign: 'center',
     flex: 1,
+  },
+  collapsedAddCircle: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  collapsedAddCircleText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+    lineHeight: 16,
   },
   countBadge: {
     backgroundColor: '#E3ECE6',
