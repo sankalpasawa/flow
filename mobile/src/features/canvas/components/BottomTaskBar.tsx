@@ -131,7 +131,7 @@ export function BottomTaskBar({ tasks, onToggle, onPress, onQuickAdd }: BottomTa
             )}
           </>
         ) : (
-          <Text style={styles.collapsedEmptyText}>All tasks done</Text>
+          <Text style={styles.collapsedEmptyText}>✓ All done</Text>
         )}
       </View>
     </TouchableOpacity>
@@ -297,9 +297,11 @@ const styles = StyleSheet.create({
     color: '#4A4540',
   },
   collapsedEmptyText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '500',
     color: colors.muted,
+    textAlign: 'center',
+    flex: 1,
   },
   countBadge: {
     backgroundColor: '#E3ECE6',

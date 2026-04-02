@@ -501,6 +501,9 @@ export function ActivityFormScreen({ route, navigation }: Props) {
                 value={mindset}
                 onChangeText={setMindset}
                 maxLength={200}
+                multiline
+                numberOfLines={1}
+                textAlignVertical="top"
               />
               <TouchableOpacity style={s.sparkleBtn} activeOpacity={0.6} onPress={generateMindset} disabled={generatingMindset}>
                 {generatingMindset ? (
@@ -522,6 +525,9 @@ export function ActivityFormScreen({ route, navigation }: Props) {
               value={description}
               onChangeText={setDescription}
               maxLength={500}
+              multiline
+              numberOfLines={1}
+              textAlignVertical="top"
             />
           </View>
 
@@ -642,7 +648,6 @@ export function ActivityFormScreen({ route, navigation }: Props) {
             </TouchableOpacity>
           )}
 
-          <View style={{ height: 20 }} />
         </ScrollView>
       </KeyboardAvoidingView>
 
@@ -769,7 +774,7 @@ const s = StyleSheet.create({
   },
   handleBar: { alignItems: 'center', paddingTop: 10, paddingBottom: 4 },
   handle: { width: 36, height: 4, borderRadius: 2, backgroundColor: colors.border },
-  content: { paddingHorizontal: 20, paddingTop: 4, paddingBottom: 40 },
+  content: { paddingHorizontal: 20, paddingTop: 4, paddingBottom: 8 },
 
   // 1. Title
   titleInput: {
