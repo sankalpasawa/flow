@@ -560,7 +560,8 @@ function buildActivities(): { activities: SeedActivity[]; logs: SeedLog[] } {
 
   function estimateDuration(title: string, _category: string): number {
     const t = title.toLowerCase();
-    if (t.includes('water') || t.includes('credit card') || t.includes('ring') || t.includes('wallet')) return 10;
+    if (t.includes('credit card') || t.includes('ring') || t.includes('wallet')) return 10;
+    if (t.includes('water')) return 5;
     if (t.includes('breakfast') || t.includes('breath') || t.includes('sunlight') || t.includes('hygiene')) return 15;
     if (t.includes('journal') || t.includes('routine') || t.includes('bedsheet')) return 20;
     if (t.includes('call') || t.includes('message') || t.includes('bency') || t.includes('nookala')) return 30;

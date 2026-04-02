@@ -147,7 +147,9 @@ export function CanvasScreen({ navigation }: Props) {
   const timedActivities = useMemo(() =>
     activities.filter((a) => {
       if (!a.start_time) return false;
-      if (a.duration_minutes === 0) return false; // zero duration = watermark, not pill
+      // Activities with start_time AND activity_type TIME_BLOCK are always pills
+      // Activities with start_time AND duration 0 AND type TASK are watermarks
+      if (a.duration_minutes === 0 && a.activity_type === 'TASK') return false;
       const start = parseISO(a.start_time);
       return isSameDay(start, selectedDate) && start.getHours() >= START_HOUR;
     }),
@@ -155,12 +157,12 @@ export function CanvasScreen({ navigation }: Props) {
   );
 
   // Watermark activities:
-  // 1. Has start_time but zero duration (time-anchored reminder)
+  // 1. Has start_time + duration 0 + type TASK (time-anchored reminder)
   // 2. No start_time + recurring (distributed evenly)
   const watermarkActivities = useMemo(() =>
     activities.filter((a) => {
-      // Time-anchored reminders (has time, no duration)
-      if (a.start_time && a.start_time !== '' && a.duration_minutes === 0) return true;
+      // Time-anchored reminders (has time, zero duration, task type)
+      if (a.start_time && a.start_time !== '' && a.duration_minutes === 0 && a.activity_type === 'TASK') return true;
       // Untimed recurring
       if ((!a.start_time || a.start_time === '') && a.recurrence_type !== 'NONE') return true;
       return false;
