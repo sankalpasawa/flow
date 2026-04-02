@@ -204,18 +204,16 @@ export function CanvasScreen({ navigation }: Props) {
   }, []);
 
   const navigateToActivity = useCallback((activity: Activity) => {
-    // Virtual recurring instances have IDs like "realId_2026-04-03"
-    // Strip the date suffix for DB operations
-    const datePattern = /_\d{4}-\d{2}-\d{2}$/;
-    const activityId = datePattern.test(activity.id) ? activity.id.replace(datePattern, '') : activity.id;
-
     const shouldLog =
       activity.status === 'COMPLETED' ||
       activity.status === 'SKIPPED';
     if (shouldLog) {
-      navigation.navigate('ExperienceLog', { activityId });
+      // Virtual recurring instance IDs (e.g. "id_2026-04-02") won't match in DB,
+      // so pass the original ID for lookup
+      const originalId = activity.id.includes('_') ? activity.id.split('_')[0] : activity.id;
+      navigation.navigate('ExperienceLog', { activityId: originalId });
     } else {
-      navigation.navigate('ActivityForm', { activityId });
+      navigation.navigate('ActivityForm', { activityId: activity.id });
     }
   }, [navigation]);
 

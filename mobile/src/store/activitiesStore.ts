@@ -251,24 +251,17 @@ export const useActivitiesStore = create<ActivitiesState>((set, get) => ({
 
   editActivity: async (id, updates) => {
     try {
-      // Virtual recurring instances have IDs like "realId_2026-04-03"
-      // The real DB id is everything before the last _YYYY-MM-DD suffix
-      const datePattern = /_\d{4}-\d{2}-\d{2}$/;
-      const realId = datePattern.test(id) ? id.replace(datePattern, '') : id;
-
-      await updateActivity(realId, updates);
-
-      // Refresh: reload the day to regenerate virtual instances from updated DB
-      const { selectedDate } = get();
-      const user = get().activities.find(a => a.user_id)?.user_id
-        || get().untimedTasks.find(a => a.user_id)?.user_id;
-      if (user && selectedDate) {
-        await get().loadDay(user, selectedDate);
-      }
-
-      if (updates.start_time || updates.duration_minutes !== undefined) {
-        const act = await import('../lib/db/activities').then(m => m.getActivity(realId));
-        if (act) scheduleLogNudge(act).catch(() => {});
+      await updateActivity(id, updates);
+      const updated = await import('../lib/db/activities').then(m => m.getActivity(id));
+      if (updated) {
+        set((s) => ({
+          activities: s.activities.map((a) => (a.id === id ? updated : a)),
+        }));
+        if (updates.start_time || updates.duration_minutes) {
+          scheduleLogNudge(updated).catch((err) =>
+            console.warn('[DayFlow] Failed to reschedule nudge:', err)
+          );
+        }
       }
     } catch (err) {
       console.error('[DayFlow] Failed to edit activity:', err);
@@ -322,10 +315,7 @@ export const useActivitiesStore = create<ActivitiesState>((set, get) => ({
       const now = new Date().toISOString();
       const updates: UpdateActivityInput = { status: newStatus };
       if (newStatus === 'COMPLETED') updates.actual_end = now;
-      // Strip virtual instance date suffix for DB update
-      const datePattern = /_\d{4}-\d{2}-\d{2}$/;
-      const realId = datePattern.test(id) ? id.replace(datePattern, '') : id;
-      await updateActivity(realId, updates);
+      await updateActivity(id, updates);
       const updateList = (list: Activity[]) =>
         list.map(a => a.id === id ? { ...a, status: newStatus, ...updates } as Activity : a);
       set(s => ({
