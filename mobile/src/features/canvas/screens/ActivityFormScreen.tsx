@@ -147,7 +147,8 @@ export function ActivityFormScreen({ route, navigation }: Props) {
     setGeneratingMindset(true);
     try {
       const catName = categories.find(c => c.id === categoryId)?.name ?? 'General';
-      const isPlaceholder = edgeFn('ai-mindset-prompt').includes('placeholder');
+      const aiEnabled = process.env.EXPO_PUBLIC_AI_ENABLED === 'true';
+      const isPlaceholder = !aiEnabled || edgeFn('ai-mindset-prompt').includes('placeholder');
 
       if (isPlaceholder) {
         // Dev mode fallback — generate locally without API
