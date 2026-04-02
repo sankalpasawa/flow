@@ -114,9 +114,19 @@ export function generateLocalMindset(
 ): string {
   const titleLower = activityTitle.toLowerCase();
 
-  // If user typed something, reframe it
-  if (existingText && existingText.trim().length > 5) {
-    return reframeMindset(existingText.trim(), titleLower, categoryName);
+  // If user typed something:
+  // - If it looks like a command/instruction to AI ("make it longer", "I want more", "be specific")
+  //   → generate fresh, ignoring the command text
+  // - If it looks like actual mindset content → reframe it
+  if (existingText && existingText.trim().length > 2) {
+    const lower = existingText.trim().toLowerCase();
+    const isCommand = /^(i want|make it|be more|more |longer|shorter|different|change|try again|redo|again|new one)/i.test(lower);
+    if (isCommand) {
+      // User is giving instructions — generate a completely fresh mindset
+      // (ignore existing text, treat as "generate new")
+    } else {
+      return reframeMindset(existingText.trim(), titleLower, categoryName);
+    }
   }
 
   // Try to match activity title keywords
