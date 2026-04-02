@@ -55,7 +55,7 @@ export const colors = {
   },
 
   // v2 Category tint opacity for glass pill overlays
-  categoryTint: 0.06,
+  categoryTint: 0.12,
 } as const;
 
 // Map category IDs to color pairs

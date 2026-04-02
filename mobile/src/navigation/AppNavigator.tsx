@@ -6,7 +6,7 @@ import { Text, View, ActivityIndicator } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useAuthStore } from '../store/authStore';
 import { seedSystemCategories } from '../lib/db/categories';
-import { seedDummyData } from '../lib/db/seed';
+import { seedDummyData, seedShowcaseDay } from '../lib/db/seed';
 import { requestNotificationPermission, addNotificationResponseListener } from '../lib/notifications';
 import {
   hasCompletedOnboarding, markOnboardingComplete, OnboardingScreen,
@@ -94,6 +94,7 @@ export function AppNavigator() {
         // Seed BEFORE initializing DB/auth so localStorage is populated
         // before the web DB singleton reads it
         await seedDummyData();
+        await seedShowcaseDay(); // DEV: seeds yesterday with all categories for visual QA
         await initialize();
         await seedSystemCategories();
         await markOnboardingComplete();

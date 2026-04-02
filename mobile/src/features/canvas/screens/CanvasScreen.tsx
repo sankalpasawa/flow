@@ -536,7 +536,7 @@ const styles = StyleSheet.create({
   },
   hourLabel: {
     color: colors.muted, fontSize: 10, fontWeight: '600' as const,
-    width: HOUR_LABEL_WIDTH - 8, textAlign: 'right', marginRight: 8,
+    width: HOUR_LABEL_WIDTH - 12, textAlign: 'right', marginRight: 8,
     opacity: 0.35,
     fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
   },

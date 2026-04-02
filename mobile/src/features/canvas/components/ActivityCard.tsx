@@ -67,6 +67,12 @@ export function ActivityCard({ activity, log, onPress, onQuickComplete, onResche
   const hasPassedThreshold = useSharedValue(false);
   const lastSnapIndex = useSharedValue(0);
 
+  // Reset swipe animation when status changes (e.g. after completing)
+  React.useEffect(() => {
+    translateX.value = 0;
+    disappearScale.value = 1;
+  }, [activity.status]);
+
   // Drag time label state (JS thread)
   const [dragTimeLabel, setDragTimeLabel] = useState<string | null>(null);
 
@@ -369,7 +375,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(196,121,91,0.35)',
   },
   doneCard: {
-    opacity: 0.4,
+    opacity: 0.6,
   },
   // Row 1: icon + title
   row1: {

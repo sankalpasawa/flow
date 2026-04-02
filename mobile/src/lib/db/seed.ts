@@ -804,7 +804,7 @@ function buildGoals(): SeedGoal[] {
 }
 
 export async function seedDummyData(): Promise<void> {
-  const SEED_VERSION = '16';
+  const SEED_VERSION = '17';
   const isWeb = typeof localStorage !== 'undefined';
 
   // Check if already seeded
@@ -918,3 +918,174 @@ export async function seedDummyData(): Promise<void> {
 }
 
 export const DEV_USER_ID = USER_ID;
+
+/**
+ * DEV SHOWCASE: Seeds yesterday with one activity per category + feature variety.
+ * Shows all pill tints, mindsets, subtasks, durations, statuses, recurring, watermarks.
+ * Call on every Expo load in dev mode. Non-destructive — uses fixed IDs so re-runs overwrite.
+ */
+export async function seedShowcaseDay(): Promise<void> {
+  const { format } = require('date-fns');
+  // Seed on TODAY so it's visible immediately without date navigation
+  const yStr = format(new Date(), 'yyyy-MM-dd');
+
+  // All category IDs — system + custom
+  const showcase = [
+    // Timed activities — one per category, spread across the day
+    {
+      id: 'showcase-01', title: 'Morning meditation', category_id: 'sys-personal',
+      start_time: `${yStr}T06:00:00`, duration_minutes: 30,
+      mindset_prompt: 'Be present. Follow the breath. Let thoughts pass like clouds.',
+      status: 'COMPLETED', recurrence_type: 'DAILY',
+    },
+    {
+      id: 'showcase-02', title: 'Gym — Upper body', category_id: 'sys-health',
+      start_time: `${yStr}T07:00:00`, duration_minutes: 60,
+      mindset_prompt: 'Focus on form over speed. Listen to your body.',
+      status: 'COMPLETED',
+      subtasks: [{ id: 's1', title: 'Warm up', done: true }, { id: 's2', title: 'Bench press', done: true }, { id: 's3', title: 'Pull ups', done: false }],
+    },
+    {
+      id: 'showcase-03', title: 'Read — Atomic Habits ch.5', category_id: 'sys-learning',
+      start_time: `${yStr}T08:30:00`, duration_minutes: 45,
+      mindset_prompt: 'Stay curious. Every page compounds.',
+      status: 'COMPLETED',
+    },
+    {
+      id: 'showcase-04', title: 'Call mom', category_id: 'cust-family',
+      start_time: `${yStr}T09:30:00`, duration_minutes: 30,
+      mindset_prompt: 'Connect emotionally. Listen to her stories.',
+      status: 'COMPLETED',
+    },
+    {
+      id: 'showcase-05', title: 'Deep work — product spec', category_id: 'cust-professional',
+      start_time: `${yStr}T10:00:00`, duration_minutes: 120,
+      mindset_prompt: 'Close everything. One tab. One task. Ship something ugly.',
+      status: 'PLANNED',
+      subtasks: [{ id: 's4', title: 'Draft outline', done: true }, { id: 's5', title: 'Write v1', done: false }, { id: 's6', title: 'Review', done: false }],
+    },
+    {
+      id: 'showcase-06', title: 'Lunch with Rahul', category_id: 'cust-social',
+      start_time: `${yStr}T12:30:00`, duration_minutes: 60,
+      mindset_prompt: 'Be light. Laugh. Don\'t try to impress.',
+      status: 'COMPLETED',
+    },
+    {
+      id: 'showcase-07', title: 'Budget review', category_id: 'cust-finance',
+      start_time: `${yStr}T14:00:00`, duration_minutes: 45,
+      mindset_prompt: 'Be clear-headed. Check the numbers, not the emotions.',
+      status: 'PLANNED',
+    },
+    {
+      id: 'showcase-08', title: 'Wedding venue shortlist', category_id: 'cust-wedding',
+      start_time: `${yStr}T15:00:00`, duration_minutes: 60,
+      mindset_prompt: 'Think about what matters to both of you, not Instagram.',
+      status: 'PLANNED',
+    },
+    {
+      id: 'showcase-09', title: 'Explore Bandra cafes', category_id: 'cust-explore',
+      start_time: `${yStr}T16:30:00`, duration_minutes: 90,
+      mindset_prompt: 'Walk without destination. Notice what you see.',
+      status: 'SKIPPED',
+    },
+    {
+      id: 'showcase-10', title: 'Evening power nap', category_id: 'sys-rest',
+      start_time: `${yStr}T18:00:00`, duration_minutes: 30,
+      mindset_prompt: 'Recharge without guilt. Your body needs this.',
+      status: 'COMPLETED',
+    },
+    {
+      id: 'showcase-11', title: 'Outfit planning', category_id: 'cust-fashion',
+      start_time: `${yStr}T19:00:00`, duration_minutes: 30,
+      mindset_prompt: 'Dress for how you want to feel, not to impress.',
+      status: 'PLANNED',
+    },
+    {
+      id: 'showcase-12', title: 'Mumbai flat hunting research', category_id: 'cust-mumbai',
+      start_time: `${yStr}T19:30:00`, duration_minutes: 45,
+      mindset_prompt: 'Patience. The right place will come.',
+      status: 'PLANNED',
+    },
+    {
+      id: 'showcase-13', title: 'Duniyadari — networking follow-ups', category_id: 'cust-duniyadari',
+      start_time: `${yStr}T20:30:00`, duration_minutes: 30,
+      mindset_prompt: 'Relationships first. Business follows trust.',
+      status: 'PLANNED',
+    },
+    {
+      id: 'showcase-14', title: 'Clean kitchen', category_id: 'cust-chores',
+      start_time: `${yStr}T21:00:00`, duration_minutes: 20,
+      mindset_prompt: 'Quick and focused. Timer for 20 minutes.',
+      status: 'COMPLETED',
+    },
+    // Untimed tasks (bottom bar)
+    {
+      id: 'showcase-task-01', title: 'Buy groceries', category_id: 'sys-personal',
+      start_time: '', duration_minutes: 0, activity_type: 'TASK',
+      assigned_date: yStr, status: 'PLANNED',
+    },
+    {
+      id: 'showcase-task-02', title: 'Reply to Priya\'s message', category_id: 'cust-social',
+      start_time: '', duration_minutes: 0, activity_type: 'TASK',
+      assigned_date: yStr, status: 'COMPLETED',
+    },
+    {
+      id: 'showcase-task-03', title: 'Book dentist appointment', category_id: 'sys-health',
+      start_time: '', duration_minutes: 0, activity_type: 'TASK',
+      assigned_date: yStr, status: 'PLANNED',
+    },
+    // Watermarks (untimed + recurring)
+    {
+      id: 'showcase-wm-01', title: 'Drink water', category_id: 'sys-health',
+      start_time: '', duration_minutes: 0, activity_type: 'TASK',
+      recurrence_type: 'DAILY', status: 'PLANNED',
+    },
+    {
+      id: 'showcase-wm-02', title: 'Gratitude', category_id: 'sys-personal',
+      start_time: '', duration_minutes: 0, activity_type: 'TASK',
+      recurrence_type: 'DAILY', status: 'PLANNED',
+    },
+  ];
+
+  const db = await getDb();
+
+  for (const a of showcase) {
+    try {
+      if (typeof db.runAsync === 'function') {
+        // Native SQLite
+        await db.runAsync(
+          `INSERT OR REPLACE INTO activities (id, user_id, activity_type, title, description, start_time, duration_minutes, category_id, assigned_date, is_scheduled, mindset_prompt, mindset_overridden, recurrence_type, recurrence_days, subtasks, status, priority, actual_start, actual_end, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+          [
+            a.id, USER_ID, a.activity_type || 'TIME_BLOCK', a.title, null,
+            a.start_time, a.duration_minutes, a.category_id,
+            a.assigned_date || (a.start_time ? a.start_time.substring(0, 10) : null),
+            a.start_time && a.start_time !== '' ? 1 : 0,
+            a.mindset_prompt || null, 0,
+            a.recurrence_type || 'NONE', null,
+            a.subtasks ? JSON.stringify(a.subtasks) : null,
+            a.status || 'PLANNED', 'MEDIUM', null, null, nowISO(), nowISO(),
+          ]
+        );
+      } else {
+        // Web DB
+        db.run(
+          `INSERT OR REPLACE INTO activities (id, user_id, activity_type, title, description, start_time, duration_minutes, category_id, assigned_date, is_scheduled, mindset_prompt, mindset_overridden, recurrence_type, recurrence_days, subtasks, status, priority, actual_start, actual_end, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+          [
+            a.id, USER_ID, a.activity_type || 'TIME_BLOCK', a.title, null,
+            a.start_time, a.duration_minutes, a.category_id,
+            a.assigned_date || (a.start_time ? a.start_time.substring(0, 10) : null),
+            a.start_time && a.start_time !== '' ? 1 : 0,
+            a.mindset_prompt || null, 0,
+            a.recurrence_type || 'NONE', null,
+            a.subtasks ? JSON.stringify(a.subtasks) : null,
+            a.status || 'PLANNED', 'MEDIUM', null, null, nowISO(), nowISO(),
+          ]
+        );
+      }
+    } catch (err) {
+      console.warn('[Showcase] Failed to insert:', a.title, err);
+    }
+  }
+
+  console.log(`[DayFlow] Showcase day seeded: ${showcase.length} activities for ${yStr}`);
+}

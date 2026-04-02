@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DayFlow — Architecture</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-snap-type: y mandatory; overflow-y: scroll; }
+
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    color: #1A1714;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── Slide system ── */
+  .slide {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 60px 40px;
+    scroll-snap-align: start;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .slide-inner {
+    max-width: 720px;
+    width: 100%;
+    z-index: 1;
+  }
+
+  /* ── Backgrounds ── */
+  .bg-cream { background: #F5F0E8; }
+  .bg-green { background: #2D5A3E; color: #fff; }
+  .bg-dark { background: #1A1714; color: #F5F0E8; }
+  .bg-warm { background: linear-gradient(135deg, #F5F0E8 0%, #EDE5D8 100%); }
+  .bg-gradient { background: linear-gradient(160deg, #2D5A3E 0%, #1A3A28 100%); color: #fff; }
+  .bg-accent { background: linear-gradient(160deg, #C4795B 0%, #A05A3E 100%); color: #fff; }
+
+  /* ── Decorative circles ── */
+  .deco-circle {
+    position: absolute;
+    border-radius: 50%;
+    opacity: 0.06;
+  }
+
+  /* ── Typography ── */
+  .mega {
+    font-size: clamp(48px, 8vw, 80px);
+    font-weight: 900;
+    letter-spacing: -3px;
+    line-height: 1.0;
+  }
+  .big {
+    font-size: clamp(32px, 5vw, 52px);
+    font-weight: 800;
+    letter-spacing: -1.5px;
+    line-height: 1.15;
+  }
+  .medium {
+    font-size: clamp(22px, 3.5vw, 32px);
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    line-height: 1.3;
+  }
+  .body-lg {
+    font-size: clamp(16px, 2.2vw, 20px);
+    font-weight: 400;
+    line-height: 1.6;
+    opacity: 0.75;
+  }
+  .label {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    opacity: 0.5;
+    margin-bottom: 16px;
+  }
+  .green { color: #2D5A3E; }
+  .accent { color: #C4795B; }
+  .faded { opacity: 0.5; }
+
+  .mt-16 { margin-top: 16px; }
+  .mt-24 { margin-top: 24px; }
+  .mt-32 { margin-top: 32px; }
+  .mt-48 { margin-top: 48px; }
+  .mb-12 { margin-bottom: 12px; }
+  .mb-24 { margin-bottom: 24px; }
+  .mb-32 { margin-bottom: 32px; }
+  .center { text-align: center; }
+
+  /* ── Flow diagram ── */
+  .flow-vertical {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    margin-top: 40px;
+  }
+  .flow-node {
+    width: 100%;
+    max-width: 440px;
+    padding: 18px 24px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .flow-node-icon {
+    font-size: 28px;
+    flex-shrink: 0;
+    width: 44px;
+    text-align: center;
+  }
+  .flow-node-text h4 { font-size: 16px; font-weight: 700; }
+  .flow-node-text p { font-size: 12px; opacity: 0.6; margin-top: 2px; }
+  .flow-connector {
+    width: 2px;
+    height: 20px;
+    background: linear-gradient(to bottom, rgba(45,90,62,0.3), rgba(196,121,91,0.3));
+  }
+
+  .node-you { background: rgba(255,255,255,0.7); border: 1px solid rgba(255,255,255,0.8); }
+  .node-brain { background: #2D5A3E; color: #fff; }
+  .node-brain p { opacity: 0.75; }
+  .node-memory { background: rgba(90,140,106,0.1); border: 1px solid rgba(90,140,106,0.15); }
+  .node-world { background: rgba(196,121,91,0.1); border: 1px solid rgba(196,121,91,0.15); }
+  .node-data { background: rgba(61,95,128,0.1); border: 1px solid rgba(61,95,128,0.15); }
+  .node-ui { background: rgba(255,255,255,0.7); border: 1px solid rgba(255,255,255,0.8); }
+
+  /* ── Cognitive grid ── */
+  .cog-loop {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 32px;
+  }
+  .cog-step {
+    flex: 1 1 calc(50% - 10px);
+    min-width: 200px;
+    padding: 16px;
+    border-radius: 14px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+  .cog-step.full { flex: 1 1 100%; }
+  .cog-step.highlight-step { background: rgba(196,121,91,0.15); border-color: rgba(196,121,91,0.25); }
+  .cog-step-num { font-size: 10px; font-weight: 700; opacity: 0.4; letter-spacing: 1px; }
+  .cog-step-title { font-size: 15px; font-weight: 700; margin-top: 2px; }
+  .cog-step-desc { font-size: 11px; opacity: 0.55; margin-top: 4px; line-height: 1.4; }
+  .cog-step-icon { float: right; font-size: 22px; margin-top: -2px; }
+
+  /* ── Wisdom comparison ── */
+  .wisdom-stack {
+    margin-top: 40px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .wisdom-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  .wisdom-badge {
+    flex-shrink: 0;
+    width: 100px;
+    padding: 8px 0;
+    text-align: center;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .wb-knowledge { background: rgba(255,255,255,0.12); }
+  .wb-skill { background: rgba(255,255,255,0.2); }
+  .wb-wisdom { background: #C4795B; color: #fff; }
+  .wisdom-quote {
+    font-size: 17px;
+    font-weight: 500;
+    line-height: 1.5;
+    font-style: italic;
+    opacity: 0.85;
+    padding-top: 4px;
+  }
+
+  /* ── Roadmap ── */
+  .roadmap-list {
+    margin-top: 32px;
+    position: relative;
+    padding-left: 32px;
+  }
+  .roadmap-list::before {
+    content: '';
+    position: absolute;
+    left: 8px;
+    top: 10px;
+    bottom: 10px;
+    width: 2px;
+    background: linear-gradient(to bottom, #2D5A3E 30%, #C4795B 60%, #8C857D);
+    border-radius: 1px;
+  }
+  .rm-item {
+    position: relative;
+    padding: 8px 0 28px 0;
+  }
+  .rm-dot {
+    position: absolute;
+    left: -28px;
+    top: 14px;
+    width: 12px;
+    height: 12px;
+    border-radius: 6px;
+    background: #F5F0E8;
+    border: 2.5px solid #2D5A3E;
+  }
+  .rm-dot.now { background: #2D5A3E; }
+  .rm-dot.later { border-color: #8C857D; }
+  .rm-phase {
+    font-size: 10px;
+    font-weight: 700;
+    color: #8C857D;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .rm-title {
+    font-size: 20px;
+    font-weight: 700;
+    margin: 2px 0;
+  }
+  .rm-desc {
+    font-size: 13px;
+    color: #4A4540;
+    line-height: 1.4;
+  }
+  .rm-tag {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 10px;
+    margin-top: 6px;
+  }
+  .tag-now { background: #2D5A3E; color: #fff; }
+  .tag-next { background: #E3ECE6; color: #2D5A3E; }
+  .tag-future { background: rgba(196,121,91,0.1); color: #C4795B; }
+
+  /* ── Moat ── */
+  .moat-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-top: 40px;
+  }
+  .moat-card {
+    background: rgba(255,255,255,0.65);
+    border: 1px solid rgba(255,255,255,0.75);
+    border-radius: 16px;
+    padding: 24px;
+    text-align: center;
+  }
+  .moat-icon { font-size: 36px; margin-bottom: 10px; }
+  .moat-title { font-size: 15px; font-weight: 700; }
+  .moat-sub { font-size: 12px; color: #8C857D; margin-top: 4px; }
+
+  /* ── Principles ── */
+  .principle-list {
+    margin-top: 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .principle {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+  }
+  .principle-num {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 800;
+    opacity: 0.6;
+  }
+  .principle-text {
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 1.4;
+    opacity: 0.85;
+    padding-top: 4px;
+  }
+  .principle-text strong { font-weight: 700; opacity: 1; }
+
+  /* ── Slide counter ── */
+  .slide-num {
+    position: absolute;
+    bottom: 24px;
+    right: 32px;
+    font-size: 11px;
+    font-weight: 600;
+    opacity: 0.25;
+    letter-spacing: 1px;
+  }
+</style>
+</head>
+<body>
+
+<!-- SLIDE 1: Title -->
+<div class="slide bg-cream">
+  <div class="deco-circle" style="width:400px;height:400px;background:#2D5A3E;top:-100px;right:-100px;"></div>
+  <div class="deco-circle" style="width:300px;height:300px;background:#C4795B;bottom:-80px;left:-80px;"></div>
+  <div class="slide-inner center">
+    <p class="label">Introducing</p>
+    <h1 class="mega">Day<span class="green">Flow</span></h1>
+    <p class="body-lg mt-24">A personal operating system.<br>Not a calendar app.</p>
+  </div>
+  <div class="slide-num">01 / 09</div>
+</div>
+
+<!-- SLIDE 2: One Line -->
+<div class="slide bg-green">
+  <div class="deco-circle" style="width:500px;height:500px;background:#fff;top:-200px;left:-200px;"></div>
+  <div class="slide-inner center">
+    <h2 class="mega">You talk.<br>It does.</h2>
+    <p class="body-lg mt-24" style="opacity:0.7;">Say what you want in plain English.<br>The AI understands your life data, the world around you,<br>and figures out what to do.</p>
+  </div>
+  <div class="slide-num" style="color:rgba(255,255,255,0.3)">02 / 09</div>
+</div>
+
+<!-- SLIDE 3: The Flow -->
+<div class="slide bg-warm">
+  <div class="slide-inner">
+    <p class="label">How it works</p>
+    <h2 class="big">Six layers.<br>One conversation.</h2>
+    <div class="flow-vertical">
+      <div class="flow-node node-you">
+        <div class="flow-node-icon">🗣</div>
+        <div class="flow-node-text"><h4>You speak</h4><p>"Plan my week" or "Am I doing too much?"</p></div>
+      </div>
+      <div class="flow-connector"></div>
+      <div class="flow-node node-brain">
+        <div class="flow-node-icon">🧠</div>
+        <div class="flow-node-text"><h4>AI thinks like a human</h4><p>11-step cognitive loop, research-backed</p></div>
+      </div>
+      <div class="flow-connector"></div>
+      <div class="flow-node node-memory">
+        <div class="flow-node-icon">💭</div>
+        <div class="flow-node-text"><h4>Knows you</h4><p>Energy peaks, habits, patterns over time</p></div>
+      </div>
+      <div class="flow-connector"></div>
+      <div class="flow-node node-world">
+        <div class="flow-node-icon">🌍</div>
+        <div class="flow-node-text"><h4>Knows the world</h4><p>Weather, time, location, what's coming next</p></div>
+      </div>
+      <div class="flow-connector"></div>
+      <div class="flow-node node-data">
+        <div class="flow-node-icon">📊</div>
+        <div class="flow-node-text"><h4>Your life data</h4><p>Activities, moods, reflections, goals</p></div>
+      </div>
+      <div class="flow-connector"></div>
+      <div class="flow-node node-ui">
+        <div class="flow-node-icon">✨</div>
+        <div class="flow-node-text"><h4>Beautiful result</h4><p>Calendar, insights, charts. Whatever fits.</p></div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num">03 / 09</div>
+</div>
+
+<!-- SLIDE 4: Cognitive Loop -->
+<div class="slide bg-dark">
+  <div class="slide-inner">
+    <p class="label" style="color:#8C857D;">The brain</p>
+    <h2 class="big">AI that thinks<br>like you do</h2>
+    <p class="body-lg mt-16">Based on 11 cognitive science research papers.</p>
+    <div class="cog-loop">
+      <div class="cog-step full" style="background:rgba(196,121,91,0.12);border-color:rgba(196,121,91,0.2);">
+        <span class="cog-step-icon">🎯</span>
+        <div class="cog-step-num">META LAYER</div>
+        <div class="cog-step-title">Motivation + Wisdom</div>
+        <div class="cog-step-desc">What matters deeply? Should I act or stay quiet?</div>
+      </div>
+      <div class="cog-step">
+        <span class="cog-step-icon">👁</span>
+        <div class="cog-step-num">01</div>
+        <div class="cog-step-title">Awareness</div>
+        <div class="cog-step-desc">Perception + perspective + how you feel</div>
+      </div>
+      <div class="cog-step">
+        <span class="cog-step-icon">🔍</span>
+        <div class="cog-step-num">02</div>
+        <div class="cog-step-title">Attention</div>
+        <div class="cog-step-desc">Filter what matters right now</div>
+      </div>
+      <div class="cog-step">
+        <span class="cog-step-icon">🪞</span>
+        <div class="cog-step-num">03</div>
+        <div class="cog-step-title">Orientation</div>
+        <div class="cog-step-desc">Frame the situation</div>
+      </div>
+      <div class="cog-step">
+        <span class="cog-step-icon">🔮</span>
+        <div class="cog-step-num">04</div>
+        <div class="cog-step-title">Anticipation</div>
+        <div class="cog-step-desc">Predict likely futures</div>
+      </div>
+      <div class="cog-step">
+        <span class="cog-step-icon">🛠</span>
+        <div class="cog-step-num">05</div>
+        <div class="cog-step-title">Skill Select</div>
+        <div class="cog-step-desc">Pick the right agent</div>
+      </div>
+      <div class="cog-step">
+        <span class="cog-step-icon">⚡</span>
+        <div class="cog-step-num">06</div>
+        <div class="cog-step-title">Execute</div>
+        <div class="cog-step-desc">Act, render, communicate</div>
+      </div>
+      <div class="cog-step full highlight-step">
+        <span class="cog-step-icon">🔄</span>
+        <div class="cog-step-num">ALWAYS</div>
+        <div class="cog-step-title">Reflect + Learn</div>
+        <div class="cog-step-desc">Gets smarter every day from your feedback</div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num" style="color:rgba(255,255,255,0.2)">04 / 09</div>
+</div>
+
+<!-- SLIDE 5: Wisdom -->
+<div class="slide bg-gradient">
+  <div class="deco-circle" style="width:600px;height:600px;background:#fff;bottom:-300px;right:-200px;"></div>
+  <div class="slide-inner">
+    <p class="label" style="color:rgba(255,255,255,0.4);">What makes it different</p>
+    <h2 class="big">Not just smart.<br>Wise.</h2>
+    <div class="wisdom-stack">
+      <div class="wisdom-row">
+        <div class="wisdom-badge wb-knowledge">Knowledge</div>
+        <div class="wisdom-quote">"You skipped gym 3 times this week."</div>
+      </div>
+      <div class="wisdom-row">
+        <div class="wisdom-badge wb-skill">Skill</div>
+        <div class="wisdom-quote">"You skip gym on Mondays. Reschedule to mornings."</div>
+      </div>
+      <div class="wisdom-row">
+        <div class="wisdom-badge wb-wisdom">Wisdom</div>
+        <div class="wisdom-quote">"You've been pushing hard all month. Maybe skipping gym this week is actually what you need."</div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num" style="color:rgba(255,255,255,0.2)">05 / 09</div>
+</div>
+
+<!-- SLIDE 6: Skills -->
+<div class="slide bg-cream">
+  <div class="deco-circle" style="width:350px;height:350px;background:#2D5A3E;top:-120px;left:-120px;"></div>
+  <div class="slide-inner">
+    <p class="label">Scaling model</p>
+    <h2 class="big">Skills grow.<br>Infinitely.</h2>
+    <p class="body-lg mt-16">Each life domain gets a specialized agent. Add a skill, add a capability. The infrastructure already exists.</p>
+    <div class="moat-grid mt-32">
+      <div class="moat-card"><div class="moat-icon">📅</div><div class="moat-title">Scheduling</div><div class="moat-sub">Create, move, resolve conflicts</div></div>
+      <div class="moat-card"><div class="moat-icon">🔮</div><div class="moat-title">Planning</div><div class="moat-sub">Tomorrow, this week, patterns</div></div>
+      <div class="moat-card"><div class="moat-icon">📈</div><div class="moat-title">Insights</div><div class="moat-sub">Energy curves, overcommitment</div></div>
+      <div class="moat-card"><div class="moat-icon">🪞</div><div class="moat-title">Reflection</div><div class="moat-sub">Post-activity learning</div></div>
+      <div class="moat-card"><div class="moat-icon">📝</div><div class="moat-title">Journaling</div><div class="moat-sub">Connects feelings to patterns</div></div>
+      <div class="moat-card"><div class="moat-icon">❤️</div><div class="moat-title">Health</div><div class="moat-sub">Wellness patterns + context</div></div>
+    </div>
+  </div>
+  <div class="slide-num">06 / 09</div>
+</div>
+
+<!-- SLIDE 7: Roadmap -->
+<div class="slide bg-warm">
+  <div class="slide-inner">
+    <p class="label">The journey</p>
+    <h2 class="big">Calendar today.<br>OS tomorrow.</h2>
+    <div class="roadmap-list">
+      <div class="rm-item"><div class="rm-dot now"></div><div class="rm-phase">Phase 1</div><div class="rm-title">Beautiful calendar</div><div class="rm-desc">Glass design, AI text input, mindset prompts</div><span class="rm-tag tag-now">Building now</span></div>
+      <div class="rm-item"><div class="rm-dot"></div><div class="rm-phase">Phase 2</div><div class="rm-title">Knows tomorrow</div><div class="rm-desc">Weather, patterns, proactive planning</div><span class="rm-tag tag-next">Next</span></div>
+      <div class="rm-item"><div class="rm-dot"></div><div class="rm-phase">Phase 3</div><div class="rm-title">Knows you</div><div class="rm-desc">Energy curves, insights, personal patterns</div><span class="rm-tag tag-next">Next</span></div>
+      <div class="rm-item"><div class="rm-dot later"></div><div class="rm-phase">Phase 4</div><div class="rm-title">Journaling</div><div class="rm-desc">Feelings connected to patterns</div><span class="rm-tag tag-future">Future</span></div>
+      <div class="rm-item"><div class="rm-dot later"></div><div class="rm-phase">Phase 5</div><div class="rm-title">Self-modifying app</div><div class="rm-desc">Ask for a feature. AI builds it inside the app.</div><span class="rm-tag tag-future">Future</span></div>
+      <div class="rm-item"><div class="rm-dot later"></div><div class="rm-phase">Phase 6</div><div class="rm-title">Personal OS</div><div class="rm-desc">Calendar, email, notes, everything. One brain.</div><span class="rm-tag tag-future">Future</span></div>
+    </div>
+  </div>
+  <div class="slide-num">07 / 09</div>
+</div>
+
+<!-- SLIDE 8: Principles -->
+<div class="slide bg-dark">
+  <div class="slide-inner">
+    <p class="label" style="color:#8C857D;">Beliefs</p>
+    <h2 class="big">How we build</h2>
+    <div class="principle-list">
+      <div class="principle"><div class="principle-num">1</div><div class="principle-text"><strong>LLM-native.</strong> Tomorrow's AI makes the app better. Zero code changes.</div></div>
+      <div class="principle"><div class="principle-num">2</div><div class="principle-text"><strong>No lock-in.</strong> Not Claude. Not Gemini. Whatever's best.</div></div>
+      <div class="principle"><div class="principle-num">3</div><div class="principle-text"><strong>Schema is the API.</strong> Expand the data, expand the AI.</div></div>
+      <div class="principle"><div class="principle-num">4</div><div class="principle-text"><strong>Skills scale.</strong> New life domain = new skill. That's it.</div></div>
+      <div class="principle"><div class="principle-num">5</div><div class="principle-text"><strong>Wisdom over optimization.</strong> Sometimes the right answer is do nothing.</div></div>
+      <div class="principle"><div class="principle-num">6</div><div class="principle-text"><strong>Structure is the moat.</strong> Not the AI. The organized personal data + context + skills.</div></div>
+    </div>
+  </div>
+  <div class="slide-num" style="color:rgba(255,255,255,0.2)">08 / 09</div>
+</div>
+
+<!-- SLIDE 9: The Moat -->
+<div class="slide bg-accent">
+  <div class="deco-circle" style="width:500px;height:500px;background:#fff;top:-200px;right:-200px;"></div>
+  <div class="slide-inner center">
+    <p class="label" style="color:rgba(255,255,255,0.5);">Why this wins</p>
+    <h2 class="mega">Anyone can<br>call an LLM.</h2>
+    <p class="body-lg mt-24" style="opacity:0.8;">Nobody else has your structured life data,<br>the context pipeline that makes it useful,<br>and the skill library that acts on it.</p>
+    <p class="body-lg mt-32" style="opacity:0.5;font-size:16px;">DayFlow — April 2026</p>
+  </div>
+  <div class="slide-num" style="color:rgba(255,255,255,0.2)">09 / 09</div>
+</div>
+
+</body>
+</html>

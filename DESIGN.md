@@ -19,7 +19,7 @@ Every color stays in the warm spectrum. No cold blues, no pure whites, no clinic
 UI elements use frosted glass (backdrop-filter blur + semi-transparent white + white border) instead of solid cards with hard borders. This creates depth through layering rather than containment. Inspired by the Family crypto wallet app. Glass surfaces feel modern and layered without being heavy. Borders feel like prison cells for content. Depth comes from blur and shadow, not from drawing rectangles around everything.
 
 **3. Color as signal, not fill**
-Categories are communicated through subtle tints (5-7% opacity overlaid on glass), not solid background fills or accent bars. The solid bar treatment was tried and explicitly rejected as "too much design." When every pill is a different bold color, they compete for attention. When color is a whisper, the content (title + mindset) takes focus. Color should help you orient, not dominate.
+Categories are communicated through tints (10-12% opacity overlaid on glass), not solid background fills or accent bars. The solid bar treatment was tried and explicitly rejected as "too much design." When every pill is a different bold color, they compete for attention. When color is a whisper, the content (title + mindset) takes focus. Color should help you orient, not dominate.
 
 **4. Mindset is the soul**
 Every activity pill shows the mindset/intention text, even in compact pills (truncated with "..."). This is not optional metadata. It is the reason the app exists — DayFlow consolidates planning + intention-setting + reflection into one place. From the original intention doc: "Don't rely on motivation, go for structure and system." The mindset prompt IS the structure. If you remove it, you have just another calendar app.
