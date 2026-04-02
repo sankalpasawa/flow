@@ -204,16 +204,17 @@ export function CanvasScreen({ navigation }: Props) {
   }, []);
 
   const navigateToActivity = useCallback((activity: Activity) => {
+    // Virtual recurring instance IDs: "uuid_2026-04-02" → extract real DB id
+    // UUIDs use hyphens only, so underscore only appears in virtual suffix
+    const realId = activity.id.includes('_') ? activity.id.split('_')[0] : activity.id;
+
     const shouldLog =
       activity.status === 'COMPLETED' ||
       activity.status === 'SKIPPED';
     if (shouldLog) {
-      // Virtual recurring instance IDs (e.g. "id_2026-04-02") won't match in DB,
-      // so pass the original ID for lookup
-      const originalId = activity.id.includes('_') ? activity.id.split('_')[0] : activity.id;
-      navigation.navigate('ExperienceLog', { activityId: originalId });
+      navigation.navigate('ExperienceLog', { activityId: realId });
     } else {
-      navigation.navigate('ActivityForm', { activityId: activity.id });
+      navigation.navigate('ActivityForm', { activityId: realId });
     }
   }, [navigation]);
 
