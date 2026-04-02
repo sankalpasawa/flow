@@ -189,11 +189,11 @@ export function CanvasScreen({ navigation }: Props) {
 
   // Horizontal swipe to change day
   const swipeGesture = Gesture.Pan()
-    .activeOffsetX([-50, 50])
-    .failOffsetY([-20, 20])
+    .activeOffsetX([-80, 80])
+    .failOffsetY([-30, 30])
     .onEnd((e) => {
       'worklet';
-      if (Math.abs(e.translationX) > 100) {
+      if (Math.abs(e.translationX) > 150) {
         const direction = e.translationX > 0 ? -1 : 1;
         runOnJS(changeDay)(direction);
       }

@@ -106,8 +106,8 @@ export function ActivityCard({ activity, log, onPress, onQuickComplete, onResche
 
   // Horizontal pan — swipe to complete
   const horizontalPan = Gesture.Pan()
-    .activeOffsetX(20)
-    .failOffsetY([-10, 10])
+    .activeOffsetX(15)
+    .failOffsetY([-8, 8])
     .enabled(!!onQuickComplete && !isDone)
     .onUpdate((e) => {
       const tx = Math.max(0, e.translationX);
