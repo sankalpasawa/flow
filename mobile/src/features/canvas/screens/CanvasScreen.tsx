@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useCallback, useMemo, useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
-  View, Text, ScrollView, TouchableOpacity, StyleSheet,
+  View, Text, ScrollView, TouchableOpacity, StyleSheet, FlatList,
   ActivityIndicator, Platform, RefreshControl, useWindowDimensions,
 } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -92,6 +92,7 @@ export function CanvasScreen({ navigation }: Props) {
   const { width: windowWidth } = useWindowDimensions();
   const [refreshing, setRefreshing] = useState(false);
   const [hourScale, setHourScale] = useState(1.0);
+  const [viewMode, setViewMode] = useState<'calendar' | 'list'>('calendar');
 
   const load = useCallback(async (date: Date) => {
     if (!user) return;
@@ -246,6 +247,20 @@ export function CanvasScreen({ navigation }: Props) {
           {isToday ? 'Today' : format(selectedDate, 'EEE, MMM d')}
         </Text>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+          <View style={styles.toggleRow}>
+            <TouchableOpacity
+              style={[styles.toggleBtn, viewMode === 'list' && styles.toggleBtnActive]}
+              onPress={() => setViewMode('list')}
+            >
+              <Text style={[styles.toggleText, viewMode === 'list' && styles.toggleTextActive]}>List</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.toggleBtn, viewMode === 'calendar' && styles.toggleBtnActive]}
+              onPress={() => setViewMode('calendar')}
+            >
+              <Text style={[styles.toggleText, viewMode === 'calendar' && styles.toggleTextActive]}>Hours</Text>
+            </TouchableOpacity>
+          </View>
           {!isToday && (
             <TouchableOpacity
               style={styles.todayBtn}
@@ -274,112 +289,147 @@ export function CanvasScreen({ navigation }: Props) {
 
       {/* v2: Tasks moved to bottom bar */}
 
-      {/* Canvas — single day, swipe left/right to change day */}
-      <GestureDetector gesture={composedGesture}>
-      <View nativeID="canvas-wrapper" style={styles.canvasWrapper}>
-        {loading && !refreshing ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator color={colors.primary} size="small" />
-          </View>
-        ) : (
-          <ScrollView
-            ref={scrollRef}
-            style={styles.canvas}
-            contentContainerStyle={{ height: (END_HOUR - START_HOUR) * effectiveHourHeight + 160 }}
-            showsVerticalScrollIndicator={false}
-            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
-          >
-            <View style={[styles.timeline, { height: (END_HOUR - START_HOUR) * effectiveHourHeight }]}>
-              {/* Hour grid */}
-              {hours.map((h) => {
-                const y = (h - START_HOUR) * effectiveHourHeight;
-                const isPastHour = isToday && h < now.getHours();
-                return (
-                  <View key={h} style={[styles.hourRow, { top: y }]} pointerEvents="none">
-                    <Text style={[styles.hourLabel, isToday && h === now.getHours() && styles.hourNow]}>
-                      {formatHour(h)}
-                    </Text>
-                    <View style={[styles.hourLine, isPastHour && styles.hourLinePast]} />
-                  </View>
-                );
-              })}
-
-              {/* Empty hour tap targets */}
-              {hours.map((h) => {
-                const y = (h - START_HOUR) * effectiveHourHeight;
-                return (
-                  <TouchableOpacity
-                    key={`empty-${h}`}
-                    style={[styles.emptyTap, { top: y, height: effectiveHourHeight }]}
-                    onPress={() => navigation.navigate('ActivityForm', { startHour: `${h}:00`, date: format(selectedDate, 'yyyy-MM-dd') })}
-                    activeOpacity={0.3}
-                  />
-                );
-              })}
-
-              {/* Now indicator */}
-              {isToday && nowY >= 0 && (
-                <View style={[styles.nowIndicator, { top: nowY }]} pointerEvents="none">
-                  <View style={styles.nowDot} />
-                  <View style={styles.nowLine} />
-                </View>
-              )}
-
-              {/* Watermark chips — recurring untimed activities */}
-              {watermarkPositions.map(({ activity: wm, top: wmTop }) => (
-                <View
-                  key={`wm-${wm.id}`}
-                  style={[styles.watermarkChip, { top: wmTop }]}
-                  pointerEvents="none"
-                >
-                  <Text style={styles.watermarkText}>
-                    {wm.category?.icon ? `${wm.category.icon} ` : ''}{wm.title}
-                  </Text>
-                </View>
-              ))}
-
-              {/* Activity blocks */}
-              {timedActivities.map((activity) => {
-                const actStart = parseISO(activity.start_time!);
-                const top = (actStart.getHours() + actStart.getMinutes() / 60) * effectiveHourHeight;
-                const height = Math.max((activity.duration_minutes / 60) * effectiveHourHeight, MIN_BLOCK_HEIGHT);
-                const log = logs[activity.id];
-                const actEnd = new Date(actStart.getTime() + activity.duration_minutes * 60000);
-                const isCurrentlyActive = isToday && isWithinInterval(now, { start: actStart, end: actEnd });
-                const isPast = isToday && actEnd < now;
-                const isOverdue = activity.status === 'PLANNED' && actStart < now && !isSameDay(actStart, now);
-
-                const itemLayout = overlapLayout.get(activity.id);
-                const colWidth = itemLayout ? availableWidth / itemLayout.totalColumns : availableWidth;
-                const leftOffset = itemLayout ? HOUR_LABEL_WIDTH + itemLayout.column * colWidth : HOUR_LABEL_WIDTH;
-
-                return (
-                  <View
-                    key={activity.id}
-                    style={[
-                      styles.activityBlock,
-                      { top, height, left: leftOffset, width: colWidth, right: undefined },
-                      (activity.status === 'COMPLETED' || activity.status === 'SKIPPED') && { opacity: 0.5 },
-                    ]}
-                  >
-                    <ActivityCard
-                      activity={activity}
-                      log={log}
-                      isNow={isCurrentlyActive}
-                      isOverdue={isOverdue}
-                      height={height}
-                      onPress={() => navigateToActivity(activity)}
-                      onQuickComplete={() => quickToggleComplete(activity.id)}
-                      onReschedule={handleReschedule}
-                    />
-                  </View>
-                );
-              })}
+      {/* Canvas / List — toggle between hourly canvas and flat list */}
+      {viewMode === 'list' ? (
+        <View style={styles.canvasWrapper}>
+          {loading && !refreshing ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator color={colors.primary} size="small" />
             </View>
-          </ScrollView>
-        )}
-      </View>
-      </GestureDetector>
+          ) : (
+            <FlatList
+              data={[...timedActivities].sort((a, b) => (a.start_time ?? '').localeCompare(b.start_time ?? ''))}
+              keyExtractor={item => item.id}
+              contentContainerStyle={{ padding: 16 }}
+              refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
+              renderItem={({ item }) => (
+                <TouchableOpacity style={styles.listItem} onPress={() => navigateToActivity(item)} activeOpacity={0.7}>
+                  <Text style={styles.listIcon}>{item.category?.icon ?? '\u2728'}</Text>
+                  <View style={styles.listContent}>
+                    <Text style={styles.listTitle}>{item.title}</Text>
+                    {item.start_time && (
+                      <Text style={styles.listTime}>
+                        {format(parseISO(item.start_time), 'h:mm a')} \u00B7 {item.duration_minutes}m
+                      </Text>
+                    )}
+                    {item.mindset_prompt && <Text style={styles.listMindset}>{item.mindset_prompt}</Text>}
+                  </View>
+                  {(item.status === 'COMPLETED' || item.status === 'SKIPPED') && (
+                    <Text style={styles.listCheck}>{'\u2713'}</Text>
+                  )}
+                </TouchableOpacity>
+              )}
+              ListEmptyComponent={<Text style={styles.listEmpty}>No activities today</Text>}
+            />
+          )}
+        </View>
+      ) : (
+        <GestureDetector gesture={composedGesture}>
+        <View nativeID="canvas-wrapper" style={styles.canvasWrapper}>
+          {loading && !refreshing ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator color={colors.primary} size="small" />
+            </View>
+          ) : (
+            <ScrollView
+              ref={scrollRef}
+              style={styles.canvas}
+              contentContainerStyle={{ height: (END_HOUR - START_HOUR) * effectiveHourHeight + 160 }}
+              showsVerticalScrollIndicator={false}
+              refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
+            >
+              <View style={[styles.timeline, { height: (END_HOUR - START_HOUR) * effectiveHourHeight }]}>
+                {/* Hour grid */}
+                {hours.map((h) => {
+                  const y = (h - START_HOUR) * effectiveHourHeight;
+                  const isPastHour = isToday && h < now.getHours();
+                  return (
+                    <View key={h} style={[styles.hourRow, { top: y }]} pointerEvents="none">
+                      <Text style={[styles.hourLabel, isToday && h === now.getHours() && styles.hourNow]}>
+                        {formatHour(h)}
+                      </Text>
+                      <View style={[styles.hourLine, isPastHour && styles.hourLinePast]} />
+                    </View>
+                  );
+                })}
+
+                {/* Empty hour tap targets */}
+                {hours.map((h) => {
+                  const y = (h - START_HOUR) * effectiveHourHeight;
+                  return (
+                    <TouchableOpacity
+                      key={`empty-${h}`}
+                      style={[styles.emptyTap, { top: y, height: effectiveHourHeight }]}
+                      onPress={() => navigation.navigate('ActivityForm', { startHour: `${h}:00`, date: format(selectedDate, 'yyyy-MM-dd') })}
+                      activeOpacity={0.3}
+                    />
+                  );
+                })}
+
+                {/* Now indicator */}
+                {isToday && nowY >= 0 && (
+                  <View style={[styles.nowIndicator, { top: nowY }]} pointerEvents="none">
+                    <View style={styles.nowDot} />
+                    <View style={styles.nowLine} />
+                  </View>
+                )}
+
+                {/* Watermark chips — recurring untimed activities */}
+                {watermarkPositions.map(({ activity: wm, top: wmTop }) => (
+                  <View
+                    key={`wm-${wm.id}`}
+                    style={[styles.watermarkChip, { top: wmTop }]}
+                    pointerEvents="none"
+                  >
+                    <Text style={styles.watermarkText}>
+                      {wm.category?.icon ? `${wm.category.icon} ` : ''}{wm.title}
+                    </Text>
+                  </View>
+                ))}
+
+                {/* Activity blocks */}
+                {timedActivities.map((activity) => {
+                  const actStart = parseISO(activity.start_time!);
+                  const top = (actStart.getHours() + actStart.getMinutes() / 60) * effectiveHourHeight;
+                  const height = Math.max((activity.duration_minutes / 60) * effectiveHourHeight, MIN_BLOCK_HEIGHT);
+                  const log = logs[activity.id];
+                  const actEnd = new Date(actStart.getTime() + activity.duration_minutes * 60000);
+                  const isCurrentlyActive = isToday && isWithinInterval(now, { start: actStart, end: actEnd });
+                  const isPast = isToday && actEnd < now;
+                  const isOverdue = activity.status === 'PLANNED' && actStart < now && !isSameDay(actStart, now);
+
+                  const itemLayout = overlapLayout.get(activity.id);
+                  const colWidth = itemLayout ? availableWidth / itemLayout.totalColumns : availableWidth;
+                  const leftOffset = itemLayout ? HOUR_LABEL_WIDTH + itemLayout.column * colWidth : HOUR_LABEL_WIDTH;
+
+                  return (
+                    <View
+                      key={activity.id}
+                      style={[
+                        styles.activityBlock,
+                        { top, height, left: leftOffset, width: colWidth, right: undefined },
+                        (activity.status === 'COMPLETED' || activity.status === 'SKIPPED') && { opacity: 0.5 },
+                      ]}
+                    >
+                      <ActivityCard
+                        activity={activity}
+                        log={log}
+                        isNow={isCurrentlyActive}
+                        isOverdue={isOverdue}
+                        height={height}
+                        onPress={() => navigateToActivity(activity)}
+                        onQuickComplete={() => quickToggleComplete(activity.id)}
+                        onReschedule={handleReschedule}
+                      />
+                    </View>
+                  );
+                })}
+              </View>
+            </ScrollView>
+          )}
+        </View>
+        </GestureDetector>
+      )}
 
       {/* Bottom task bar */}
       <BottomTaskBar
@@ -488,6 +538,23 @@ const styles = StyleSheet.create({
     fontSize: 9,
     fontWeight: '600',
   },
+
+  // View toggle (List / Hours)
+  toggleRow: { flexDirection: 'row', gap: 4, backgroundColor: colors.surface2, borderRadius: 8, padding: 2 },
+  toggleBtn: { paddingHorizontal: 12, paddingVertical: 4, borderRadius: 6 },
+  toggleBtnActive: { backgroundColor: colors.surface },
+  toggleText: { fontSize: 12, fontWeight: '500' as const, color: colors.muted },
+  toggleTextActive: { color: colors.text, fontWeight: '600' as const },
+
+  // List view items
+  listItem: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(224,217,206,0.3)' },
+  listIcon: { fontSize: 20 },
+  listContent: { flex: 1 },
+  listTitle: { fontSize: 15, fontWeight: '600' as const, color: colors.text },
+  listTime: { fontSize: 12, color: colors.muted, marginTop: 2 },
+  listMindset: { fontSize: 11, fontStyle: 'italic' as const, color: colors.text2, opacity: 0.6, marginTop: 2 },
+  listCheck: { fontSize: 16, color: colors.primary },
+  listEmpty: { textAlign: 'center' as const, color: colors.muted, marginTop: 40 },
 
   fab: {
     position: 'absolute', bottom: 88, right: 20,

@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DayFlow — Today List View</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Geist+Mono:wght@400;500;600&display=swap');
+
+  :root {
+    --bg: #F5F0E8;
+    --text: #1A1714;
+    --text2: #4A4540;
+    --muted: #8C857D;
+    --border: #E0D9CE;
+    --primary: #2D5A3E;
+    --primary-soft: #E3ECE6;
+    --accent: #C4795B;
+    --terra: #B5634A;
+    --sage: #5A8C6A;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Instrument Sans', -apple-system, sans-serif; background: #E8E2D8; -webkit-font-smoothing: antialiased; padding: 40px 20px 80px; }
+  .page { max-width: 520px; margin: 0 auto; }
+  .page-title { font-size: 13px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; color: var(--muted); text-align: center; margin-bottom: 32px; }
+
+  .phone {
+    width: 393px; height: 852px; margin: 0 auto;
+    background: var(--bg); border-radius: 48px; border: 6px solid #1a1714;
+    overflow: hidden; position: relative;
+    box-shadow: 0 8px 32px rgba(26,23,20,0.15);
+  }
+  .ps { height: 100%; overflow-y: auto; }
+  .ps::-webkit-scrollbar { display: none; }
+
+  .fh { position: sticky; top: 0; z-index: 30; background: var(--bg); }
+  .sb { display: flex; justify-content: space-between; align-items: center; padding: 14px 28px 0; font-size: 15px; font-weight: 600; }
+  .di { width: 126px; height: 36px; background: #1a1714; border-radius: 20px; margin: -28px auto 0; position: relative; margin-bottom: -20px; }
+  .hdr { display: flex; justify-content: space-between; align-items: center; padding: 8px 24px 4px; }
+  .hdr-left { display: flex; align-items: center; gap: 12px; }
+  .hdr-t { font-size: 32px; font-weight: 700; letter-spacing: -0.8px; }
+  .toggle { display: flex; gap: 2px; background: var(--border); border-radius: 8px; padding: 2px; }
+  .toggle-btn { padding: 4px 12px; border-radius: 6px; font-size: 12px; font-weight: 500; color: var(--muted); }
+  .toggle-btn.active { background: white; color: var(--text); font-weight: 600; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+  .hdr-btn { width: 36px; height: 36px; border-radius: 12px; background: linear-gradient(180deg,#fff,#F5F0E8); box-shadow: 0 1px 3px rgba(0,0,0,0.05); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: var(--primary); position: relative; overflow: hidden; }
+  .hdr-btn-bar { position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--primary); border-radius: 12px 12px 0 0; }
+  .hdr-icons { display: flex; gap: 6px; }
+  .ds { display: flex; gap: 2px; padding: 12px 20px 4px; }
+  .dc { min-width: 48px; height: 60px; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 16px; gap: 2px; flex-shrink: 0; }
+  .dc-d { font-size: 11px; font-weight: 500; color: var(--muted); text-transform: uppercase; }
+  .dc-n { font-size: 18px; font-weight: 700; color: var(--text); line-height: 1; }
+  .dc.s { background: linear-gradient(180deg,#3E7A55,#2D5A3E); box-shadow: 0 3px 10px rgba(45,90,62,0.3); }
+  .dc.s .dc-d { color: rgba(255,255,255,0.7); }
+  .dc.s .dc-n { color: #fff; }
+  .ph { display: flex; justify-content: center; padding: 6px 0 2px; }
+  .pb { width: 36px; height: 4px; border-radius: 2px; background: var(--border); }
+
+  /* ===== LIST VIEW — Simple, like Plan's Tomorrow list ===== */
+  .list { padding: 8px 20px; }
+
+  .item {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 14px 0;
+    border-bottom: 1px solid rgba(224,217,206,0.2);
+  }
+  .item:last-child { border-bottom: none; }
+
+  /* Circle checkbox */
+  .circle {
+    width: 24px; height: 24px; border-radius: 12px;
+    border: 2px solid var(--border);
+    flex-shrink: 0; margin-top: 1px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .circle.done { background: var(--primary); border-color: var(--primary); }
+  .circle.done::after { content: '✓'; color: white; font-size: 12px; font-weight: 700; }
+
+  /* Content */
+  .body { flex: 1; min-width: 0; }
+
+  /* Row 1: Icon + Title */
+  .title-row { display: flex; align-items: center; gap: 6px; }
+  .icon { font-size: 16px; }
+  .title { font-size: 15px; font-weight: 600; color: var(--text); line-height: 1.3; }
+  .title.done { text-decoration: line-through; color: var(--muted); }
+
+  /* Row 2: Mindset */
+  .mindset {
+    font-size: 12px; font-style: italic; color: var(--text2);
+    opacity: 0.55; margin-top: 3px; line-height: 1.35;
+  }
+
+  /* Row 3: Time · Duration · Category */
+  .meta {
+    display: flex; gap: 6px; align-items: center;
+    margin-top: 4px;
+  }
+  .meta-time {
+    font-family: 'Geist Mono', monospace;
+    font-size: 11px; font-weight: 500; color: var(--muted);
+  }
+  .meta-dot { font-size: 8px; color: var(--border); }
+  .meta-dur {
+    font-size: 11px; color: var(--muted);
+  }
+  .meta-cat {
+    font-size: 10px; font-weight: 600; padding: 1px 7px; border-radius: 4px;
+  }
+
+  /* Bottom elements */
+  .btb { position: absolute; bottom: 82px; left: 0; right: 0; height: 44px; background: rgba(255,255,255,0.75); border-top: 0.5px solid rgba(224,217,206,0.5); display: flex; align-items: center; padding: 0 20px; gap: 10px; }
+  .btb-ck { width: 16px; height: 16px; border-radius: 5px; border: 1.5px solid var(--border); }
+  .btb-nm { font-size: 13px; font-weight: 500; color: var(--text2); flex: 1; }
+  .btb-ct { font-family: 'Geist Mono', monospace; font-size: 10px; font-weight: 600; color: var(--primary); background: var(--primary-soft); padding: 2px 8px; border-radius: 6px; }
+  .fab { position: absolute; bottom: 136px; right: 24px; width: 52px; height: 52px; border-radius: 16px; background: linear-gradient(145deg,#4A8060,#2D5A3E); color: #fff; font-size: 26px; font-weight: 300; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 16px rgba(45,90,62,0.3); z-index: 20; }
+  .tb { position: absolute; bottom: 0; left: 0; right: 0; height: 82px; background: rgba(255,255,255,0.75); border-top: 0.5px solid rgba(255,255,255,0.5); display: flex; justify-content: space-around; align-items: flex-start; padding-top: 10px; }
+  .t { display: flex; flex-direction: column; align-items: center; gap: 2px; width: 60px; }
+  .t.on svg { stroke: var(--primary); }
+  .t.on span { color: var(--primary); font-weight: 700; }
+  .t svg { width: 22px; height: 22px; fill: none; stroke: var(--muted); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .t span { font-size: 10px; font-weight: 600; color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="page-title">Today — List View (Simple)</div>
+
+  <div class="phone">
+    <div class="ps">
+      <div class="fh">
+        <div class="sb"><span>9:41</span><span style="font-size:12px;letter-spacing:2px">●●●</span></div>
+        <div class="di"></div>
+        <div class="hdr">
+          <div class="hdr-left">
+            <span class="hdr-t">Today</span>
+            <div class="toggle">
+              <div class="toggle-btn active">List</div>
+              <div class="toggle-btn">Hours</div>
+            </div>
+          </div>
+          <div class="hdr-icons">
+            <div class="hdr-btn"><div class="hdr-btn-bar"></div>2</div>
+            <div class="hdr-btn" style="color:var(--muted)">⌕</div>
+          </div>
+        </div>
+        <div class="ds">
+          <div class="dc"><span class="dc-d">Sun</span><span class="dc-n">30</span></div>
+          <div class="dc"><span class="dc-d">Mon</span><span class="dc-n">31</span></div>
+          <div class="dc"><span class="dc-d">Tue</span><span class="dc-n">1</span></div>
+          <div class="dc s"><span class="dc-d">Wed</span><span class="dc-n">2</span></div>
+          <div class="dc"><span class="dc-d">Thu</span><span class="dc-n">3</span></div>
+          <div class="dc"><span class="dc-d">Fri</span><span class="dc-n">4</span></div>
+          <div class="dc"><span class="dc-d">Sat</span><span class="dc-n">5</span></div>
+        </div>
+        <div class="ph"><div class="pb"></div></div>
+      </div>
+
+      <div class="list">
+
+        <!-- Done -->
+        <div class="item">
+          <div class="circle done"></div>
+          <div class="body">
+            <div class="title-row"><span class="icon">💪</span><span class="title done">Sunlight</span></div>
+            <div class="mindset">15 minutes of warmth. Let the light reset.</div>
+            <div class="meta">
+              <span class="meta-time">9:00 AM</span>
+              <span class="meta-dot">·</span>
+              <span class="meta-dur">15m</span>
+              <span class="meta-dot">·</span>
+              <span class="meta-cat" style="color:var(--terra);background:rgba(181,99,74,0.08)">Health</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Done -->
+        <div class="item">
+          <div class="circle done"></div>
+          <div class="body">
+            <div class="title-row"><span class="icon">🧠</span><span class="title done">Sankalp work</span></div>
+            <div class="mindset">Serious about intent, playful execution.</div>
+            <div class="meta">
+              <span class="meta-time">10:30 AM</span>
+              <span class="meta-dot">·</span>
+              <span class="meta-dur">2h</span>
+              <span class="meta-dot">·</span>
+              <span class="meta-cat" style="color:var(--primary);background:rgba(45,90,62,0.08)">Personal</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Upcoming -->
+        <div class="item">
+          <div class="circle"></div>
+          <div class="body">
+            <div class="title-row"><span class="icon">✨</span><span class="title">Proactive choice & action @ life</span></div>
+            <div class="mindset">I choose how I respond. I am the author of my life.</div>
+            <div class="meta">
+              <span class="meta-time">12:15 PM</span>
+              <span class="meta-dot">·</span>
+              <span class="meta-dur">30m</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Now -->
+        <div class="item">
+          <div class="circle" style="border-color:var(--accent);border-width:2.5px"></div>
+          <div class="body">
+            <div class="title-row"><span class="icon">✨</span><span class="title">Board of mentors</span></div>
+            <div class="mindset">Seek wisdom from those who've walked before you.</div>
+            <div class="meta">
+              <span class="meta-time" style="color:var(--accent)">1:00 PM — now</span>
+              <span class="meta-dot">·</span>
+              <span class="meta-dur">1h</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Upcoming -->
+        <div class="item">
+          <div class="circle"></div>
+          <div class="body">
+            <div class="title-row"><span class="icon">😴</span><span class="title">Leisure activities</span></div>
+            <div class="mindset">This is one of my first callings. Just enjoy it.</div>
+            <div class="meta">
+              <span class="meta-time">3:00 PM</span>
+              <span class="meta-dot">·</span>
+              <span class="meta-dur">1h</span>
+              <span class="meta-dot">·</span>
+              <span class="meta-cat" style="color:var(--sage);background:rgba(90,140,106,0.08)">Rest</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="item">
+          <div class="circle"></div>
+          <div class="body">
+            <div class="title-row"><span class="icon">✨</span><span class="title">Celebrating Journal</span></div>
+            <div class="mindset">Grateful for the small wins this week.</div>
+            <div class="meta">
+              <span class="meta-time">3:00 PM</span>
+              <span class="meta-dot">·</span>
+              <span class="meta-dur">30m</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="item">
+          <div class="circle"></div>
+          <div class="body">
+            <div class="title-row"><span class="icon">🏠</span><span class="title">Love/care with bhabhi</span></div>
+            <div class="mindset">Be present. Listen. Don't give advice.</div>
+            <div class="meta">
+              <span class="meta-time">5:00 PM</span>
+              <span class="meta-dot">·</span>
+              <span class="meta-dur">30m</span>
+              <span class="meta-dot">·</span>
+              <span class="meta-cat" style="color:var(--terra);background:rgba(181,99,74,0.08)">Family</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="item">
+          <div class="circle"></div>
+          <div class="body">
+            <div class="title-row"><span class="icon">✨</span><span class="title">Check routine before sleep</span></div>
+            <div class="mindset">Review the day. What went well?</div>
+            <div class="meta">
+              <span class="meta-time">8:00 PM</span>
+              <span class="meta-dot">·</span>
+              <span class="meta-dur">15m</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="height:120px"></div>
+      </div>
+    </div>
+
+    <div class="btb">
+      <div class="btb-ck"></div>
+      <span class="btb-nm">Anand meeting follow up</span>
+      <span class="btb-ct">+2</span>
+    </div>
+    <div class="fab">+</div>
+    <div class="tb">
+      <div class="t on"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/></svg><span>Today</span></div>
+      <div class="t"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M4 10h16"/></svg><span>Plan</span></div>
+      <div class="t"><svg viewBox="0 0 24 24"><path d="M4 18l4-6 4 4 4-8 4 6"/></svg><span>Insights</span></div>
+      <div class="t"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 5v-1m0 14v1m-7-7h-1m14 0h1"/></svg><span>Settings</span></div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

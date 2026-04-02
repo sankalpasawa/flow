@@ -180,7 +180,7 @@ export function QuickAddScreen({ route, navigation }: Props) {
               title: p.title,
               start_time: `${activityDate}T${p.time}:00`,
               duration_minutes: p.duration ?? 30,
-              category_id: p.categoryId ?? '',
+              category_id: p.categoryId || 'sys-personal',
               activity_type: 'TIME_BLOCK',
               recurrence_type: (p.recurrence ?? 'NONE') as any,
             });
