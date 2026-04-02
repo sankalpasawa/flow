@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { captureOnContentChange } from '../../../debug/DesignQA';
+import { captureOnContentChange, registerTaskBarControls, unregisterTaskBarControls } from '../../../debug/DesignQA';
 import {
   View,
   Text,
@@ -69,6 +69,12 @@ export function BottomTaskBar({ tasks, onToggle, onPress, onQuickAdd }: BottomTa
       setExpanded(false);
     });
   }, [slideAnim]);
+
+  // Register task bar controls for remote QA commands
+  useEffect(() => {
+    registerTaskBarControls(expand, collapse);
+    return () => unregisterTaskBarControls();
+  }, [expand, collapse]);
 
   const panResponder = useRef(
     PanResponder.create({

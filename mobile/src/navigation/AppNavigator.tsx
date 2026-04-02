@@ -82,6 +82,7 @@ export function AppNavigator() {
   const { user, loading, initialize } = useAuthStore();
   const [onboarded, setOnboarded] = useState<boolean | null>(checkOnboardedSync);
   const [dbReady, setDbReady] = useState(false);
+  const navRef = useRef<any>(null);
 
   useEffect(() => {
     (async () => {
@@ -137,7 +138,7 @@ export function AppNavigator() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-    <NavigationContainer onStateChange={(state) => {
+    <NavigationContainer ref={navRef} onReady={() => setNavigationRef(navRef.current)} onStateChange={(state) => {
         const route = state?.routes?.[state.index];
         if (route?.name) captureOnNavigation(route.name);
       }}>

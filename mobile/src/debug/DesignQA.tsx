@@ -1,14 +1,24 @@
 /**
- * DayFlow Design QA — Smart Capture
+ * DayFlow Design QA — Smart Capture + Remote Control
  *
  * OFF by default. Claude starts/stops QA mode via the server.
  * While ON: captures once per unique screen. No duplicates.
+ * Remote commands allow Claude to navigate screens and control the app.
  *
  * Server endpoints:
- *   POST /qa/start — turn on QA mode
- *   POST /qa/stop  — turn off QA mode
+ *   POST /qa/start  — turn on QA mode
+ *   POST /qa/stop   — turn off QA mode
  *   POST /trigger   — force capture of current screen
- *   GET  /status    — check if QA is active
+ *   POST /command   — send navigation/control command
+ *   GET  /qa-state  — poll for QA state + pending commands
+ *
+ * Commands:
+ *   navigate:ActivityForm       — push ActivityForm screen
+ *   navigate:Main               — reset to main tab navigator
+ *   navigate:ExperienceLog:ID   — open experience log for activity
+ *   tab:Plan|Insights|Settings|Today — switch tab
+ *   expandTaskBar               — expand bottom task bar
+ *   collapseTaskBar             — collapse bottom task bar
  */
 
 import React, { useRef, useEffect, useState } from 'react';
@@ -240,7 +250,7 @@ export function DesignQAProvider({ children }: { children: React.ReactNode }) {
   return (
     <ViewShot ref={ref} style={{ flex: 1 }} options={{ format: 'png', quality: 0.9 }}>
       {children}
-      {bannerVisible && Platform.OS === 'ios' || Platform.OS === 'android' && (
+      {bannerVisible && (Platform.OS === 'ios' || Platform.OS === 'android') && (
         <View style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 20, backgroundColor: 'rgba(196,121,91,0.9)', zIndex: 9999, alignItems: 'center', justifyContent: 'center' }}>
           <Text style={{ color: 'white', fontSize: 10, fontWeight: '600' }}>QA Testing</Text>
         </View>

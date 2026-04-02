@@ -1,11 +1,13 @@
 #!/usr/bin/env node
 /**
- * DayFlow Design QA Server — Smart Mode
+ * DayFlow Design QA Server — Smart Mode + Remote Control
  *
  * POST /qa/start  — activate QA mode (app starts capturing unique screens)
  * POST /qa/stop   — deactivate QA mode
  * POST /trigger   — force capture current screen
- * GET  /qa-state  — app polls this to know if QA is active
+ * POST /command   — send navigation/control command to the app
+ * GET  /qa-state  — app polls this to know if QA is active + pending commands
+ * POST /ack-cmd   — app acknowledges command was executed
  * POST /upload    — receive screenshot from app
  * POST /ack       — acknowledge force trigger consumed
  * GET  /captures  — list all screenshots
