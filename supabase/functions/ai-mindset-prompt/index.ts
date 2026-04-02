@@ -62,15 +62,27 @@ Deno.serve(async (req) => {
     const isEnhance = existing_text && existing_text.trim().length > 0;
 
     const systemPrompt = isEnhance
-      ? `You are refining a personal intention for a productivity app user.
-The user has written a rough mindset/intention. Make it more personal, concise, and intentional.
-Keep their voice and meaning. Make it 1-2 sentences max. Sound like their inner voice, not a coach.
-Respond with ONLY the refined text, no quotes, no explanation.`
-      : `You are generating a personal intention for a productivity app user.
-Write a short, personal mindset prompt (1-2 sentences) for the activity below.
-Use the user's own voice based on their past prompts. Be direct, personal, warm.
-Never generic motivational quotes. Sound like their inner voice reminding them what matters.
-Respond with ONLY the prompt text, no quotes, no explanation.`;
+      ? `You are reframing a mindset for a productivity app user.
+Mindset = how to approach this activity. Mental framing, not motivation.
+
+GOOD: "Connect emotionally. Listen to her, don't fix." / "Focus on calmness. One task at a time."
+BAD: "You got this!" / "Believe in yourself!" / "Every step counts!"
+
+The user typed a rough mindset. REFRAME it: improve the framing, keep the meaning.
+Keep to 2-3 short sentences. Sound like their inner voice. Direct.
+If their text is already good, just clean it up.
+Respond with ONLY the reframed text. No quotes, no explanation.`
+      : `You are generating a mindset for a productivity app user.
+Mindset = how to approach this activity. Mental framing. What to keep in mind.
+
+GOOD: "Focus on form, not speed. Breathe through each rep."
+GOOD: "Listen more than you speak. Ask why before suggesting how."
+BAD: "You can do it!" / "Stay positive!" / "Push through!"
+
+Generate 2-3 short sentences. Direct, personal, practical.
+Sound like their inner voice reminding them HOW to approach this.
+Use past prompts to match their voice.
+Respond with ONLY the mindset text. No quotes, no explanation.`;
 
     const userMessage = isEnhance
       ? `Activity: "${title}"

@@ -13,6 +13,7 @@ import { SYSTEM_CATEGORIES } from '../../categories/systemCategories';
 import { generateId } from '../../../lib/db/db';
 import { colors, radii, spacing } from '../../../theme';
 import { edgeFn } from '../../../lib/supabase';
+import { generateLocalMindset } from '../../../lib/ai/mindsetGenerator';
 
 interface RouteParams {
   activityId?: string;
@@ -185,25 +186,10 @@ export function ActivityFormScreen({ route, navigation }: Props) {
       const isPlaceholder = !aiEnabled || edgeFn('ai-mindset-prompt').includes('placeholder');
 
       if (isPlaceholder) {
-        // Dev mode fallback — generate locally without API
-        const fallbacks: Record<string, string[]> = {
-          'Deep Work': ['Architecture first, details follow.', 'Ship something ugly today.', 'No Slack until the draft is done.'],
-          'Health': ['Start with stretches. Listen to your body.', 'Push through the last set.', 'Movement is medicine.'],
-          'Meetings': ['Listen more than you talk.', 'Ask why before suggesting how.', 'Be present, take notes.'],
-          'Creative': ['Make situations lighter.', 'Let the ideas flow, judge later.', 'Improv mindset — yes, and.'],
-          'Personal': ['Be present. No phone.', 'I am enough and I love the way I am.', 'Experience this fully.'],
-          'Learning': ['Stay curious. Take notes.', 'Knowledge compounds over time.', 'Understanding > memorizing.'],
-          'Rest': ['This is one of my first callings. Just enjoy it.', 'Recharge without guilt.', 'Spend time in the child zone.'],
-        };
-        const options = fallbacks[catName] || ['Give this your full attention.', 'Be intentional with this time.', 'Focus on what matters most.'];
-
-        if (mindset.trim()) {
-          // Enhance mode — make the user's text better
-          const enhanced = mindset.trim().endsWith('.') ? mindset.trim() : mindset.trim() + '.';
-          setMindset(enhanced + ' ' + options[Math.floor(Math.random() * options.length)]);
-        } else {
-          setMindset(options[Math.floor(Math.random() * options.length)]);
-        }
+        // Local mindset generation — framing, not motivation
+        // "How should I approach this? What should I keep in mind?"
+        const result = generateLocalMindset(title.trim(), catName, mindset.trim());
+        setMindset(result);
       } else {
         // Production — call the edge function
         const res = await fetch(edgeFn('ai-mindset-prompt'), {
