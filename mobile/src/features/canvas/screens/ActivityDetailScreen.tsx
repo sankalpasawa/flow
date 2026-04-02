@@ -8,6 +8,7 @@ import { format, parseISO, addMinutes } from 'date-fns';
 import { useActivitiesStore } from '../../../store/activitiesStore';
 import { Activity } from '../../../types';
 import { isEditWindowOpen } from '../../../lib/db/logs';
+import { colors } from '../../../theme';
 
 interface Props {
   route: { params?: { activityId?: string } };
@@ -41,7 +42,7 @@ export function ActivityDetailScreen({ route, navigation }: Props) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 }}>
-          <Text style={{ color: '#1A1A1A', fontSize: 18, fontWeight: '700', marginBottom: 8 }}>Activity not found</Text>
+          <Text style={{ color: colors.text, fontSize: 18, fontWeight: '700', marginBottom: 8 }}>Activity not found</Text>
           <Text style={{ color: '#9A9490', fontSize: 14, marginBottom: 20 }}>This activity may have been deleted.</Text>
           <TouchableOpacity style={styles.primaryAction} onPress={() => navigation.goBack()}>
             <Text style={styles.primaryActionText}>Go Back</Text>
@@ -211,49 +212,49 @@ function statusColor(s: Activity['status']) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FAF7F2' },
+  container: { flex: 1, backgroundColor: colors.bg },
   content: { padding: 20, paddingBottom: 48 },
   catBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12 },
   catIcon: { fontSize: 18 },
   catName: { fontSize: 14, fontWeight: '600' },
-  title: { color: '#1A1A1A', fontSize: 24, fontWeight: '700', marginBottom: 12, lineHeight: 30 },
+  title: { color: colors.text, fontSize: 24, fontWeight: '700', marginBottom: 12, lineHeight: 30 },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 20 },
-  meta: { color: '#5A5550', fontSize: 14 },
+  meta: { color: colors.muted, fontSize: 14 },
   metaSep: { color: '#EDE8E1' },
   statusBadge: { fontSize: 12, fontWeight: '700' },
   mindsetBox: { backgroundColor: '#EBF2EE', borderRadius: 14, padding: 14, marginBottom: 20 },
-  mindsetLabel: { color: '#2D4A3E', fontSize: 12, fontWeight: '600', marginBottom: 6 },
+  mindsetLabel: { color: colors.primary, fontSize: 12, fontWeight: '600', marginBottom: 6 },
   mindsetText: { color: '#3D6454', fontSize: 14, lineHeight: 20, fontStyle: 'italic' },
   primaryAction: {
-    backgroundColor: '#2D4A3E', borderRadius: 16,
+    backgroundColor: colors.primary, borderRadius: 16,
     paddingVertical: 14, alignItems: 'center', marginBottom: 12, minHeight: 44,
   },
   primaryActionText: { color: '#fff', fontSize: 16, fontWeight: '600' },
   logButton: {
-    backgroundColor: '#fff', borderRadius: 14, borderWidth: 1.5, borderColor: '#2D4A3E',
+    backgroundColor: '#fff', borderRadius: 14, borderWidth: 1.5, borderColor: colors.primary,
     paddingVertical: 14, alignItems: 'center', marginBottom: 20, minHeight: 44,
   },
-  logButtonText: { color: '#2D4A3E', fontSize: 16, fontWeight: '600' },
+  logButtonText: { color: colors.primary, fontSize: 16, fontWeight: '600' },
   logCard: { backgroundColor: '#fff', borderRadius: 16, padding: 16, marginBottom: 20, borderWidth: 1, borderColor: '#EDE8E1' },
   logTitle: { color: '#9A9490', fontSize: 12, fontWeight: '700', marginBottom: 12, textTransform: 'uppercase', letterSpacing: 0.5 },
   logScales: { flexDirection: 'row', gap: 16, marginBottom: 12 },
   scaleItem: { alignItems: 'center' },
   scaleLabel: { color: '#9A9490', fontSize: 11, marginBottom: 4 },
   scaleEmoji: { fontSize: 20, marginBottom: 2 },
-  scaleValue: { color: '#5A5550', fontSize: 13, fontWeight: '600' },
-  reflection: { color: '#5A5550', fontSize: 14, fontStyle: 'italic', marginBottom: 8, lineHeight: 20 },
+  scaleValue: { color: colors.muted, fontSize: 13, fontWeight: '600' },
+  reflection: { color: colors.muted, fontSize: 14, fontStyle: 'italic', marginBottom: 8, lineHeight: 20 },
   wouldRepeat: { color: '#9A9490', fontSize: 13 },
-  wouldRepeatVal: { color: '#1A1A1A', fontWeight: '600' },
+  wouldRepeatVal: { color: colors.text, fontWeight: '600' },
   editLogButton: {
     marginTop: 12, paddingVertical: 8, alignItems: 'center', minHeight: 44, justifyContent: 'center',
   },
-  editLogText: { color: '#2D4A3E', fontSize: 14, fontWeight: '600' },
+  editLogText: { color: colors.primary, fontSize: 14, fontWeight: '600' },
   actionRow: { flexDirection: 'row', gap: 12 },
   editButton: {
     flex: 1, backgroundColor: '#fff', borderRadius: 14, borderWidth: 1.5, borderColor: '#EDE8E1',
     paddingVertical: 12, alignItems: 'center', minHeight: 44,
   },
-  editButtonText: { color: '#5A5550', fontSize: 15, fontWeight: '600' },
+  editButtonText: { color: colors.muted, fontSize: 15, fontWeight: '600' },
   deleteButton: {
     flex: 1, backgroundColor: '#FFE4E1', borderRadius: 14,
     paddingVertical: 12, alignItems: 'center', minHeight: 44,

@@ -9,7 +9,7 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-const CHIP_WIDTH = 52;
+const CHIP_WIDTH = 48;
 const CHIP_HEIGHT = 60;
 const TOTAL_DAYS = 21;
 const TODAY_INDEX = 7; // 7 past days, today at index 7, then 13 future
@@ -240,11 +240,11 @@ const styles = StyleSheet.create({
   chip: {
     width: CHIP_WIDTH, height: CHIP_HEIGHT,
     alignItems: 'center', justifyContent: 'center',
-    borderRadius: radii.sm,
+    borderRadius: radii.lg,  // 16px per DESIGN.md
   },
   chipSelected: {
     backgroundColor: colors.primary,
-    shadowColor: '#2D5A3E',
+    shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 8,

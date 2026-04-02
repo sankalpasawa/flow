@@ -335,7 +335,7 @@ export function ExperienceLogScreen({ route, navigation }: Props) {
               disabled={saving}
             >
               <Text style={styles.actionBtnText}>
-                {saving ? 'Saving...' : 'Done'}
+                {saving ? 'Saving...' : 'Reflect & Close'}
               </Text>
             </TouchableOpacity>
           </ScrollView>
@@ -348,11 +348,11 @@ export function ExperienceLogScreen({ route, navigation }: Props) {
 // --- Styles ---
 
 const CIRCLE_SIZE = 44;
-const ACCENT = '#C4795B';
+const ACCENT = colors.accent;
 const ACCENT_BG = 'rgba(196,121,91,0.15)';
 const PRIMARY = colors.primary;
-const PRIMARY_BG = 'rgba(45,74,62,0.12)';
-const SHEET_BG = '#F5F0E8';
+const PRIMARY_BG = 'rgba(45,90,62,0.12)';
+const SHEET_BG = colors.bg;
 
 const styles = StyleSheet.create({
   overlay: {

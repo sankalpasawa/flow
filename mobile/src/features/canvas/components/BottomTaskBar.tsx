@@ -315,7 +315,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 13,
     fontWeight: '500',
-    color: '#4A4540',
+    color: colors.text2,
   },
   collapsedEmptyText: {
     fontSize: 12,
@@ -338,7 +338,7 @@ const styles = StyleSheet.create({
     lineHeight: 16,
   },
   countBadge: {
-    backgroundColor: '#E3ECE6',
+    backgroundColor: colors.primaryBg,
     paddingVertical: 2,
     paddingHorizontal: 8,
     borderRadius: 6,
@@ -346,7 +346,7 @@ const styles = StyleSheet.create({
   countBadgeText: {
     fontFamily: monoFont,
     fontSize: 10,
-    color: '#2D5A3E',
+    color: colors.primary,
     fontWeight: '600',
   },
 
@@ -360,7 +360,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#000',
   },
   expandedSheet: {
-    backgroundColor: 'rgba(255,255,255,0.92)',
+    backgroundColor: 'rgba(255,255,255,0.85)',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     paddingBottom: 34, // safe area bottom
@@ -377,7 +377,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#DED6CA',
+    backgroundColor: colors.border,
     marginBottom: 12,
   },
 

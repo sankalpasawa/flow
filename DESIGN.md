@@ -346,3 +346,46 @@ All saved in `designs/` folder:
 | 2026-03-31 | Energy uses emoji icons not numbers | 🪫 Drained, 😴 Low, 😌 Steady, ⚡ High, 🔥 Peak. More expressive than 1-5 numbers. |
 | 2026-03-31 | Subtask empty state: "+" circle + "Subtask" text | When no subtasks, show plus icon with label. When items exist, just the plus icon. |
 | 2026-04-02 | AI text-to-action as default creation mode | FAB opens free-form text input first. Natural language parsed by Claude Haiku into structured activity. Local regex fallback for offline/speed. Dual-mode: quick text (default) + full form (toggle). |
+| 2026-04-02 | Five-layer architecture: UI is the skin layer | UI renders data, never holds logic. Data shape determines rendering. |
+| 2026-04-02 | Dynamic UI is mechanism-agnostic | HTML WebView is fallback today. As LLMs evolve, native generation or unknown mechanisms. Architecture doesn't prescribe "how." |
+| 2026-04-02 | World context in AI prompts (future) | Weather, day type, location will appear in AI suggestions. UI may show contextual hints ("rainy today"). Design the weather/context chip when needed. |
+| 2026-04-02 | User model insights (future) | Energy curves, patterns, suggestions surfaced in Insights tab. Design to show AI-derived observations with the same glass aesthetic. Proactive suggestions in quick-add. |
+| 2026-04-02 | Cognitive architecture drives design | 11-step loop (Motivation → Wisdom → ... → Reflect). Each cognitive layer has UI implications. See ARCHITECTURE.md. |
+
+## Architecture Implications for Design
+
+DayFlow's cognitive architecture (ARCHITECTURE.md) has specific UI implications. The AI processes through: Motivation → Wisdom → Awareness (perception, perspective, affect) → Attention → Orientation → Anticipation → Skill Select → Skill Adapt → Execute → Communicate → Reflect.
+
+### Communicate Layer (how AI renders results)
+The AI generates results through whatever mechanism is best:
+- **Native components** for core app (calendar, tasks, forms). Already designed.
+- **Generated UI** for custom requests. HTML in a glass-framed WebView is the first fallback. As LLMs evolve, the mechanism evolves. Design tokens (colors, fonts, spacing, glass treatment) must be extractable as a prompt-friendly format so any generated output matches DayFlow natively.
+
+### Awareness: Affect Display
+When the AI infers emotional state (from recent mood logs, energy, patterns), it may show why a suggestion was made:
+- "You seem drained this afternoon (energy avg 2.8 at 2pm). Light tasks only."
+- This is the AI's awareness made visible. The reasoning IS the UX.
+
+### Attention: Context Relevance
+Not all context should be shown. The Attention layer filters what matters:
+- Small context chips when relevant: "☀ 72F" / "📍 Home" / "Weekend"
+- Only show signals that influenced the suggestion. Never dump raw context.
+
+### Anticipation: Proactive Suggestions
+When the AI has enough context to predict, it can suggest without being asked:
+- Morning briefing: "7 activities today. Energy dips at 2pm, hardest task at 3pm. Consider swapping."
+- Schedule conflict prediction: "Your 3pm meeting usually runs over. 4pm deep work may get cut."
+- Design: glass card with accent border for AI-generated proactive content.
+
+### Wisdom: When AI Holds Back
+The UI must support the AI saying nothing. Not every screen needs an AI suggestion. Wisdom means the AI knows when to be quiet. No empty states that say "AI has no suggestions." Just... silence. The absence of a suggestion IS the wisdom.
+
+### Reflect: Experience Log
+The experience log (mood, energy, completion, reflection) is the Reflect step of the cognitive loop. It feeds back into every other layer. Design should encourage reflection without making it feel like homework. Current design (bottom sheet, emoji scales, optional text) is correct.
+
+### User Model Insights
+Insights tab shows AI-derived patterns:
+- Energy curve (sparkline, glass card)
+- Completion patterns (simple bar, category-tinted)
+- "You tend to..." observations (text cards with glass treatment)
+- All using existing design language. No new visual vocabulary needed.

@@ -19,12 +19,25 @@ npx expo start --web
 ```
 
 ## Architecture
-- **Expo 55** React Native app, runs on web via react-native-web
+See `ARCHITECTURE.md` for the full five-layer architecture vision.
+
+**Five layers**: UI (skin) → Data (spine) → World Context (senses) → User Model (memory) → AI (brain)
+
+**Current implementation**:
+- **Expo 55** React Native app, iPhone via Expo Go (web is out of scope)
 - **Offline-first**: SQLite on native, custom in-memory DB with localStorage persistence on web (`src/lib/db/db.web.ts`)
 - **State**: Zustand stores (`src/store/`)
-- **Design**: Warm minimal theme — cream bg (#FAF7F2), forest green primary (#2D4A3E). Theme tokens in `src/theme.ts`
+- **Design**: Warm minimal theme — cream bg (#F5F0E8), forest green primary (#2D5A3E). Theme tokens in `src/theme.ts`
 - **Backend**: Supabase (placeholder creds for dev, auto-bypassed via dev mode in authStore)
+- **AI**: Schema-driven command layer (`commandLayer.ts` + Supabase edge function). LLM-agnostic. Currently Claude Haiku.
 - **Goals feature**: Long-term goals with progress tracking, category-based grouping, and target dates. Lives in `src/features/goals/`.
+
+**Key architecture rules**:
+- The AI is not Claude. It's whatever LLM is best. Don't hardcode vendor assumptions.
+- Schema is the API. Expand the data schema, the AI's capabilities expand automatically.
+- UI follows data. Data shape determines rendering (timed → pill, untimed+recurring → watermark, untimed → task).
+- Adapters are source-agnostic. Not just calendars. Any external app with an API.
+- Capabilities are unbounded. The LLM defines what's possible, not the app.
 
 ## Key Concepts
 - **Two activity types**: `TIME_BLOCK` (hourly canvas slots) and `TASK` (checklist items)

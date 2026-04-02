@@ -50,7 +50,7 @@ function glassTintBackground(catHex: string): string {
   const finalR = Math.round(baseR * (1 - tint) + r * tint);
   const finalG = Math.round(baseG * (1 - tint) + g * tint);
   const finalB = Math.round(baseB * (1 - tint) + b * tint);
-  return `rgba(${finalR},${finalG},${finalB},0.72)`;
+  return `rgba(${finalR},${finalG},${finalB},0.65)`;
 }
 
 export function ActivityCard({ activity, log, onPress, onQuickComplete, onReschedule, isNow, isOverdue, height }: Props) {
@@ -265,12 +265,12 @@ export function ActivityCard({ activity, log, onPress, onQuickComplete, onResche
               borderWidth: 1,
               borderColor: colors.glass.border,
               borderRadius: cardBorderRadius,
-              // Multi-layer shadow (first layer)
+              // DESIGN.md pill shadow: 0 3px 8px rgba(0,0,0,0.06)
               shadowColor: '#000',
-              shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.12,
-              shadowRadius: 12,
-              elevation: 4,
+              shadowOffset: { width: 0, height: 3 },
+              shadowOpacity: 0.06,
+              shadowRadius: 8,
+              elevation: 3,
             },
             height !== undefined && { height, paddingVertical: compact ? 3 : 6 },
             isNow && styles.nowCard,

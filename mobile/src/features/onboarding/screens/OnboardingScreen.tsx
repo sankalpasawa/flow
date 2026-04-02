@@ -5,6 +5,7 @@ import {
   TextInput, ScrollView,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { colors } from '../../../theme';
 import { useAuthStore } from '../../../store/authStore';
 import { useActivitiesStore } from '../../../store/activitiesStore';
 import { SYSTEM_CATEGORIES } from '../../categories/systemCategories';
@@ -148,24 +149,24 @@ export function OnboardingScreen({ onComplete }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FAF7F2' },
+  container: { flex: 1, backgroundColor: colors.bg },
   stepContainer: {
     flex: 1, alignItems: 'center', justifyContent: 'center',
     paddingHorizontal: 28, paddingVertical: 40,
   },
   emoji: { fontSize: 64, marginBottom: 20 },
-  title: { fontSize: 28, fontWeight: '800', color: '#1A1A1A', textAlign: 'center', marginBottom: 16 },
-  body: { fontSize: 17, color: '#5A5550', textAlign: 'center', lineHeight: 26, marginBottom: 40 },
-  bodySmall: { fontSize: 15, color: '#5A5550', textAlign: 'center', marginBottom: 20 },
+  title: { fontSize: 28, fontWeight: '800', color: colors.text, textAlign: 'center', marginBottom: 16 },
+  body: { fontSize: 17, color: colors.muted, textAlign: 'center', lineHeight: 26, marginBottom: 40 },
+  bodySmall: { fontSize: 15, color: colors.muted, textAlign: 'center', marginBottom: 20 },
   button: {
-    backgroundColor: '#2D4A3E', borderRadius: 12, paddingVertical: 16,
+    backgroundColor: colors.primary, borderRadius: 12, paddingVertical: 16,
     paddingHorizontal: 48, alignItems: 'center', minHeight: 44, width: '100%',
   },
   buttonDisabled: { opacity: 0.5 },
   buttonText: { color: '#fff', fontSize: 17, fontWeight: '700' },
   input: {
     backgroundColor: '#FFFFFF', borderRadius: 10, paddingHorizontal: 16,
-    paddingVertical: 14, color: '#1A1A1A', fontSize: 16,
+    paddingVertical: 14, color: colors.text, fontSize: 16,
     width: '100%', marginBottom: 20, minHeight: 44,
   },
   label: { color: '#9A9490', fontSize: 13, fontWeight: '600', alignSelf: 'flex-start', marginBottom: 10 },
@@ -179,8 +180,8 @@ const styles = StyleSheet.create({
   },
   catChipSelected: { backgroundColor: '#EBF2EE' },
   catIcon: { fontSize: 16 },
-  catName: { color: '#5A5550', fontSize: 13 },
-  catNameSelected: { color: '#2D4A3E', fontWeight: '600' },
+  catName: { color: colors.muted, fontSize: 13 },
+  catNameSelected: { color: colors.primary, fontWeight: '600' },
   skipButton: { marginTop: 16, minHeight: 44, justifyContent: 'center' },
   skipText: { color: '#9A9490', fontSize: 14 },
 });

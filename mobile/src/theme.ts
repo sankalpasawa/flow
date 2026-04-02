@@ -5,15 +5,15 @@ export const colors = {
   bg: '#F5F0E8',
   surface: '#FFFFFF',
   surface2: '#F2EDE5',
-  text: '#1A1A1A',
-  text2: '#4B4642',
-  muted: '#746E69',
-  border: '#DED6CA',
+  text: '#1A1714',
+  text2: '#4A4540',
+  muted: '#8C857D',
+  border: '#E0D9CE',
   shadow: 'rgba(45,74,62,0.10)',
 
-  // Primary (Deep Work green)
-  primary: '#2D4A3E',
-  primaryLight: '#35573F',
+  // Primary (Forest green)
+  primary: '#2D5A3E',
+  primaryLight: '#3E7A55',
   primaryBg: '#E3ECE6',
 
   // Category palette
@@ -29,7 +29,7 @@ export const colors = {
   amberLight: '#EFE2BC',
 
   // Status
-  done: '#2D4A3E',
+  done: '#2D5A3E',
   active: '#C4795B',
   planned: '#EDE8E1',
 
@@ -44,7 +44,7 @@ export const colors = {
     bg: 'rgba(255,255,255,0.65)',
     border: 'rgba(255,255,255,0.75)',
     blur: 20,
-    sheet: 'rgba(255,255,255,0.88)',
+    sheet: 'rgba(255,255,255,0.85)',
     sheetBlur: 24,
   },
 
@@ -107,28 +107,28 @@ export const radii = {
 
 export const shadows = {
   xs: {
-    shadowColor: '#1A1A1A',
+    shadowColor: '#1A1714',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.04,
     shadowRadius: 2,
     elevation: 1,
   },
   sm: {
-    shadowColor: '#1A1A1A',
+    shadowColor: '#1A1714',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: 4,
     elevation: 2,
   },
   card: {
-    shadowColor: '#1A1A1A',
+    shadowColor: '#1A1714',
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.08,
     shadowRadius: 8,
     elevation: 3,
   },
   fab: {
-    shadowColor: '#1A1A1A',
+    shadowColor: '#1A1714',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.15,
     shadowRadius: 16,
@@ -150,26 +150,30 @@ export const shadows = {
   },
 } as const;
 
+// DESIGN.md typography scale
 export const typography = {
-  displayLarge: { fontSize: 32, fontWeight: '700' as const, letterSpacing: -0.5 },
-  headline: { fontSize: 24, fontWeight: '700' as const, letterSpacing: -0.3 },
-  title: { fontSize: 18, fontWeight: '600' as const },
-  body: { fontSize: 15, fontWeight: '400' as const, lineHeight: 22 },
-  bodySmall: { fontSize: 13, fontWeight: '400' as const, lineHeight: 18 },
-  label: { fontSize: 12, fontWeight: '600' as const, letterSpacing: 0.4 },
-  caption: { fontSize: 11, fontWeight: '500' as const, letterSpacing: 0.3 },
+  display: { fontSize: 32, fontWeight: '700' as const, letterSpacing: -0.5 },
+  heading: { fontSize: 22, fontWeight: '700' as const, letterSpacing: -0.3 },
+  title: { fontSize: 14, fontWeight: '700' as const },
+  body: { fontSize: 13, fontWeight: '500' as const, lineHeight: 18 },
+  small: { fontSize: 11, fontWeight: '500' as const },
+  caption: { fontSize: 10, fontWeight: '600' as const, letterSpacing: 0.3 },  // Geist Mono
+  micro: { fontSize: 9, fontWeight: '600' as const },  // Geist Mono, watermark chips
+  mindset: { fontSize: 9.5, fontWeight: '400' as const, fontStyle: 'italic' as const, lineHeight: 13 },
+  label: { fontSize: 11, fontWeight: '500' as const, letterSpacing: 0.3 },
 } as const;
 
+// Aliases used across the app (maps to DESIGN.md scale)
 export const type = {
-  h1: { fontSize: 28, fontWeight: '700' as const, letterSpacing: -0.6 },
+  h1: { fontSize: 32, fontWeight: '700' as const, letterSpacing: -0.5 },
   h2: { fontSize: 22, fontWeight: '700' as const, letterSpacing: -0.3 },
   h3: { fontSize: 18, fontWeight: '600' as const },
-  body: { fontSize: 16, fontWeight: '600' as const },
-  bodyRegular: { fontSize: 15, fontWeight: '400' as const, lineHeight: 22 },
-  small: { fontSize: 13, fontWeight: '400' as const, lineHeight: 18 },
-  caption: { fontSize: 12, fontWeight: '600' as const },
-  micro: { fontSize: 11, fontWeight: '500' as const },
-  label: { fontSize: 12, fontWeight: '600' as const, letterSpacing: 0.4 },
+  body: { fontSize: 15, fontWeight: '600' as const },
+  bodyRegular: { fontSize: 13, fontWeight: '500' as const, lineHeight: 18 },
+  small: { fontSize: 11, fontWeight: '500' as const },
+  caption: { fontSize: 10, fontWeight: '600' as const },
+  micro: { fontSize: 9, fontWeight: '600' as const },
+  label: { fontSize: 11, fontWeight: '500' as const, letterSpacing: 0.3 },
 } as const;
 
 export const motion = {
@@ -184,6 +188,6 @@ export const sizes = {
   iconButton: 40,
   chip: { height: 36, paddingH: 12 },
   card: { paddingV: 12, paddingH: 14, radius: 14, borderLeft: 2 },
-  fab: { size: 48, radius: 24 },
-  tabBar: { height: 80, paddingBottom: 24 },
+  fab: { size: 52, radius: 16 },
+  tabBar: { height: 82, paddingBottom: 24 },
 } as const;

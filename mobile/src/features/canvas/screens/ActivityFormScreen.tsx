@@ -801,7 +801,7 @@ export function ActivityFormScreen({ route, navigation }: Props) {
 // ─── Styles ───
 
 const CHIP_BG = 'rgba(255,255,255,0.55)';
-const CHIP_SELECTED_BG = '#2D5A3E';
+const CHIP_SELECTED_BG = colors.primary;
 
 const s = StyleSheet.create({
   // Layout
@@ -809,7 +809,7 @@ const s = StyleSheet.create({
   overlayDismiss: { height: 60 },
   sheet: {
     flex: 1,
-    backgroundColor: '#FAF7F2',
+    backgroundColor: colors.bg,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
   },
@@ -887,11 +887,11 @@ const s = StyleSheet.create({
   conflictText: {
     fontSize: 12,
     fontWeight: '500',
-    color: '#C4795B',
+    color: colors.accent,
   },
   conflictSuggestion: {
     marginTop: 4,
-    backgroundColor: '#E3ECE6',
+    backgroundColor: colors.primaryBg,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 8,
@@ -900,7 +900,7 @@ const s = StyleSheet.create({
   conflictSuggestionText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#2D5A3E',
+    color: colors.primary,
   },
 
   // Task hint
@@ -1129,7 +1129,7 @@ const s = StyleSheet.create({
 
   // Save button
   saveBtn: {
-    backgroundColor: '#2D5A3E',
+    backgroundColor: colors.primary,
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',
@@ -1165,7 +1165,7 @@ const s = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalSheet: {
-    backgroundColor: '#FAF7F2',
+    backgroundColor: colors.bg,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 24,
@@ -1182,7 +1182,7 @@ const s = StyleSheet.create({
   modalNavText: { color: colors.primary, fontSize: 24, fontWeight: '600' },
   modalTitle: { color: colors.text, fontSize: 16, fontWeight: '600' },
   modalDoneBtn: {
-    backgroundColor: '#2D5A3E',
+    backgroundColor: colors.primary,
     borderRadius: 12,
     paddingVertical: 14,
     alignItems: 'center',
@@ -1200,11 +1200,11 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  calendarDaySelected: { backgroundColor: '#2D5A3E', borderRadius: 20 },
+  calendarDaySelected: { backgroundColor: colors.primary, borderRadius: 20 },
   calendarDayText: { color: colors.text, fontSize: 14, fontWeight: '500' },
   calendarDayMuted: { color: colors.muted, opacity: 0.4 },
   calendarDayTextSelected: { color: '#fff', fontWeight: '700' },
-  calendarDayToday: { color: '#2D5A3E', fontWeight: '700' },
+  calendarDayToday: { color: colors.primary, fontWeight: '700' },
 
   // ─── Time Picker ───
   timePickerRow: {
@@ -1241,7 +1241,7 @@ const s = StyleSheet.create({
     fontWeight: '500',
   },
   timePickerItemTextSel: {
-    color: '#2D5A3E',
+    color: colors.primary,
     fontWeight: '700',
   },
   timePickerColon: {

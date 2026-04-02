@@ -4,6 +4,7 @@ import {
   TextInput, ActivityIndicator, Animated,
 } from 'react-native';
 import { parseISO, addMinutes } from 'date-fns';
+import { colors } from '../../../theme';
 import { useAuthStore } from '../../../store/authStore';
 import { useActivitiesStore } from '../../../store/activitiesStore';
 import { FREE_TIER_LOG_LIMIT, WouldRepeat, LogPhase } from '../../../types';
@@ -259,9 +260,9 @@ export function LogFormScreen({ route, navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FAF7F2' },
+  container: { flex: 1, backgroundColor: colors.bg },
   content: { padding: 20, paddingBottom: 48 },
-  activityTitle: { color: '#1A1A1A', fontSize: 20, fontWeight: '700', marginBottom: 24, lineHeight: 26 },
+  activityTitle: { color: colors.text, fontSize: 20, fontWeight: '700', marginBottom: 24, lineHeight: 26 },
   sectionLabel: { color: '#9A9490', fontSize: 11, fontWeight: '700', letterSpacing: 1, marginBottom: 10, marginTop: 20 },
   optional: { color: '#EDE8E1', fontWeight: '400' },
   scaleRow: { flexDirection: 'row', justifyContent: 'space-between' },
@@ -272,7 +273,7 @@ const styles = StyleSheet.create({
   scaleItemSelected: { backgroundColor: '#EBF2EE' },
   scaleEmoji: { fontSize: 24, marginBottom: 4 },
   scaleLabel2: { color: '#9A9490', fontSize: 10, fontWeight: '500' },
-  scaleLabelSelected: { color: '#2D4A3E' },
+  scaleLabelSelected: { color: colors.primary },
   chipRow: { flexDirection: 'row', gap: 8 },
   chip: {
     flex: 1, backgroundColor: '#FFFFFF', borderRadius: 10,
@@ -280,37 +281,37 @@ const styles = StyleSheet.create({
   },
   chipSelected: { backgroundColor: '#EBF2EE' },
   chipText: { color: '#9A9490', fontSize: 13, fontWeight: '600' },
-  chipTextSelected: { color: '#2D4A3E' },
+  chipTextSelected: { color: colors.primary },
   reflectionInput: {
     backgroundColor: '#FFFFFF', borderRadius: 10,
-    padding: 14, color: '#1A1A1A', fontSize: 15,
+    padding: 14, color: colors.text, fontSize: 15,
     minHeight: 100,
   },
   charCount: { color: '#EDE8E1', fontSize: 11, textAlign: 'right', marginTop: 4 },
   submitButton: {
-    backgroundColor: '#2D4A3E', borderRadius: 12,
+    backgroundColor: colors.primary, borderRadius: 12,
     paddingVertical: 16, alignItems: 'center', marginTop: 24, minHeight: 44,
   },
   submitDisabled: { opacity: 0.4 },
   submitText: { color: '#fff', fontSize: 17, fontWeight: '700' },
   successOverlay: {
-    flex: 1, backgroundColor: '#FAF7F2',
+    flex: 1, backgroundColor: colors.bg,
     alignItems: 'center', justifyContent: 'center',
   },
   successEmoji: { fontSize: 64, marginBottom: 16 },
-  successTitle: { color: '#1A1A1A', fontSize: 28, fontWeight: '800', marginBottom: 8 },
+  successTitle: { color: colors.text, fontSize: 28, fontWeight: '800', marginBottom: 8 },
   successBody: { color: '#9A9490', fontSize: 16 },
   closedWindow: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 },
   closedEmoji: { fontSize: 48, marginBottom: 16 },
-  closedTitle: { color: '#1A1A1A', fontSize: 22, fontWeight: '700', marginBottom: 8 },
+  closedTitle: { color: colors.text, fontSize: 22, fontWeight: '700', marginBottom: 8 },
   closedBody: { color: '#9A9490', fontSize: 15, textAlign: 'center', lineHeight: 22, marginBottom: 24 },
   doneButton: {
     backgroundColor: '#FFFFFF', borderRadius: 10,
     paddingVertical: 14, paddingHorizontal: 32, minHeight: 44,
   },
-  doneButtonText: { color: '#5A5550', fontSize: 16, fontWeight: '600' },
+  doneButtonText: { color: colors.muted, fontSize: 16, fontWeight: '600' },
   upgradeButton: {
-    backgroundColor: '#2D4A3E', borderRadius: 10,
+    backgroundColor: colors.primary, borderRadius: 10,
     paddingVertical: 14, paddingHorizontal: 24, minHeight: 44, marginBottom: 12,
   },
   upgradeButtonText: { color: '#fff', fontSize: 15, fontWeight: '700' },

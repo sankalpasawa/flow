@@ -284,7 +284,7 @@ export function CanvasScreen({ navigation }: Props) {
 
       {/* Pull handle */}
       <View style={{ alignItems: 'center', paddingVertical: 6 }}>
-        <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: '#DED6CA' }} />
+        <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: colors.border }} />
       </View>
 
       {/* v2: Tasks moved to bottom bar */}
@@ -510,7 +510,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: { color: colors.text, ...type.h1 },
   todayBtn: {
-    width: 40, height: 40, borderRadius: 8,
+    width: 36, height: 36, borderRadius: 12,
     alignItems: 'center', justifyContent: 'flex-start',
     backgroundColor: colors.bg, borderWidth: 1, borderColor: colors.border,
     overflow: 'hidden',
@@ -519,10 +519,10 @@ const styles = StyleSheet.create({
     width: '100%', height: 2, backgroundColor: colors.primary,
   },
   todayBtnDate: {
-    color: colors.text, fontSize: 18, fontWeight: '700',
-    lineHeight: 22, marginTop: 6,
+    color: colors.text, fontSize: 16, fontWeight: '700',
+    lineHeight: 20, marginTop: 4,
   },
-  searchBtn: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+  searchBtn: { width: 36, height: 36, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   searchIcon: { color: colors.muted, fontSize: 24 },
 
   loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center' },
@@ -537,9 +537,10 @@ const styles = StyleSheet.create({
     height: 0, overflow: 'visible', zIndex: 1,
   },
   hourLabel: {
-    color: colors.muted, fontSize: 11, fontWeight: '500' as const,
+    color: colors.muted, fontSize: 10, fontWeight: '600' as const,
     width: HOUR_LABEL_WIDTH, textAlign: 'right', marginRight: 6, marginTop: -7,
     opacity: 0.35, overflow: 'visible',
+    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
   },
   hourNow: { color: colors.accent, fontWeight: '700', opacity: 1 },
   hourLine: { flex: 1, height: 1, backgroundColor: colors.border, opacity: 0.2 },
@@ -552,7 +553,7 @@ const styles = StyleSheet.create({
   },
   nowDot: {
     width: 10, height: 10, borderRadius: 5, backgroundColor: colors.accent, marginTop: -5, marginLeft: -5,
-    shadowColor: '#C4795B', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.4, shadowRadius: 10,
+    shadowColor: colors.accent, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.4, shadowRadius: 10,
   },
   nowLine: { flex: 1, height: 2, backgroundColor: colors.accent, opacity: 0.8 },
 
@@ -598,18 +599,18 @@ const styles = StyleSheet.create({
   listCat: { fontSize: 11, fontWeight: '600' as const, paddingHorizontal: 7, paddingVertical: 1, borderRadius: 4, overflow: 'hidden' as const },
   listIcon: { fontSize: 20 },
   listContent: { flex: 1 },
-  listTitle: { fontSize: 15, fontWeight: '600' as const, color: colors.text },
-  listTime: { fontSize: 12, color: colors.muted, marginTop: 2 },
-  listMindset: { fontSize: 11, fontStyle: 'italic' as const, color: colors.text2, opacity: 0.6, marginTop: 2 },
+  listTitle: { fontSize: 14, fontWeight: '700' as const, color: colors.text },
+  listTime: { fontSize: 11, color: colors.muted, marginTop: 2 },
+  listMindset: { fontSize: 9.5, fontStyle: 'italic' as const, color: colors.text2, opacity: 0.6, marginTop: 2, lineHeight: 13 },
   listCheck: { fontSize: 16, color: colors.primary },
   listEmpty: { textAlign: 'center' as const, color: colors.muted, marginTop: 40 },
 
   fab: {
     position: 'absolute', bottom: 88, right: 20,
-    width: 48, height: 48, borderRadius: 24,
+    width: 52, height: 52, borderRadius: 16,
     backgroundColor: colors.primary,
     alignItems: 'center', justifyContent: 'center',
     ...shadows.fab,
   },
-  fabText: { color: '#fff', fontSize: 22, lineHeight: 24 },
+  fabText: { color: '#fff', fontSize: 24, lineHeight: 26 },
 });

@@ -68,3 +68,50 @@ export async function generatePlanSuggestions(
   });
   return result?.suggestions ?? null;
 }
+
+// ── Universal command — calls /command edge function ──
+
+export interface CommandResponse {
+  action: 'create' | 'update' | 'delete' | 'search' | 'navigate' | 'display' | 'clarify';
+  params: Record<string, any>;
+  confidence: number;
+  message: string;
+  clarification?: string | null;
+  error?: string;
+}
+
+export async function sendCommand(
+  text: string,
+  userId: string,
+  context: string,
+): Promise<CommandResponse | null> {
+  if (!AI_FEATURE_FLAG) return null;
+
+  try {
+    // Use direct fetch with anon key — works in dev mode without a session
+    const url = `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/command`;
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY}`,
+        'apikey': process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '',
+      },
+      body: JSON.stringify({
+        text: sanitizeInput(text),
+        user_id: userId,
+        context,
+      }),
+    });
+
+    if (!res.ok) {
+      console.warn(`[AI] Command failed: ${res.status}`);
+      return null;
+    }
+
+    return await res.json() as CommandResponse;
+  } catch (err) {
+    console.warn('[AI] Command error:', err);
+    return null;
+  }
+}

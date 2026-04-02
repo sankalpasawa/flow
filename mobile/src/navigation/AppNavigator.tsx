@@ -12,6 +12,7 @@ import {
   hasCompletedOnboarding, markOnboardingComplete, OnboardingScreen,
 } from '../features/onboarding/screens/OnboardingScreen';
 import { setNavigationRef } from '../debug/DesignQA';
+import { colors } from '../theme';
 
 // Screens
 import { SignInScreen } from '../features/auth/screens/SignInScreen';
@@ -46,19 +47,19 @@ function TabNavigator() {
         tabBarShowLabel: true,
         tabBarIcon: ({ focused }) => {
           const icons: Record<string, string> = { Today: '◉', Plan: '◫', Insights: '◈', Settings: '⚙' };
-          return <Text style={{ fontSize: 18, color: focused ? '#2D5A3E' : '#8C857D' }}>{icons[route.name] ?? '•'}</Text>;
+          return <Text style={{ fontSize: 18, color: focused ? '#2D5A3E' : '#8C857D', transform: [{ scale: focused ? 1 : 0.88 }] }}>{icons[route.name] ?? '•'}</Text>;
         },
         tabBarStyle: {
-          backgroundColor: 'rgba(255,255,255,0.75)',
+          backgroundColor: 'rgba(255,255,255,0.70)',
           borderTopColor: 'rgba(224,217,206,0.5)',
           borderTopWidth: 0.5,
-          height: 80,
+          height: 82,
           paddingBottom: 24,
           paddingTop: 6,
         },
         tabBarActiveTintColor: '#2D5A3E',
         tabBarInactiveTintColor: '#8C857D',
-        tabBarLabelStyle: { fontSize: 12, fontWeight: '600', letterSpacing: 0.2 },
+        tabBarLabelStyle: { fontSize: 11, fontWeight: '600', letterSpacing: 0.2 },
       })}
     >
       <Tab.Screen name="Today" component={CanvasScreen} />
@@ -130,9 +131,9 @@ export function AppNavigator() {
 
   if (loading || !dbReady) {
     return (
-      <View style={{ flex: 1, backgroundColor: '#FAF7F2', alignItems: 'center', justifyContent: 'center' }}>
-        <Text style={{ color: '#2D4A3E', fontSize: 28, fontWeight: '600', marginBottom: 20 }}>DayFlow</Text>
-        <ActivityIndicator color="#2D4A3E" />
+      <View style={{ flex: 1, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center' }}>
+        <Text style={{ color: colors.primary, fontSize: 28, fontWeight: '600', marginBottom: 20 }}>DayFlow</Text>
+        <ActivityIndicator color={colors.primary} />
       </View>
     );
   }
@@ -143,7 +144,7 @@ export function AppNavigator() {
         const route = state?.routes?.[state.index];
         if (route?.name) captureOnNavigation(route.name);
       }}>
-      <Stack.Navigator screenOptions={{ headerStyle: { backgroundColor: '#FAF7F2' }, headerTintColor: '#1A1A1A', headerShadowVisible: false }}>
+      <Stack.Navigator screenOptions={{ headerStyle: { backgroundColor: colors.bg }, headerTintColor: colors.text, headerShadowVisible: false }}>
         {!user ? (
           <>
             <Stack.Screen name="SignIn" component={SignInScreen} options={{ headerShown: false }} />

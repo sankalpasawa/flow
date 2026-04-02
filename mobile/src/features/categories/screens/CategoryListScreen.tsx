@@ -19,7 +19,7 @@ interface Props {
 }
 
 const ICON_OPTIONS = ['📌', '🎯', '💡', '🏋️', '🎵', '🛒', '📞', '✈️', '🎓', '🏠', '💼', '🎮', '📖', '🍳', '🌱', '💰'];
-const COLOR_OPTIONS = ['#2D4A3E', '#C4795B', '#7B9E87', '#4A6B8A', '#8B6B8A', '#B8860B', '#EF4444', '#14B8A6', '#F97316', '#0EA5E9'];
+const COLOR_OPTIONS = ['#2D5A3E', '#C4795B', '#7B9E87', '#4A6B8A', '#8B6B8A', '#B8860B', '#EF4444', '#14B8A6', '#F97316', '#0EA5E9'];
 
 type ViewMode = 'categories' | 'timeline' | 'detail';
 

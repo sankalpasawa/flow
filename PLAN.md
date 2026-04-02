@@ -1012,3 +1012,77 @@ The LLM automatically understands these new capabilities without code changes.
 | Apr 2 | Schema-driven AI: unbounded capabilities, no fixed list | Done | commandLayer.ts + /command edge function deployed |
 | Apr 2 | Mindset = framing not motivation | Done | mindsetGenerator.ts with 50+ activity-specific prompts |
 | Apr 2 | Three-state circle: planned → done → reflected | Done | List view implementation |
+| Apr 2 | Five-layer architecture: UI → Data → World Context → User Model → AI | Documented | ARCHITECTURE.md |
+| Apr 2 | Self-modifying app: DayFlow modifies itself from within, mechanism is generic (HTML fallback today, native as LLMs evolve) | Vision documented | ARCHITECTURE.md |
+| Apr 2 | LLM-agnostic: not tied to Claude, any LLM, capability grows with LLM power | Principle locked | ARCHITECTURE.md |
+| Apr 2 | Adapters are source-agnostic: not just calendars, any external app/data | Principle locked | ARCHITECTURE.md |
+| Apr 2 | User Model layer: energy curves, completion patterns, overcommitment detection from ExperienceLog | Designed | ARCHITECTURE.md, build in Phase 3 |
+| Apr 2 | World Context layer: time, weather, location, day type fed into AI context | Designed | ARCHITECTURE.md, build in Phase 2 |
+| Apr 2 | DayFlow's value = structure + context modality + skills. Not the AI itself. | Principle locked | ARCHITECTURE.md |
+| Apr 2 | Skills as scaling unit: each use case = specialized agent with context recipe | Designed | ARCHITECTURE.md |
+| Apr 2 | HTML WebView is fallback for dynamic UI, not the architecture. Mechanism evolves with LLMs. | Clarified | ARCHITECTURE.md |
+| Apr 2 | Cognitive architecture: 11-step loop modeled on human cognition (Motivation → Wisdom → Awareness → Attention → Orientation → Anticipation → Skill Select → Skill Adapt → Execute → Communicate → Reflect) | Documented | ARCHITECTURE.md |
+| Apr 2 | Research-backed: ACT-R, Rasmussen SRK, Dreyfus skill model, Damasio somatic markers, Friston predictive processing, Kolb experiential learning, Berlin Wisdom Paradigm | Foundations locked | ARCHITECTURE.md |
+| Apr 2 | Skill evolution via Rasmussen SRK: skill-based (automatic) → rule-based (pattern match) → knowledge-based (first principles). Skills mature through experience. | Designed | ARCHITECTURE.md |
+| Apr 2 | Wisdom layer: meta-judgment that knows when NOT to act, balances values, recognizes life phases, manages uncertainty | Designed | ARCHITECTURE.md |
+| Apr 2 | Affect as input: emotional state feeds INTO reasoning (Damasio), not just captured in reflection | Designed | ARCHITECTURE.md |
+| Apr 2 | Anticipation layer: proactive AI that predicts futures and acts before being asked (Friston, Seligman) | Designed | ARCHITECTURE.md |
+| Apr 2 | Attention layer: filters what matters right now from all available signals (Kahneman, Desimone & Duncan) | Designed | ARCHITECTURE.md |
+
+---
+
+## Product Roadmap (Five-Layer Architecture)
+
+This roadmap reflects the five-layer architecture and cognitive model defined in ARCHITECTURE.md.
+Each phase activates new cognitive layers. The UI layer improves continuously throughout.
+
+### Phase 1: Finish the Calendar (current)
+**Layer focus: UI + Data**
+**Cognitive layers active: Awareness (perception), Skill (rule-based parser), Execute, Communicate**
+- Complete today screen design polish
+- Wire LLM into QuickAdd (currently local-only)
+- Design reviews, visual QA
+- Goal: solid calendar app that works beautifully on iPhone
+
+### Phase 2: Tomorrow Feature
+**Layer focus: World Context (first use)**
+**Cognitive layers activated: Attention (scope filtering), Orientation (framing), Anticipation (predict tomorrow)**
+- Build the "tomorrow" planning screen
+- First world context signals: day type (weekday/weekend/holiday), weather
+- First user model signals: "you usually do X on Saturdays" from activity history
+- Enrich `buildContext()` in commandLayer.ts with world signals
+- First skill agent: planning
+- Goal: AI that reasons about future, not just present
+
+### Phase 3: Insights Feature
+**Layer focus: User Model (first use)**
+**Cognitive layers activated: Wisdom (meta-judgment), Affect (mood/energy as input)**
+- Deep pattern aggregation from ExperienceLog + Activity history
+- Energy curves, completion patterns, overcommitment detection
+- Pattern summary string fed into AI context
+- Insights skill: surfaces AI-derived observations
+- Goal: DayFlow knows the user
+
+### Phase 4: Journaling
+**Layer focus: Data (Universal Entry migration)**
+**Cognitive layers activated: Perspective (how user sees things), Reflect (deep feedback loop)**
+- Add `type` and `source` columns to Activity (becomes Entry)
+- Journal entry type with rich text, mood, tags
+- Journaling skill: prompts, structures, connects to patterns
+- Goal: DayFlow understands how the user feels
+
+### Phase 5: Self-modification + Free-form
+**Layer focus: AI (agent creation, dynamic generation)**
+**Cognitive layers activated: Motivation (goal hierarchy), full Wisdom**
+- Dynamic UI generation (mechanism-agnostic, HTML WebView as first fallback)
+- Edge function generation from within the app
+- Agent orchestration for multi-step tasks
+- Goal: DayFlow creates features from within
+
+### Phase 6: External Sources + Full OS
+**Layer focus: Data (source adapters)**
+**All cognitive layers fully active**
+- Source adapters (any external app/data, not just calendars)
+- Cross-source reasoning
+- More skills for new domains
+- Goal: DayFlow is the personal operating system

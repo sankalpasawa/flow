@@ -8,6 +8,7 @@ import { useAuthStore } from '../../../store/authStore';
 import { getLogsForUser } from '../../../lib/db/logs';
 import { ExperienceLog } from '../../../types';
 import { NetworkBanner } from '../../../components/common/NetworkBanner';
+import { colors } from '../../../theme';
 
 const MOOD_EMOJI = ['', '😫', '😕', '😐', '🙂', '🔥'];
 const ENERGY_EMOJI = ['', '🪫', '😴', '⚡', '⚡⚡', '⚡⚡⚡'];
@@ -35,7 +36,7 @@ export function LogHistoryScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.center}>
-          <ActivityIndicator color="#2D4A3E" size="large" />
+          <ActivityIndicator color={colors.primary} size="large" />
         </View>
       </SafeAreaView>
     );
@@ -106,22 +107,22 @@ export function LogHistoryScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FAF7F2' },
+  container: { flex: 1, backgroundColor: colors.bg },
   header: { paddingHorizontal: 16, paddingVertical: 14 },
-  headerTitle: { color: '#1A1A1A', fontSize: 22, fontWeight: '800' },
+  headerTitle: { color: colors.text, fontSize: 22, fontWeight: '800' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 },
   emptyEmoji: { fontSize: 48, marginBottom: 12 },
-  emptyTitle: { color: '#1A1A1A', fontSize: 20, fontWeight: '700', marginBottom: 8 },
+  emptyTitle: { color: colors.text, fontSize: 20, fontWeight: '700', marginBottom: 8 },
   emptyBody: { color: '#9A9490', fontSize: 15, textAlign: 'center', lineHeight: 22 },
   listContent: { padding: 16, gap: 12 },
   logCard: { backgroundColor: '#FFFFFF', borderRadius: 12, padding: 14 },
   logHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 },
-  logActivity: { color: '#1A1A1A', fontSize: 15, fontWeight: '600', flex: 1, marginRight: 8 },
+  logActivity: { color: colors.text, fontSize: 15, fontWeight: '600', flex: 1, marginRight: 8 },
   logDate: { color: '#9A9490', fontSize: 12 },
   scalesRow: { flexDirection: 'row', gap: 16, marginBottom: 8 },
   scale: { alignItems: 'center' },
   scaleLabel: { color: '#9A9490', fontSize: 10, marginBottom: 2 },
   scaleEmoji: { fontSize: 18, marginBottom: 2 },
-  scaleNum: { color: '#5A5550', fontSize: 12, fontWeight: '600' },
+  scaleNum: { color: colors.muted, fontSize: 12, fontWeight: '600' },
   reflection: { color: '#9A9490', fontSize: 13, fontStyle: 'italic', lineHeight: 19, marginTop: 4 },
 });

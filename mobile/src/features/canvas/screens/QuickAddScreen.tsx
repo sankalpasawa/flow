@@ -9,6 +9,8 @@ import { useActivitiesStore } from '../../../store/activitiesStore';
 import { getCategories } from '../../../lib/db/categories';
 import { parseActivityText, ParsedActivity } from '../../../lib/parseActivity';
 import { processText, ActionResult } from '../../../lib/actionEngine';
+import { sendCommand, CommandResponse } from '../../../lib/ai';
+import { buildContext, classifyScope } from '../../../lib/ai/commandLayer';
 import { SYSTEM_CATEGORIES } from '../../categories/systemCategories';
 import { Category } from '../../../types';
 import { colors, spacing, radii, motion } from '../../../theme';
@@ -82,10 +84,13 @@ export function QuickAddScreen({ route, navigation }: Props) {
   const [text, setText] = useState('');
   const [parsed, setParsed] = useState<ParsedActivity | null>(null);
   const [action, setAction] = useState<ActionResult | null>(null);
+  const [llmResult, setLlmResult] = useState<CommandResponse | null>(null);
+  const [llmLoading, setLlmLoading] = useState(false);
   const [categories, setCategories] = useState<Category[]>(SYSTEM_CATEGORIES);
   const [saving, setSaving] = useState(false);
   const inputRef = useRef<TextInput>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const llmRef = useRef<number>(0); // tracks latest LLM request
 
   const dateStr = paramDate ?? format(new Date(), 'yyyy-MM-dd');
 
@@ -103,26 +108,51 @@ export function QuickAddScreen({ route, navigation }: Props) {
     return () => clearTimeout(timer);
   }, []);
 
-  // Debounced parsing
+  // Debounced parsing: local instant + LLM async for complex inputs
   const handleTextChange = useCallback((value: string) => {
     setText(value);
+    setLlmResult(null);
     if (debounceRef.current) clearTimeout(debounceRef.current);
 
     if (!value.trim()) {
       setParsed(null);
+      setAction(null);
       return;
     }
 
     debounceRef.current = setTimeout(() => {
       const catList = categories.map((c) => ({ id: c.id, name: c.name }));
-      const result = parseActivityText(value, catList, new Date());
+      const now = new Date();
+
+      // 1. Local parser — instant
+      const result = parseActivityText(value, catList, now);
       setParsed(result);
 
-      // Run action engine for intent detection + conflict resolution
-      const actionResult = processText(value, activities, catList, new Date());
+      // 2. Action engine — instant
+      const actionResult = processText(value, activities, catList, now);
       setAction(actionResult);
+
+      // 3. LLM — async, for inputs where local parser may not be enough
+      //    Fire if: action is unknown, confidence is low, or text looks complex
+      const needsLlm = actionResult.type === 'unknown'
+        || actionResult.confidence < 0.6
+        || classifyScope(value) !== 'light';
+
+      if (needsLlm && user) {
+        const requestId = ++llmRef.current;
+        setLlmLoading(true);
+        const context = buildContext('light', activities, categories, now);
+        sendCommand(value, user.id, context).then((res) => {
+          // Only apply if this is still the latest request
+          if (requestId === llmRef.current && res && !res.error) {
+            setLlmResult(res);
+          }
+        }).catch(() => {}).finally(() => {
+          if (requestId === llmRef.current) setLlmLoading(false);
+        });
+      }
     }, 600);
-  }, [categories]);
+  }, [categories, activities, user]);
 
   // Clean up debounce on unmount
   useEffect(() => {
@@ -138,12 +168,91 @@ export function QuickAddScreen({ route, navigation }: Props) {
   }, [categories]);
 
   // Action handler — handles create, move, complete, cancel
+  // Uses LLM result if available and confident, otherwise falls back to local parser
   const handleAction = useCallback(async () => {
     if (!user || saving) return;
-    if (!action && !parsed) return;
+    if (!action && !parsed && !llmResult) return;
     setSaving(true);
 
     try {
+      // If LLM returned a high-confidence result, use it
+      if (llmResult && llmResult.confidence >= 0.7 && llmResult.action !== 'clarify') {
+        const lp = llmResult.params;
+
+        switch (llmResult.action) {
+          case 'create': {
+            const title = lp.title || parsed?.title || text;
+            const startTime = lp.start_time || null;
+            const duration = lp.duration_minutes ?? parsed?.duration ?? 30;
+            const categoryId = lp.category_id || parsed?.categoryId || 'sys-personal';
+            const recurrence = lp.recurrence_type || 'NONE';
+            const mindset = lp.mindset_prompt || null;
+
+            if (startTime) {
+              await addActivity({
+                user_id: user.id,
+                title,
+                start_time: startTime.includes('T') ? startTime : `${dateStr}T${startTime}`,
+                duration_minutes: duration,
+                category_id: categoryId,
+                activity_type: 'TIME_BLOCK',
+                recurrence_type: recurrence as any,
+                ...(mindset ? { mindset_prompt: mindset } : {}),
+              });
+            } else if (recurrence !== 'NONE') {
+              await addActivity({
+                user_id: user.id,
+                title,
+                start_time: '',
+                duration_minutes: 0,
+                category_id: categoryId,
+                activity_type: 'TASK',
+                is_scheduled: false,
+                recurrence_type: recurrence as any,
+                ...(mindset ? { mindset_prompt: mindset } : {}),
+              });
+            } else {
+              await addTask({
+                user_id: user.id,
+                title,
+                category_id: categoryId,
+                assigned_date: dateStr,
+              });
+            }
+            break;
+          }
+
+          case 'update': {
+            // LLM returns search_query + updates
+            const match = lp.matched_id
+              ? activities.find(a => a.id === lp.matched_id)
+              : activities.find(a => a.title.toLowerCase().includes((lp.search_query || '').toLowerCase()));
+            if (match && lp.updates) {
+              await editActivity(match.id, lp.updates);
+            }
+            break;
+          }
+
+          case 'delete': {
+            const match = lp.matched_id
+              ? activities.find(a => a.id === lp.matched_id)
+              : activities.find(a => a.title.toLowerCase().includes((lp.search_query || '').toLowerCase()));
+            if (match) {
+              await editActivity(match.id, { status: 'SKIPPED' });
+            }
+            break;
+          }
+
+          default:
+            // For search, navigate, display — fall through to local handler
+            break;
+        }
+
+        navigation.goBack();
+        return;
+      }
+
+      // Fall back to local parser + action engine
       const actionType = action?.type ?? 'create';
       const p = action?.parsed ?? parsed!;
       const activityDate = p.date ?? dateStr;
@@ -176,7 +285,6 @@ export function QuickAddScreen({ route, navigation }: Props) {
         default: {
           const hasRecurrence = p.recurrence && p.recurrence !== 'NONE';
           if (p.time) {
-            // Timed activity → pill on canvas
             await addActivity({
               user_id: user.id,
               title: p.title,
@@ -187,11 +295,10 @@ export function QuickAddScreen({ route, navigation }: Props) {
               recurrence_type: (p.recurrence ?? 'NONE') as any,
             });
           } else if (hasRecurrence) {
-            // No time + recurring → watermark (untimed recurring activity)
             await addActivity({
               user_id: user.id,
               title: p.title,
-              start_time: '',  // empty = no time
+              start_time: '',
               duration_minutes: 0,
               category_id: p.categoryId || 'sys-personal',
               activity_type: 'TASK',
@@ -199,7 +306,6 @@ export function QuickAddScreen({ route, navigation }: Props) {
               recurrence_type: (p.recurrence ?? 'DAILY') as any,
             });
           } else {
-            // No time, no recurrence → simple task in bottom bar
             await addTask({
               user_id: user.id,
               title: p.title,
@@ -217,7 +323,7 @@ export function QuickAddScreen({ route, navigation }: Props) {
     } finally {
       setSaving(false);
     }
-  }, [action, parsed, user, saving, dateStr, addActivity, addTask, quickToggleComplete, editActivity, navigation]);
+  }, [action, parsed, llmResult, user, saving, dateStr, text, activities, addActivity, addTask, quickToggleComplete, editActivity, navigation]);
 
   // Navigate to full form, carrying parsed fields
   const goToForm = useCallback(() => {
@@ -272,11 +378,28 @@ export function QuickAddScreen({ route, navigation }: Props) {
           </View>
         )}
 
-        {/* Action message */}
-        {action?.message && action.conflict.exists && (
+        {/* LLM clarification or message */}
+        {llmResult?.clarification && (
+          <View style={styles.actionMessage}>
+            <Text style={styles.actionMessageText}>{llmResult.clarification}</Text>
+          </View>
+        )}
+        {llmResult && !llmResult.clarification && llmResult.message && llmResult.action !== 'create' && (
+          <View style={styles.actionMessage}>
+            <Text style={styles.actionMessageText}>{llmResult.message}</Text>
+          </View>
+        )}
+
+        {/* Local conflict message */}
+        {!llmResult && action?.message && action.conflict.exists && (
           <View style={styles.actionMessage}>
             <Text style={styles.actionMessageText}>{action.message}</Text>
           </View>
+        )}
+
+        {/* LLM loading indicator */}
+        {llmLoading && (
+          <Text style={styles.llmHint}>Thinking...</Text>
         )}
 
         {/* Action button */}
@@ -288,7 +411,14 @@ export function QuickAddScreen({ route, navigation }: Props) {
             activeOpacity={0.8}
           >
             <Text style={styles.createBtnText}>
-              {saving ? 'Working...' : action?.type === 'complete' ? 'Done' : action?.type === 'cancel' ? 'Cancel Activity' : action?.type === 'move' ? 'Move' : 'Create'}
+              {saving ? 'Working...'
+                : llmResult?.action === 'update' ? 'Update'
+                : llmResult?.action === 'delete' ? 'Remove'
+                : llmResult?.action === 'clarify' ? 'Clarify'
+                : action?.type === 'complete' ? 'Done'
+                : action?.type === 'cancel' ? 'Cancel Activity'
+                : action?.type === 'move' ? 'Move'
+                : 'Create'}
             </Text>
           </TouchableOpacity>
         )}
@@ -343,9 +473,9 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   chip: {
-    backgroundColor: 'rgba(255,255,255,0.65)',
+    backgroundColor: colors.glass.bg,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.75)',
+    borderColor: colors.glass.border,
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -359,7 +489,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   createBtn: {
-    backgroundColor: '#2D5A3E',
+    backgroundColor: colors.primary,
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',
@@ -383,7 +513,13 @@ const styles = StyleSheet.create({
   actionMessageText: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#C4795B',
+    color: colors.accent,
     lineHeight: 18,
+  },
+  llmHint: {
+    fontSize: 12,
+    color: colors.muted,
+    marginBottom: 8,
+    fontStyle: 'italic',
   },
 });

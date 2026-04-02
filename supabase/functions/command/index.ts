@@ -4,12 +4,11 @@
  * Receives: natural language text + app context
  * Returns: action JSON the app executes
  *
- * No fixed capabilities. Schema-driven. The LLM figures out
- * what's possible from the data model.
+ * LLM-agnostic. Currently uses Google Gemini (free tier).
+ * Swap to any LLM by changing the API call below.
  */
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import Anthropic from "npm:@anthropic-ai/sdk@0.39.0";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -57,9 +56,11 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    const apiKey = Deno.env.get('ANTHROPIC_API_KEY');
-    if (!apiKey) {
-      // No API key — return a basic fallback
+    // Try Gemini first, fall back to Anthropic if available
+    const geminiKey = Deno.env.get('GEMINI_API_KEY');
+    const anthropicKey = Deno.env.get('ANTHROPIC_API_KEY');
+
+    if (!geminiKey && !anthropicKey) {
       return new Response(JSON.stringify({
         action: 'create', params: { raw_text: text }, confidence: 0.3,
         message: 'AI not configured. Creating as-is.',
@@ -80,17 +81,46 @@ Return JSON only:
   "clarification": "question if unsure, null otherwise"
 }`;
 
-    const anthropic = new Anthropic({ apiKey });
-    const message = await anthropic.messages.create({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 300,
-      system: systemPrompt,
-      messages: [{ role: 'user', content: text }],
-    });
+    let raw = '';
 
-    const raw = message.content[0]?.type === 'text' ? message.content[0].text.trim() : '';
+    if (geminiKey) {
+      // Google Gemini API (free tier: 15 RPM, 1M tokens/day)
+      const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`;
+      const geminiRes = await fetch(geminiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system_instruction: { parts: [{ text: systemPrompt }] },
+          contents: [{ parts: [{ text }] }],
+          generationConfig: {
+            maxOutputTokens: 300,
+            temperature: 0.1,
+          },
+        }),
+      });
 
-    // Parse JSON
+      if (!geminiRes.ok) {
+        const errText = await geminiRes.text();
+        console.error('[command] Gemini error:', geminiRes.status, errText);
+        throw new Error(`Gemini API error: ${geminiRes.status}`);
+      }
+
+      const geminiData = await geminiRes.json();
+      raw = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ?? '';
+    } else if (anthropicKey) {
+      // Anthropic Claude fallback
+      const { default: Anthropic } = await import("npm:@anthropic-ai/sdk@0.39.0");
+      const anthropic = new Anthropic({ apiKey: anthropicKey });
+      const message = await anthropic.messages.create({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 300,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: text }],
+      });
+      raw = message.content[0]?.type === 'text' ? message.content[0].text.trim() : '';
+    }
+
+    // Parse JSON from LLM response
     let result: any;
     try {
       const clean = raw.replace(/```json\n?|```\n?/g, '').trim();

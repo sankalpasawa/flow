@@ -30,12 +30,59 @@
 - [ ] **Post-create scroll**: After creating an activity, auto-navigate to that day's canvas and scroll to the time slot where the activity was placed
 - [ ] **Experience log screen**: Post-activity mood/energy/reflection logging (design in progress)
 
+## Architecture Roadmap (from ARCHITECTURE.md)
+
+See ARCHITECTURE.md for full cognitive architecture (11-step loop) and research foundations.
+
+### Cognitive Loop Foundation
+- [ ] **Map current command layer to cognitive steps**: What exists, what's missing
+- [ ] **Motivation layer**: How does the AI learn the user's goal hierarchy? (Onboarding? Learned over time?)
+- [ ] **Wisdom heuristics**: When should the AI hold back vs act?
+- [ ] **Affect inference**: How to estimate emotional state from available signals
+- [ ] **Attention filtering**: How to determine what context matters for each request
+- [ ] **Anticipation queries**: Schedule conflict prediction, pattern extrapolation
+
+### Phase 2: Tomorrow Feature (next after calendar polish)
+**Cognitive layers activated: Attention, Orientation, Anticipation**
+- [ ] **World context: day type**: Detect weekday/weekend/holiday, include in AI context
+- [ ] **World context: weather**: Integrate free weather API, include in AI context for outdoor activity suggestions
+- [ ] **Basic user model**: Aggregate completion patterns from last 30 days, include summary in AI context
+- [ ] **Enrich buildContext()**: Expand `commandLayer.ts:buildContext()` to accept world signals and user model summary
+- [ ] **Tomorrow planning with AI**: AI suggests tomorrow's plan based on patterns + world context
+- [ ] **First skill agent**: Planning skill with context recipe
+
+### Phase 3: Insights (after tomorrow)
+**Cognitive layers activated: Wisdom, Affect**
+- [ ] **Energy curve computation**: Aggregate mood/energy from ExperienceLog by time-of-day
+- [ ] **Completion pattern detection**: "You skip gym on Mondays 80% of the time"
+- [ ] **Overcommitment signal**: Planned vs completed per day, running average
+- [ ] **Pattern summary for AI**: Distill aggregations into concise text for AI context
+- [ ] **Insights tab redesign**: Show AI-derived observations with glass aesthetic
+- [ ] **Wisdom layer first use**: "You're overcommitting" / "Your schedule looks fine"
+
+### Phase 4: Journaling
+- [ ] **Universal Entry migration**: Add `type` and `source` columns to Activity table
+- [ ] **Journal entry type**: Rich text body, mood, tags
+- [ ] **AI cross-referencing**: Connect journal entries to activity patterns
+
+### Phase 5: Self-modification + Free-form
+- [ ] **Glass WebView component**: Fallback renderer for AI-generated HTML. First mechanism for dynamic UI. Not the only one.
+- [ ] **Design tokens in AI prompt**: Pass DayFlow's design system to LLM so generated content matches the app.
+- [ ] **Skills system**: Route requests to specialized agents. Each skill has a context recipe + output type.
+- [ ] **Edge function generation**: AI writes and deploys Supabase functions from within the app.
+- [ ] **Agent orchestration**: Multi-step task decomposition and execution across skills.
+
+### Phase 6: External Sources
+- [ ] **Google Calendar read adapter**
+- [ ] **Google Calendar write adapter**
+- [ ] **Two-way sync**
+- [ ] **Other source adapters** (based on user need)
+
 ## Lower Priority
 
 - [ ] **Data fetching from server**: Replace hardcoded seed data with Supabase sync for production. Seed data is dev-only (in `src/lib/db/seed.ts`).
 - [ ] **AI features with real API keys**: Mindset prompts (Claude Sonnet), auto-categorize (Claude Haiku), planning suggestions. Edge functions exist in `supabase/functions/`.
 - [ ] **Codex review integration**: Use codex to review code on each change.
-- [ ] **Calendar sync**: Google Calendar, Apple Calendar integration (deferred to post-PMF per PRD).
 - [ ] **Activity overlap validation**: Prevent scheduling two activities at the same time.
 - [ ] **Freemium gate**: 5 logs/day limit for free tier, unlimited for Pro ($10/mo).
 - [ ] **PostHog analytics**: Add event tracking for key user actions.
