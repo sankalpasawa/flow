@@ -150,6 +150,11 @@ Rules:
 
 This applies to: QA testing, debugging, deployment, git operations, design review, and all development tasks.
 
+## Product Knowledge System
+Before making ANY code change, read `PRODUCT-KNOWLEDGE-SYSTEM.md`.
+It contains: shearing layers (what changes at what rate), four flow maps (data, decisions, failures, changes), boundary contracts, sensors, and the change protocol.
+The single most important rule: **when crossing a layer boundary, read the change flow map for that boundary.**
+
 ## NEVER Take Shortcuts — Code Quality Rules
 
 These rules are ABSOLUTE. Breaking them causes cascading bugs that are worse than the original problem.
