@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DayFlow — Completion + Reflection States</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');
+
+  :root {
+    --bg: #F5F0E8;
+    --text: #1A1714;
+    --text2: #4A4540;
+    --muted: #8C857D;
+    --border: #E0D9CE;
+    --primary: #2D5A3E;
+    --primary-soft: #E3ECE6;
+    --accent: #C4795B;
+    --accent-soft: rgba(196,121,91,0.1);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Instrument Sans', sans-serif; background: #E8E2D8; -webkit-font-smoothing: antialiased; padding: 32px 12px 80px; }
+
+  h1 { font-size: 22px; font-weight: 700; text-align: center; margin-bottom: 4px; }
+  .sub { font-size: 13px; color: var(--muted); text-align: center; margin-bottom: 32px; max-width: 500px; margin-left: auto; margin-right: auto; line-height: 1.5; }
+
+  .grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; max-width: 960px; margin: 0 auto; }
+  @media (max-width: 700px) { .grid { grid-template-columns: 1fr; max-width: 400px; } }
+
+  .label { font-size: 10px; font-weight: 600; letter-spacing: 0.7px; text-transform: uppercase; color: var(--muted); text-align: center; margin-bottom: 4px; }
+  .desc { font-size: 11px; color: var(--text2); text-align: center; margin-bottom: 8px; line-height: 1.4; max-width: 300px; margin-left: auto; margin-right: auto; }
+
+  /* Phone frame */
+  .phone {
+    width: 100%; max-width: 320px; margin: 0 auto;
+    background: var(--bg); border-radius: 32px; border: 4px solid #1a1714;
+    overflow: hidden; padding: 20px 0; min-height: 560px;
+    box-shadow: 0 4px 16px rgba(26,23,20,0.12);
+    position: relative;
+  }
+
+  /* Shared pill styles */
+  .pill {
+    margin: 0 16px 8px;
+    border-radius: 14px; padding: 10px 12px;
+    background: rgba(255,255,255,0.65);
+    border: 1px solid rgba(255,255,255,0.75);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    position: relative;
+  }
+  .pill-row { display: flex; align-items: center; gap: 8px; }
+  .pill-icon { font-size: 15px; }
+  .pill-body { flex: 1; }
+  .pill-title { font-size: 14px; font-weight: 600; color: var(--text); }
+  .pill-title.done { text-decoration: line-through; opacity: 0.4; }
+  .pill-mind { font-size: 10px; font-style: italic; color: var(--text2); opacity: 0.6; margin-top: 2px; }
+
+  /* Hour label */
+  .hour { font-size: 11px; color: var(--muted); opacity: 0.35; padding: 8px 16px 4px; }
+
+  /* ===== A: INLINE PROMPT ===== */
+  .inline-prompt {
+    margin: 0 16px 8px;
+    border-radius: 14px; padding: 10px 14px;
+    background: var(--accent-soft);
+    border: 1px solid rgba(196,121,91,0.15);
+  }
+  .ip-question { font-size: 12px; font-weight: 600; color: var(--accent); margin-bottom: 8px; }
+  .ip-moods { display: flex; gap: 8px; align-items: center; }
+  .ip-mood {
+    width: 36px; height: 36px; border-radius: 18px;
+    border: 1.5px solid var(--border); background: white;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; cursor: pointer;
+  }
+  .ip-mood.sel { border-color: var(--accent); background: var(--accent-soft); }
+  .ip-skip { font-size: 11px; color: var(--muted); margin-left: auto; cursor: pointer; }
+
+  /* Completed pill with inline prompt below */
+  .pill.just-completed {
+    background: rgba(255,255,255,0.5);
+    border-color: rgba(255,255,255,0.6);
+  }
+  .pill.just-completed .pill-title { text-decoration: line-through; opacity: 0.5; }
+  .pill.just-completed .green-check {
+    color: var(--primary); font-size: 16px; font-weight: 700;
+  }
+
+  /* ===== B+C: TOAST + TWO-PHASE CIRCLE ===== */
+
+  /* Circle states */
+  .circle {
+    width: 24px; height: 24px; border-radius: 12px;
+    flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700;
+  }
+  .circle-empty { border: 2px solid var(--border); }
+  .circle-half {
+    border: 2px solid var(--primary);
+    background: linear-gradient(to right, var(--primary) 50%, transparent 50%);
+    position: relative; overflow: hidden;
+  }
+  .circle-half::before {
+    content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 50%;
+    background: var(--primary);
+  }
+  .circle-half::after {
+    content: '✓'; color: white; position: relative; z-index: 1; font-size: 11px;
+  }
+  .circle-full {
+    background: var(--primary); border: 2px solid var(--primary); color: white;
+  }
+  .circle-full::after { content: '✓'; font-size: 12px; }
+
+  /* Toast */
+  .toast {
+    position: absolute; bottom: 16px; left: 16px; right: 16px;
+    background: var(--text);
+    border-radius: 14px; padding: 12px 16px;
+    display: flex; align-items: center; gap: 10px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+  }
+  .toast-text { flex: 1; font-size: 13px; font-weight: 500; color: white; }
+  .toast-btn {
+    font-size: 13px; font-weight: 700; color: var(--accent);
+    padding: 4px 12px; border-radius: 8px;
+    background: rgba(196,121,91,0.15);
+  }
+  .toast-dismiss { font-size: 18px; color: rgba(255,255,255,0.4); cursor: pointer; }
+
+  /* List item for B+C */
+  .list-item {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .li-body { flex: 1; }
+  .li-title { font-size: 14px; font-weight: 600; color: var(--text); }
+  .li-title.half-done { color: var(--text2); }
+  .li-meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .li-mind { font-size: 10px; font-style: italic; color: var(--text2); opacity: 0.55; margin-top: 2px; }
+
+  /* Legend for circles */
+  .legend { display: flex; gap: 16px; padding: 12px 16px; flex-wrap: wrap; }
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+  .legend-label { font-size: 10px; color: var(--muted); }
+
+  /* Section divider */
+  .section-label { font-size: 10px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; color: var(--muted); padding: 16px 16px 4px; }
+</style>
+</head>
+<body>
+
+<h1>Completion + Reflection</h1>
+<p class="sub">Three approaches shown together. The circle tells you: not done, done but not reflected, fully reflected.</p>
+
+<div class="grid">
+
+  <!-- ===== A: INLINE PROMPT ===== -->
+  <div>
+    <div class="label">A. Inline prompt</div>
+    <div class="desc">Swipe to complete → mood prompt appears right there. One tap to reflect. No navigation.</div>
+    <div class="phone">
+      <div class="hour">9 AM</div>
+
+      <!-- Normal pill -->
+      <div class="pill">
+        <div class="pill-row">
+          <span class="pill-icon">✨</span>
+          <div class="pill-body">
+            <div class="pill-title">Board of mentors</div>
+            <div class="pill-mind">Seek wisdom from those who've walked before.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="hour">10 AM</div>
+
+      <!-- Just completed — shows green check -->
+      <div class="pill just-completed">
+        <div class="pill-row">
+          <span class="pill-icon">🧠</span>
+          <div class="pill-body">
+            <div class="pill-title done">Sankalp work</div>
+            <div class="pill-mind">Serious about intent, playful execution.</div>
+          </div>
+          <span class="green-check">✓</span>
+        </div>
+      </div>
+
+      <!-- Inline reflection prompt appears below the completed pill -->
+      <div class="inline-prompt">
+        <div class="ip-question">How was Sankalp work?</div>
+        <div class="ip-moods">
+          <div class="ip-mood">😞</div>
+          <div class="ip-mood">😕</div>
+          <div class="ip-mood">😐</div>
+          <div class="ip-mood sel">🙂</div>
+          <div class="ip-mood">😊</div>
+          <span class="ip-skip">Skip</span>
+        </div>
+      </div>
+
+      <div class="hour">12 PM</div>
+
+      <!-- Fully reflected pill — no prompt -->
+      <div class="pill" style="opacity:0.6">
+        <div class="pill-row">
+          <span class="pill-icon">💪</span>
+          <div class="pill-body">
+            <div class="pill-title done">Sunlight</div>
+            <div class="pill-mind">15 min of warmth.</div>
+          </div>
+          <span style="color:var(--primary);font-size:14px;font-weight:700">✓ 🙂</span>
+        </div>
+      </div>
+
+      <!-- Another upcoming -->
+      <div class="pill">
+        <div class="pill-row">
+          <span class="pill-icon">🏠</span>
+          <div class="pill-body">
+            <div class="pill-title">Love/care with bhabhi</div>
+            <div class="pill-mind">Be present. Listen.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== B+C: TOAST + TWO-PHASE CIRCLE ===== -->
+  <div>
+    <div class="label">B+C. Toast + two-phase circle</div>
+    <div class="desc">Circle has 3 states: empty → half (done, not reflected) → full (reflected). Toast appears after completing.</div>
+    <div class="phone">
+
+      <!-- Legend -->
+      <div class="legend">
+        <div class="legend-item"><div class="circle circle-empty" style="width:18px;height:18px;border-radius:9px"></div><span class="legend-label">Planned</span></div>
+        <div class="legend-item"><div class="circle circle-half" style="width:18px;height:18px;border-radius:9px"></div><span class="legend-label">Done</span></div>
+        <div class="legend-item"><div class="circle circle-full" style="width:18px;height:18px;border-radius:9px"></div><span class="legend-label">Reflected</span></div>
+      </div>
+
+      <div class="section-label">Completed</div>
+
+      <!-- Fully reflected -->
+      <div class="list-item">
+        <div class="circle circle-full"></div>
+        <div class="li-body">
+          <div class="li-title" style="text-decoration:line-through;opacity:0.5">Sunlight</div>
+          <div class="li-mind">15 min of warmth.</div>
+          <div class="li-meta">9:00 AM · 15m · Health</div>
+        </div>
+      </div>
+
+      <!-- Done but not reflected (half circle) -->
+      <div class="list-item">
+        <div class="circle circle-half"></div>
+        <div class="li-body">
+          <div class="li-title half-done">Sankalp work</div>
+          <div class="li-mind">Serious about intent, playful execution.</div>
+          <div class="li-meta">10:30 AM · 2h · Personal</div>
+        </div>
+      </div>
+
+      <div class="section-label">Upcoming</div>
+
+      <!-- Planned (empty circle) -->
+      <div class="list-item">
+        <div class="circle circle-empty"></div>
+        <div class="li-body">
+          <div class="li-title">Board of mentors</div>
+          <div class="li-mind">Seek wisdom from those who've walked before.</div>
+          <div class="li-meta">1:00 PM · 1h</div>
+        </div>
+      </div>
+
+      <div class="list-item">
+        <div class="circle circle-empty"></div>
+        <div class="li-body">
+          <div class="li-title">Leisure activities</div>
+          <div class="li-mind">This is one of my first callings.</div>
+          <div class="li-meta">3:00 PM · 1h · Rest</div>
+        </div>
+      </div>
+
+      <div class="list-item">
+        <div class="circle circle-empty"></div>
+        <div class="li-body">
+          <div class="li-title">Love/care with bhabhi</div>
+          <div class="li-mind">Be present. Listen.</div>
+          <div class="li-meta">5:00 PM · 30m · Family</div>
+        </div>
+      </div>
+
+      <!-- Toast at bottom -->
+      <div class="toast">
+        <span class="toast-text">✓ Sankalp work done</span>
+        <span class="toast-btn">Reflect</span>
+        <span class="toast-dismiss">×</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== ALL THREE COMBINED ===== -->
+  <div>
+    <div class="label">Combined: B+C + A</div>
+    <div class="desc">Two-phase circles everywhere. When you tap the half circle, inline mood prompt appears. Toast for awareness.</div>
+    <div class="phone">
+
+      <div class="section-label">Completed</div>
+
+      <!-- Fully reflected (full circle + mood shown) -->
+      <div class="list-item">
+        <div class="circle circle-full"></div>
+        <div class="li-body">
+          <div class="li-title" style="text-decoration:line-through;opacity:0.5">Sunlight</div>
+          <div class="li-meta">9:00 AM · 15m · 🙂 Good</div>
+        </div>
+      </div>
+
+      <!-- Done, not reflected (half circle) — tapping shows inline prompt -->
+      <div class="list-item" style="border-bottom:none">
+        <div class="circle circle-half"></div>
+        <div class="li-body">
+          <div class="li-title half-done">Sankalp work</div>
+          <div class="li-mind">Serious about intent, playful execution.</div>
+          <div class="li-meta">10:30 AM · 2h · Personal</div>
+        </div>
+      </div>
+
+      <!-- Inline prompt expanded below the half-circle item -->
+      <div class="inline-prompt" style="margin:0 16px 0 52px; border-radius:10px; padding:8px 12px">
+        <div class="ip-question" style="font-size:11px;margin-bottom:6px">How did it go?</div>
+        <div class="ip-moods">
+          <div class="ip-mood" style="width:32px;height:32px;font-size:16px">😞</div>
+          <div class="ip-mood" style="width:32px;height:32px;font-size:16px">😕</div>
+          <div class="ip-mood" style="width:32px;height:32px;font-size:16px">😐</div>
+          <div class="ip-mood" style="width:32px;height:32px;font-size:16px">🙂</div>
+          <div class="ip-mood" style="width:32px;height:32px;font-size:16px">😊</div>
+        </div>
+      </div>
+
+      <div class="section-label" style="margin-top:8px">Upcoming</div>
+
+      <div class="list-item">
+        <div class="circle circle-empty"></div>
+        <div class="li-body">
+          <div class="li-title">Board of mentors</div>
+          <div class="li-mind">Seek wisdom from those who've walked before.</div>
+          <div class="li-meta">1:00 PM · 1h</div>
+        </div>
+      </div>
+
+      <div class="list-item">
+        <div class="circle circle-empty"></div>
+        <div class="li-body">
+          <div class="li-title">Leisure activities</div>
+          <div class="li-mind">This is one of my first callings.</div>
+          <div class="li-meta">3:00 PM · 1h · Rest</div>
+        </div>
+      </div>
+
+      <div class="list-item">
+        <div class="circle circle-empty"></div>
+        <div class="li-body">
+          <div class="li-title">Love/care with bhabhi</div>
+          <div class="li-mind">Be present. Listen.</div>
+          <div class="li-meta">5:00 PM · 30m · Family</div>
+        </div>
+      </div>
+
+      <!-- Toast -->
+      <div class="toast">
+        <span class="toast-text">✓ Sankalp work — tap ◐ to reflect</span>
+        <span class="toast-dismiss">×</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
