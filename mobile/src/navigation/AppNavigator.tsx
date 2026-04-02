@@ -94,7 +94,8 @@ export function AppNavigator() {
         // Seed BEFORE initializing DB/auth so localStorage is populated
         // before the web DB singleton reads it
         await seedDummyData();
-        await seedShowcaseDay(); // DEV: seeds yesterday with all categories for visual QA
+        // seedShowcaseDay disabled — was overwriting user edits on every reload
+        // await seedShowcaseDay();
         await initialize();
         await seedSystemCategories();
         await markOnboardingComplete();
