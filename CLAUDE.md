@@ -107,6 +107,9 @@ Read `TODO.md` for the full list. Top priorities:
 - Web: `npx expo start --web` then open http://localhost:8081
 - SDK 54 for Expo Go compatibility
 
+## QA Cleanup
+After every QA session, clean `mobile/qa-screenshots/` and `/tmp/dayflow-qa/`. Don't let test artifacts accumulate.
+
 ## Ask Logging (PRD Updates)
 Every 5-10 significant user requests, update the "User Asks Log" table in PLAN.md.
 Log: date, what was asked, status (Done/In progress/TODO), and outcome.
