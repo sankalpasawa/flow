@@ -304,13 +304,24 @@ export function CanvasScreen({ navigation }: Props) {
               refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
               renderItem={({ item }) => {
                 const isDone = item.status === 'COMPLETED' || item.status === 'SKIPPED';
+                const hasLog = !!logs[item.id];
                 const catColor = getCategoryColor(item.category_id);
+                // Three states: empty (planned) → half (done, not reflected) → full (reflected)
+                const circleStyle = isDone
+                  ? (hasLog ? styles.listCircleFull : styles.listCircleHalf)
+                  : styles.listCircle;
                 return (
                   <View style={styles.listItem}>
-                    {/* Circle checkbox */}
+                    {/* Circle: tap empty → complete, tap half → open experience log */}
                     <TouchableOpacity
-                      style={[styles.listCircle, isDone && styles.listCircleDone]}
-                      onPress={() => quickToggleComplete(item.id)}
+                      style={circleStyle}
+                      onPress={() => {
+                        if (!isDone) {
+                          quickToggleComplete(item.id);
+                        } else if (!hasLog) {
+                          navigation.navigate('ExperienceLog', { activityId: item.id });
+                        }
+                      }}
                       activeOpacity={0.6}
                     >
                       {isDone && <Text style={styles.listCircleCheck}>{'\u2713'}</Text>}
@@ -576,8 +587,9 @@ const styles = StyleSheet.create({
 
   // List view items
   listItem: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: colors.border },
-  listCircle: { width: 24, height: 24, borderRadius: 12, borderWidth: 2, borderColor: colors.border, alignItems: 'center', justifyContent: 'center', marginTop: 2 },
-  listCircleDone: { backgroundColor: colors.primary, borderColor: colors.primary },
+  listCircle: { width: 24, height: 24, borderRadius: 12, borderWidth: 2, borderColor: colors.border, alignItems: 'center', justifyContent: 'center', marginTop: 2 } as any,
+  listCircleHalf: { width: 24, height: 24, borderRadius: 12, borderWidth: 2, borderColor: colors.primary, alignItems: 'center', justifyContent: 'center', marginTop: 2, backgroundColor: colors.primaryBg } as any,
+  listCircleFull: { width: 24, height: 24, borderRadius: 12, borderWidth: 2, borderColor: colors.primary, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center', marginTop: 2 } as any,
   listCircleCheck: { color: '#fff', fontSize: 12, fontWeight: '700' as const },
   listTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   listTitleDone: { textDecorationLine: 'line-through', color: colors.muted },
