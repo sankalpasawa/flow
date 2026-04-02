@@ -969,3 +969,46 @@ Only working on:
 - Data integrity (seed, recurrence)
 
 NOT working on: Plan tab, Insights tab, Settings tab, Dark mode, Push notifications
+
+## Product Roadmap — Google Calendar Integration
+
+### Vision
+DayFlow is a beautiful AI-powered UI layer. Google Calendar is the data backbone.
+Two-way sync. Edit from either side. DayFlow adds mindset, experience, AI — Google handles sync, sharing, meetings.
+
+### v2 (Current) — Standalone DayFlow
+- Local SQLite database
+- All features built: glass UI, AI command layer, mindset, experience log
+- No Google Calendar integration
+
+### v3 — Google Calendar → DayFlow (read)
+- User signs in with Google OAuth
+- Google Calendar events appear on DayFlow canvas
+- Read-only: DayFlow displays, doesn't modify Google events
+- Mindset + experience stored in DayFlow local DB, linked by Google event ID
+
+### v4 — DayFlow → Google Calendar (write)
+- Activities created in DayFlow push to Google Calendar
+- Mindset written to event description
+- Experience log summary written to description
+- Structured data in extended properties (mood, energy, completion)
+- Team/shared calendars visible
+
+### v5 — Two-way sync + edit from either side
+- Edit in Google Calendar → reflects in DayFlow
+- Edit in DayFlow → reflects in Google Calendar  
+- Conflict resolution (last-write-wins or prompt user)
+- Real-time sync via Google Calendar webhooks
+- Full history access for AI insights ("how much time on health this month?")
+
+### Architecture note
+The current AI command layer (commandLayer.ts) is schema-driven.
+When Google Calendar becomes the data layer, the schema expands to include
+Google Calendar fields (attendees, location, conferencing, reminders).
+The LLM automatically understands these new capabilities without code changes.
+
+| Apr 2 | Google Calendar integration strategy: v3 read, v4 write, v5 two-way | Strategy documented | Roadmap in PLAN.md |
+| Apr 2 | Remove task concept — everything is Activity | Agreed | Data model stays, UI doesn't distinguish |
+| Apr 2 | Schema-driven AI: unbounded capabilities, no fixed list | Done | commandLayer.ts + /command edge function deployed |
+| Apr 2 | Mindset = framing not motivation | Done | mindsetGenerator.ts with 50+ activity-specific prompts |
+| Apr 2 | Three-state circle: planned → done → reflected | Done | List view implementation |
