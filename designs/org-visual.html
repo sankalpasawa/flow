@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DayFlow — The Organization</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-snap-type: y mandatory; }
+  body { font-family: 'Inter', -apple-system, sans-serif; color: #1A1714; -webkit-font-smoothing: antialiased; }
+
+  .slide {
+    min-height: 100vh; display: flex; flex-direction: column;
+    justify-content: center; align-items: center;
+    padding: 60px 40px; scroll-snap-align: start; position: relative; overflow: hidden;
+  }
+  .slide-inner { max-width: 800px; width: 100%; z-index: 1; }
+
+  .bg-cream { background: #F5F0E8; }
+  .bg-green { background: #2D5A3E; color: #fff; }
+  .bg-dark { background: #1A1714; color: #F5F0E8; }
+  .bg-warm { background: linear-gradient(135deg, #F5F0E8, #EDE5D8); }
+  .bg-accent { background: linear-gradient(160deg, #C4795B, #A05A3E); color: #fff; }
+
+  .deco { position: absolute; border-radius: 50%; opacity: 0.06; }
+
+  .mega { font-size: clamp(42px, 7vw, 72px); font-weight: 900; letter-spacing: -2px; line-height: 1.05; }
+  .big { font-size: clamp(28px, 4.5vw, 44px); font-weight: 800; letter-spacing: -1px; line-height: 1.15; }
+  .medium { font-size: clamp(20px, 3vw, 28px); font-weight: 700; letter-spacing: -0.5px; line-height: 1.3; }
+  .body-lg { font-size: clamp(15px, 2vw, 18px); font-weight: 400; line-height: 1.6; opacity: 0.75; }
+  .label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; opacity: 0.5; margin-bottom: 16px; }
+  .mt-16 { margin-top: 16px; } .mt-24 { margin-top: 24px; } .mt-32 { margin-top: 32px; } .mt-48 { margin-top: 48px; }
+  .mb-16 { margin-bottom: 16px; } .mb-24 { margin-bottom: 24px; }
+  .center { text-align: center; }
+  .green { color: #2D5A3E; }
+  .accent { color: #C4795B; }
+
+  .slide-num { position: absolute; bottom: 24px; right: 32px; font-size: 11px; font-weight: 600; opacity: 0.2; letter-spacing: 1px; }
+
+  /* Org chart */
+  .org-chart { display: flex; flex-direction: column; align-items: center; gap: 0; margin-top: 32px; }
+  .org-row { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; }
+  .org-connector { width: 2px; height: 24px; background: rgba(255,255,255,0.2); margin: 0 auto; }
+  .org-branch { display: flex; justify-content: center; gap: 0; }
+  .org-branch-line { width: 100%; height: 2px; background: rgba(255,255,255,0.15); margin-bottom: 12px; }
+
+  .org-node {
+    padding: 12px 16px; border-radius: 12px; text-align: center;
+    min-width: 100px; position: relative;
+  }
+  .org-ceo { background: rgba(196,121,91,0.2); border: 1px solid rgba(196,121,91,0.3); }
+  .org-coo { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15); }
+  .org-dept { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); min-width: 80px; }
+  .org-node-title { font-size: 12px; font-weight: 700; }
+  .org-node-sub { font-size: 9px; opacity: 0.6; margin-top: 2px; }
+  .org-node-emoji { font-size: 20px; margin-bottom: 4px; }
+
+  /* Flow diagram */
+  .flow { display: flex; flex-direction: column; align-items: center; gap: 0; margin-top: 32px; }
+  .flow-step {
+    width: 100%; max-width: 500px; padding: 16px 20px; border-radius: 14px;
+    display: flex; align-items: center; gap: 14px; position: relative;
+  }
+  .flow-num {
+    width: 32px; height: 32px; border-radius: 16px; display: flex;
+    align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 800; flex-shrink: 0;
+  }
+  .flow-content h4 { font-size: 14px; font-weight: 700; }
+  .flow-content p { font-size: 11px; opacity: 0.6; margin-top: 2px; }
+  .flow-content .owner { font-size: 9px; font-weight: 600; opacity: 0.4; text-transform: uppercase; letter-spacing: 0.5px; }
+  .flow-arrow { width: 2px; height: 16px; margin: 0 auto; }
+
+  .step-intake { background: rgba(59,130,246,0.1); }
+  .step-intake .flow-num { background: #3B82F6; color: #fff; }
+  .step-eval { background: rgba(139,92,246,0.1); }
+  .step-eval .flow-num { background: #8B5CF6; color: #fff; }
+  .step-spec { background: rgba(236,72,153,0.1); }
+  .step-spec .flow-num { background: #EC4899; color: #fff; }
+  .step-review { background: rgba(249,115,22,0.1); }
+  .step-review .flow-num { background: #F97316; color: #fff; }
+  .step-approve { background: rgba(196,121,91,0.15); border: 1px solid rgba(196,121,91,0.25); }
+  .step-approve .flow-num { background: #C4795B; color: #fff; }
+  .step-build { background: rgba(45,90,62,0.1); }
+  .step-build .flow-num { background: #2D5A3E; color: #fff; }
+  .step-qa { background: rgba(16,185,129,0.1); }
+  .step-qa .flow-num { background: #10B981; color: #fff; }
+  .step-ship { background: rgba(45,90,62,0.15); border: 1px solid rgba(45,90,62,0.2); }
+  .step-ship .flow-num { background: #2D5A3E; color: #fff; }
+
+  .flow-arrow-blue { background: #3B82F6; }
+  .flow-arrow-purple { background: #8B5CF6; }
+  .flow-arrow-pink { background: #EC4899; }
+  .flow-arrow-orange { background: #F97316; }
+  .flow-arrow-accent { background: #C4795B; }
+  .flow-arrow-green { background: #2D5A3E; }
+  .flow-arrow-teal { background: #10B981; }
+
+  /* Department cards */
+  .dept-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 32px; }
+  .dept-card {
+    padding: 16px; border-radius: 14px; position: relative;
+    background: rgba(255,255,255,0.65); border: 1px solid rgba(255,255,255,0.75);
+    box-shadow: 0 3px 8px rgba(0,0,0,0.06);
+  }
+  .dept-emoji { font-size: 24px; margin-bottom: 8px; }
+  .dept-name { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+  .dept-mission { font-size: 11px; color: #4A4540; line-height: 1.4; }
+  .dept-okr { font-size: 10px; font-weight: 600; color: #2D5A3E; margin-top: 8px; }
+  .dept-metric { font-size: 9px; color: #8C857D; margin-top: 2px; }
+
+  /* Routing table visual */
+  .routing { margin-top: 32px; }
+  .route-row {
+    display: flex; align-items: center; gap: 8px; padding: 10px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    font-size: 12px;
+  }
+  .route-from { width: 80px; font-weight: 700; flex-shrink: 0; }
+  .route-signal { flex: 1; opacity: 0.7; }
+  .route-arrow { color: #C4795B; font-weight: 700; flex-shrink: 0; }
+  .route-to { width: 100px; font-weight: 600; flex-shrink: 0; text-align: right; }
+
+  /* Workings scale */
+  .scale-row { display: flex; gap: 8px; margin-top: 24px; justify-content: center; }
+  .scale-item {
+    width: 100px; padding: 12px 8px; border-radius: 12px; text-align: center;
+    background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.1);
+  }
+  .scale-item.active { background: rgba(196,121,91,0.15); border-color: rgba(196,121,91,0.25); }
+  .scale-num { font-size: 24px; font-weight: 800; }
+  .scale-label { font-size: 9px; opacity: 0.5; margin-top: 4px; font-weight: 600; }
+
+  /* What's missing section */
+  .missing-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 24px; }
+  .missing-card {
+    padding: 14px; border-radius: 12px; border-left: 3px solid;
+  }
+  .missing-card.p0 { background: rgba(239,68,68,0.08); border-color: #EF4444; }
+  .missing-card.p1 { background: rgba(249,115,22,0.08); border-color: #F97316; }
+  .missing-card.p2 { background: rgba(59,130,246,0.08); border-color: #3B82F6; }
+  .missing-title { font-size: 12px; font-weight: 700; margin-bottom: 2px; }
+  .missing-dept { font-size: 9px; font-weight: 600; opacity: 0.5; text-transform: uppercase; }
+  .missing-desc { font-size: 11px; color: #4A4540; margin-top: 4px; }
+</style>
+</head>
+<body>
+
+<!-- SLIDE 1: Title -->
+<div class="slide bg-cream">
+  <div class="deco" style="width:400px;height:400px;background:#2D5A3E;top:-100px;right:-100px;"></div>
+  <div class="slide-inner center">
+    <p class="label">The Company</p>
+    <h1 class="mega">Day<span class="green">Flow</span> Inc.</h1>
+    <p class="body-lg mt-24">An AI-native organization.<br>9 departments. Autonomous agents. One founder.</p>
+  </div>
+  <div class="slide-num">01 / 10</div>
+</div>
+
+<!-- SLIDE 2: Org Chart -->
+<div class="slide bg-dark">
+  <div class="slide-inner center">
+    <p class="label" style="color:#8C857D;">Organization</p>
+    <h2 class="big">Who does what</h2>
+    <div class="org-chart">
+      <!-- CEO -->
+      <div class="org-row">
+        <div class="org-node org-ceo">
+          <div class="org-node-emoji">👑</div>
+          <div class="org-node-title">CEO (Founder)</div>
+          <div class="org-node-sub">Vision, decisions, taste</div>
+        </div>
+      </div>
+      <div class="org-connector"></div>
+      <!-- COO -->
+      <div class="org-row">
+        <div class="org-node org-coo">
+          <div class="org-node-emoji">⚙️</div>
+          <div class="org-node-title">Operations (COO)</div>
+          <div class="org-node-sub">Cross-dept coordination</div>
+        </div>
+      </div>
+      <div class="org-connector"></div>
+      <!-- Branch line -->
+      <div style="width:90%;height:2px;background:rgba(255,255,255,0.12);margin:0 auto 12px;"></div>
+      <!-- Departments -->
+      <div class="org-row">
+        <div class="org-node org-dept">
+          <div class="org-node-emoji">📦</div>
+          <div class="org-node-title">Product</div>
+          <div class="org-node-sub">What + Why</div>
+        </div>
+        <div class="org-node org-dept">
+          <div class="org-node-emoji">🎨</div>
+          <div class="org-node-title">Design</div>
+          <div class="org-node-sub">How it looks</div>
+        </div>
+        <div class="org-node org-dept">
+          <div class="org-node-emoji">⚡</div>
+          <div class="org-node-title">Engineering</div>
+          <div class="org-node-sub">How it works</div>
+        </div>
+        <div class="org-node org-dept">
+          <div class="org-node-emoji">📊</div>
+          <div class="org-node-title">Data</div>
+          <div class="org-node-sub">What happened</div>
+        </div>
+      </div>
+      <div style="height:12px;"></div>
+      <div class="org-row">
+        <div class="org-node org-dept">
+          <div class="org-node-emoji">🔒</div>
+          <div class="org-node-title">Security</div>
+          <div class="org-node-sub">Keep it safe</div>
+        </div>
+        <div class="org-node org-dept">
+          <div class="org-node-emoji">✅</div>
+          <div class="org-node-title">Quality</div>
+          <div class="org-node-sub">Ship zero bugs</div>
+        </div>
+        <div class="org-node org-dept">
+          <div class="org-node-emoji">🚀</div>
+          <div class="org-node-title">Growth</div>
+          <div class="org-node-sub">Get + keep users</div>
+        </div>
+        <div class="org-node org-dept">
+          <div class="org-node-emoji">✍️</div>
+          <div class="org-node-title">Content</div>
+          <div class="org-node-sub">Every word</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num" style="color:rgba(255,255,255,0.2)">02 / 10</div>
+</div>
+
+<!-- SLIDE 3: Idea to Ship flow -->
+<div class="slide bg-warm">
+  <div class="slide-inner">
+    <p class="label">Process</p>
+    <h2 class="big">Idea to Ship</h2>
+    <p class="body-lg">Every feature follows this path. No shortcuts.</p>
+    <div class="flow">
+      <div class="flow-step step-intake">
+        <div class="flow-num">1</div>
+        <div class="flow-content">
+          <div class="owner">Product</div>
+          <h4>Intake</h4>
+          <p>Problem statement, proposed solution, success criteria</p>
+        </div>
+      </div>
+      <div class="flow-arrow flow-arrow-blue"></div>
+      <div class="flow-step step-eval">
+        <div class="flow-num">2</div>
+        <div class="flow-content">
+          <div class="owner">CEO + Growth</div>
+          <h4>Evaluate</h4>
+          <p>RICE score: Reach x Impact x Confidence / Effort</p>
+        </div>
+      </div>
+      <div class="flow-arrow flow-arrow-purple"></div>
+      <div class="flow-step step-spec">
+        <div class="flow-num">3</div>
+        <div class="flow-content">
+          <div class="owner">Product + Design + Engineering</div>
+          <h4>Spec</h4>
+          <p>Product spec, design spec (with mockup), tech spec. In parallel.</p>
+        </div>
+      </div>
+      <div class="flow-arrow flow-arrow-pink"></div>
+      <div class="flow-step step-review">
+        <div class="flow-num">4</div>
+        <div class="flow-content">
+          <div class="owner">All departments</div>
+          <h4>Review</h4>
+          <p>Security checks, QA plan, data events, cross-dept sign-off</p>
+        </div>
+      </div>
+      <div class="flow-arrow flow-arrow-orange"></div>
+      <div class="flow-step step-approve">
+        <div class="flow-num">5</div>
+        <div class="flow-content">
+          <div class="owner">CEO (Founder)</div>
+          <h4>Approve</h4>
+          <p>Build / Defer / Kill. You decide. Agents recommend.</p>
+        </div>
+      </div>
+      <div class="flow-arrow flow-arrow-accent"></div>
+      <div class="flow-step step-build">
+        <div class="flow-num">6</div>
+        <div class="flow-content">
+          <div class="owner">Engineering</div>
+          <h4>Build</h4>
+          <p>Code following architecture + design specs. One commit per change.</p>
+        </div>
+      </div>
+      <div class="flow-arrow flow-arrow-green"></div>
+      <div class="flow-step step-qa">
+        <div class="flow-num">7</div>
+        <div class="flow-content">
+          <div class="owner">Quality + Design</div>
+          <h4>QA</h4>
+          <p>Unit tests, design pixel check, feature verification, regression</p>
+        </div>
+      </div>
+      <div class="flow-arrow flow-arrow-teal"></div>
+      <div class="flow-step step-ship">
+        <div class="flow-num">8</div>
+        <div class="flow-content">
+          <div class="owner">Engineering + Data</div>
+          <h4>Ship + Monitor</h4>
+          <p>Deploy, track analytics, watch for issues, iterate</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num">03 / 10</div>
+</div>
+
+<!-- SLIDE 4: Each Department -->
+<div class="slide bg-cream">
+  <div class="slide-inner">
+    <p class="label">Departments</p>
+    <h2 class="big">What each team owns</h2>
+    <div class="dept-grid">
+      <div class="dept-card">
+        <div class="dept-emoji">📦</div>
+        <div class="dept-name">Product</div>
+        <div class="dept-mission">Decides WHAT to build and WHY. Owns roadmap, user stories, priority.</div>
+        <div class="dept-okr">OKR: 100% features spec'd before build</div>
+      </div>
+      <div class="dept-card">
+        <div class="dept-emoji">🎨</div>
+        <div class="dept-name">Design</div>
+        <div class="dept-mission">Owns every pixel. Design system, mockups, accessibility, visual QA.</div>
+        <div class="dept-okr">OKR: Zero pixel mismatches</div>
+      </div>
+      <div class="dept-card">
+        <div class="dept-emoji">⚡</div>
+        <div class="dept-name">Engineering</div>
+        <div class="dept-mission">Builds reliable software. Architecture, performance, tech debt.</div>
+        <div class="dept-okr">OKR: Tech debt score > 7/10</div>
+      </div>
+      <div class="dept-card">
+        <div class="dept-emoji">📊</div>
+        <div class="dept-name">Data</div>
+        <div class="dept-mission">Makes decisions data-informed. Analytics, experiments, insights.</div>
+        <div class="dept-okr">OKR: 15+ core events tracked</div>
+      </div>
+      <div class="dept-card">
+        <div class="dept-emoji">🔒</div>
+        <div class="dept-name">Security</div>
+        <div class="dept-mission">Protects user data and trust. Auth, privacy, compliance.</div>
+        <div class="dept-okr">OKR: Zero critical vulnerabilities</div>
+      </div>
+      <div class="dept-card">
+        <div class="dept-emoji">✅</div>
+        <div class="dept-name">Quality</div>
+        <div class="dept-mission">Ships zero defects. Testing, regression, design compliance.</div>
+        <div class="dept-okr">OKR: > 50% test coverage</div>
+      </div>
+      <div class="dept-card">
+        <div class="dept-emoji">🚀</div>
+        <div class="dept-name">Growth</div>
+        <div class="dept-mission">Acquires and retains users. Onboarding, notifications, virality.</div>
+        <div class="dept-okr">OKR: D7 retention > 40%</div>
+      </div>
+      <div class="dept-card">
+        <div class="dept-emoji">⚙️</div>
+        <div class="dept-name">Operations</div>
+        <div class="dept-mission">Keeps the org running. Cross-dept coordination, standups, planning.</div>
+        <div class="dept-okr">OKR: Zero blocked items</div>
+      </div>
+      <div class="dept-card">
+        <div class="dept-emoji">✍️</div>
+        <div class="dept-name">Content</div>
+        <div class="dept-mission">Every word is intentional. Copy, docs, app store, changelog.</div>
+        <div class="dept-okr">OKR: App Store listing ready</div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num">04 / 10</div>
+</div>
+
+<!-- SLIDE 5: Routing -->
+<div class="slide bg-dark">
+  <div class="slide-inner">
+    <p class="label" style="color:#8C857D;">How signals flow</p>
+    <h2 class="big">Cross-Department Routing</h2>
+    <p class="body-lg">When one department finds something, it knows exactly where to send it.</p>
+    <div class="routing">
+      <div class="route-row"><span class="route-from">📊 Data</span><span class="route-signal">Low retention detected</span><span class="route-arrow">→</span><span class="route-to">🚀 Growth</span></div>
+      <div class="route-row"><span class="route-from">✅ Quality</span><span class="route-signal">Pixel mismatch found</span><span class="route-arrow">→</span><span class="route-to">🎨 Design</span></div>
+      <div class="route-row"><span class="route-from">🔒 Security</span><span class="route-signal">Vulnerability detected</span><span class="route-arrow">→</span><span class="route-to">⚡ Engineering</span></div>
+      <div class="route-row"><span class="route-from">🚀 Growth</span><span class="route-signal">Onboarding drop-off</span><span class="route-arrow">→</span><span class="route-to">📦 Product</span></div>
+      <div class="route-row"><span class="route-from">⚡ Eng</span><span class="route-signal">Tech debt > threshold</span><span class="route-arrow">→</span><span class="route-to">⚙️ Operations</span></div>
+      <div class="route-row"><span class="route-from">✍️ Content</span><span class="route-signal">Inconsistent terminology</span><span class="route-arrow">→</span><span class="route-to">📦 Product</span></div>
+      <div class="route-row"><span class="route-from">📦 Product</span><span class="route-signal">New feature approved</span><span class="route-arrow">→</span><span class="route-to">🎨 + ⚡ + ✅</span></div>
+      <div class="route-row"><span class="route-from">🎨 Design</span><span class="route-signal">New component spec'd</span><span class="route-arrow">→</span><span class="route-to">⚡ Engineering</span></div>
+      <div class="route-row"><span class="route-from">📊 Data</span><span class="route-signal">Feature unused (< 5%)</span><span class="route-arrow">→</span><span class="route-to">📦 Product</span></div>
+    </div>
+  </div>
+  <div class="slide-num" style="color:rgba(255,255,255,0.2)">05 / 10</div>
+</div>
+
+<!-- SLIDE 6: Daily Standup -->
+<div class="slide bg-green">
+  <div class="deco" style="width:500px;height:500px;background:#fff;top:-200px;left:-200px;"></div>
+  <div class="slide-inner center">
+    <p class="label" style="color:rgba(255,255,255,0.4);">Every day</p>
+    <h2 class="mega">Standup</h2>
+    <p class="body-lg mt-16" style="opacity:0.7;">Every session starts with parallel department checks.<br>CEO synthesizes into one priority list.</p>
+    <div style="display:flex;flex-direction:column;gap:12px;margin-top:32px;text-align:left;max-width:440px;margin-left:auto;margin-right:auto;">
+      <div style="display:flex;gap:12px;align-items:flex-start;">
+        <span style="font-size:20px;">✅</span>
+        <div><div style="font-size:13px;font-weight:700;">Quality</div><div style="font-size:11px;opacity:0.6;">Tests passing, design tokens clean, regressions?</div></div>
+      </div>
+      <div style="display:flex;gap:12px;align-items:flex-start;">
+        <span style="font-size:20px;">🎨</span>
+        <div><div style="font-size:13px;font-weight:700;">Design</div><div style="font-size:11px;opacity:0.6;">Pixel mismatches, specs needed, debt score</div></div>
+      </div>
+      <div style="display:flex;gap:12px;align-items:flex-start;">
+        <span style="font-size:20px;">⚡</span>
+        <div><div style="font-size:13px;font-weight:700;">Engineering</div><div style="font-size:11px;opacity:0.6;">Tech debt, large files, architecture compliance</div></div>
+      </div>
+      <div style="display:flex;gap:12px;align-items:flex-start;">
+        <span style="font-size:20px;">📊</span>
+        <div><div style="font-size:13px;font-weight:700;">Data</div><div style="font-size:11px;opacity:0.6;">Analytics coverage, events tracked, insights</div></div>
+      </div>
+      <div style="display:flex;gap:12px;align-items:flex-start;margin-top:8px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.15);">
+        <span style="font-size:20px;">👑</span>
+        <div><div style="font-size:13px;font-weight:700;">CEO Synthesis</div><div style="font-size:11px;opacity:0.6;">Today's #1 priority. Risks. Decisions needed.</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num" style="color:rgba(255,255,255,0.2)">06 / 10</div>
+</div>
+
+<!-- SLIDE 7: Workings Scale -->
+<div class="slide bg-dark">
+  <div class="slide-inner center">
+    <p class="label" style="color:#8C857D;">Visibility</p>
+    <h2 class="big">Workings Scale</h2>
+    <p class="body-lg">How much org process do you see?</p>
+    <div class="scale-row">
+      <div class="scale-item"><div class="scale-num">1</div><div class="scale-label">Silent</div></div>
+      <div class="scale-item active"><div class="scale-num">2</div><div class="scale-label">Default</div></div>
+      <div class="scale-item"><div class="scale-num">3</div><div class="scale-label">Findings</div></div>
+      <div class="scale-item"><div class="scale-num">4</div><div class="scale-label">Trade-offs</div></div>
+      <div class="scale-item"><div class="scale-num">5</div><div class="scale-label">Everything</div></div>
+    </div>
+    <div style="margin-top:32px;text-align:left;max-width:500px;margin-left:auto;margin-right:auto;">
+      <div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:16px;">
+        <span style="font-size:18px;font-weight:800;color:#C4795B;width:24px;">1</span>
+        <div style="font-size:13px;opacity:0.7;">"Done. Feature shipped."</div>
+      </div>
+      <div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:16px;">
+        <span style="font-size:18px;font-weight:800;color:#C4795B;width:24px;">2</span>
+        <div style="font-size:13px;opacity:0.7;">"Done. Design spec'd, QA passed, 3 tests added."</div>
+      </div>
+      <div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:16px;">
+        <span style="font-size:18px;font-weight:800;color:#C4795B;width:24px;">3</span>
+        <div style="font-size:13px;opacity:0.7;">"CDO found spacing issue in form. Routed to CTO. Fixed in commit abc123."</div>
+      </div>
+      <div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:16px;">
+        <span style="font-size:18px;font-weight:800;color:#C4795B;width:24px;">4</span>
+        <div style="font-size:13px;opacity:0.7;">"CTO wanted refactor first (tech debt 4/10). CGO wanted ship fast (retention risk). Chose: ship, refactor next sprint."</div>
+      </div>
+      <div style="display:flex;gap:12px;align-items:flex-start;">
+        <span style="font-size:18px;font-weight:800;color:#C4795B;width:24px;">5</span>
+        <div style="font-size:13px;opacity:0.7;">"Grepped 30 .tsx files for hardcoded hex. theme.ts line 15 verified. FEATURE-SPECS.md section 4.2 checked. CQO report: 23/344 tests..."</div>
+      </div>
+    </div>
+    <p style="margin-top:24px;font-size:12px;opacity:0.4;font-weight:600;">Tiebreakers and non-obvious decisions always surface. Regardless of level.</p>
+  </div>
+  <div class="slide-num" style="color:rgba(255,255,255,0.2)">07 / 10</div>
+</div>
+
+<!-- SLIDE 8: What's Missing -->
+<div class="slide bg-warm">
+  <div class="slide-inner">
+    <p class="label">Gaps</p>
+    <h2 class="big">What we still need</h2>
+    <div class="missing-grid">
+      <div class="missing-card p0">
+        <div class="missing-dept">Security</div>
+        <div class="missing-title">JWT validation in edge function</div>
+        <div class="missing-desc">Anyone can impersonate any user. P0 blocker.</div>
+      </div>
+      <div class="missing-card p0">
+        <div class="missing-dept">Quality</div>
+        <div class="missing-title">Test coverage at 6.7%</div>
+        <div class="missing-desc">344 tests planned, 23 implemented. Ship risk.</div>
+      </div>
+      <div class="missing-card p0">
+        <div class="missing-dept">Data</div>
+        <div class="missing-title">Zero analytics</div>
+        <div class="missing-desc">No PostHog. No events. Shipping blind.</div>
+      </div>
+      <div class="missing-card p0">
+        <div class="missing-dept">Legal</div>
+        <div class="missing-title">No privacy policy</div>
+        <div class="missing-desc">Required for App Store. Required for GDPR.</div>
+      </div>
+      <div class="missing-card p1">
+        <div class="missing-dept">Engineering</div>
+        <div class="missing-title">ActivityFormScreen: 1,402 lines</div>
+        <div class="missing-desc">3.5x the threshold. Urgent refactor.</div>
+      </div>
+      <div class="missing-card p1">
+        <div class="missing-dept">Infrastructure</div>
+        <div class="missing-title">No CI/CD pipeline</div>
+        <div class="missing-desc">No automated builds, no deploy pipeline.</div>
+      </div>
+      <div class="missing-card p1">
+        <div class="missing-dept">Growth</div>
+        <div class="missing-title">No onboarding optimization</div>
+        <div class="missing-desc">First-time experience not measured or tuned.</div>
+      </div>
+      <div class="missing-card p2">
+        <div class="missing-dept">Content</div>
+        <div class="missing-title">App Store listing not drafted</div>
+        <div class="missing-desc">Name, description, screenshots, keywords.</div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num">08 / 10</div>
+</div>
+
+<!-- SLIDE 9: What can be added -->
+<div class="slide bg-cream">
+  <div class="slide-inner">
+    <p class="label">What's next</p>
+    <h2 class="big">Things we can add</h2>
+    <p class="body-lg mb-24">Beyond the current product. Future org capabilities.</p>
+    <div class="dept-grid" style="grid-template-columns: 1fr 1fr;">
+      <div class="dept-card">
+        <div class="dept-emoji">🤖</div>
+        <div class="dept-name">AI Ops Department</div>
+        <div class="dept-mission">Manages LLM costs, prompt versioning, model switching (Claude vs Gemini vs local), quality scoring of AI outputs.</div>
+      </div>
+      <div class="dept-card">
+        <div class="dept-emoji">🌍</div>
+        <div class="dept-name">Localization</div>
+        <div class="dept-mission">Multi-language support. Hindi, regional languages. RTL for Arabic. Cultural adaptation of mindset prompts.</div>
+      </div>
+      <div class="dept-card">
+        <div class="dept-emoji">🤝</div>
+        <div class="dept-name">Partnerships</div>
+        <div class="dept-mission">Google Calendar API, Apple Health, Spotify, WhatsApp. Each integration needs its own adapter.</div>
+      </div>
+      <div class="dept-card">
+        <div class="dept-emoji">💰</div>
+        <div class="dept-name">Monetization</div>
+        <div class="dept-mission">Freemium model. Pro tier pricing. IAP implementation. Revenue analytics. Churn prevention.</div>
+      </div>
+      <div class="dept-card">
+        <div class="dept-emoji">🧪</div>
+        <div class="dept-name">Research</div>
+        <div class="dept-mission">User interviews. Usability testing. Competitor analysis. Market sizing. Behavioral science research.</div>
+      </div>
+      <div class="dept-card">
+        <div class="dept-emoji">📣</div>
+        <div class="dept-name">Marketing</div>
+        <div class="dept-mission">Landing page. Social media. Product Hunt launch. Press outreach. Community building.</div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num">09 / 10</div>
+</div>
+
+<!-- SLIDE 10: The Philosophy -->
+<div class="slide bg-accent">
+  <div class="deco" style="width:500px;height:500px;background:#fff;bottom:-200px;right:-200px;"></div>
+  <div class="slide-inner center">
+    <p class="label" style="color:rgba(255,255,255,0.5);">The philosophy</p>
+    <h2 class="mega">You set direction.<br>The org executes.</h2>
+    <p class="body-lg mt-24" style="opacity:0.8;">
+      Every idea goes through a process.<br>
+      Every department has a voice.<br>
+      Every decision is logged.<br>
+      Every trade-off is explicit.<br><br>
+      The LLM is the engine.<br>
+      The org is the steering.
+    </p>
+  </div>
+  <div class="slide-num" style="color:rgba(255,255,255,0.2)">10 / 10</div>
+</div>
+
+</body>
+</html>
