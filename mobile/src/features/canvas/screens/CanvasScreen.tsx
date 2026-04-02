@@ -20,7 +20,7 @@ import { captureOnContentChange } from '../../../debug/DesignQA';
 import { colors, shadows, spacing, type } from '../../../theme';
 import {
   HOUR_HEIGHT, START_HOUR, END_HOUR, HOUR_LABEL_WIDTH,
-  TOTAL_CANVAS_HEIGHT, getActivityPosition, formatHour,
+  MIN_BLOCK_HEIGHT, getActivityPosition, formatHour,
 } from '../../../lib/calendar';
 
 interface Props {
@@ -208,16 +208,25 @@ export function CanvasScreen({ navigation }: Props) {
     setSelectedDate(newDate);
   }
 
-  const baseScale = useRef(1.0);
+  const baseScaleRef = useRef(1.0);
+
+  function saveBaseScale() {
+    baseScaleRef.current = hourScale;
+  }
+
+  function applyPinchScale(gestureScale: number) {
+    const newScale = Math.min(2.0, Math.max(0.7, baseScaleRef.current * gestureScale));
+    setHourScale(newScale);
+  }
+
   const pinchGesture = Gesture.Pinch()
     .onBegin(() => {
       'worklet';
-      baseScale.current = hourScale;
+      runOnJS(saveBaseScale)();
     })
     .onUpdate((e) => {
       'worklet';
-      const newScale = Math.min(2.0, Math.max(0.7, baseScale.current * e.scale));
-      runOnJS(setHourScale)(newScale);
+      runOnJS(applyPinchScale)(e.scale);
     });
 
   const composedGesture = Gesture.Simultaneous(pinchGesture, swipeGesture);
@@ -273,7 +282,7 @@ export function CanvasScreen({ navigation }: Props) {
             showsVerticalScrollIndicator={false}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
           >
-            <View style={styles.timeline}>
+            <View style={[styles.timeline, { height: END_HOUR * effectiveHourHeight }]}>
               {/* Hour grid */}
               {hours.map((h) => {
                 const y = (h - START_HOUR) * effectiveHourHeight;
@@ -324,9 +333,10 @@ export function CanvasScreen({ navigation }: Props) {
 
               {/* Activity blocks */}
               {timedActivities.map((activity) => {
-                const { top, height } = getActivityPosition(activity.start_time!, activity.duration_minutes);
-                const log = logs[activity.id];
                 const actStart = parseISO(activity.start_time!);
+                const top = (actStart.getHours() + actStart.getMinutes() / 60) * effectiveHourHeight;
+                const height = Math.max((activity.duration_minutes / 60) * effectiveHourHeight, MIN_BLOCK_HEIGHT);
+                const log = logs[activity.id];
                 const actEnd = new Date(actStart.getTime() + activity.duration_minutes * 60000);
                 const isCurrentlyActive = isToday && isWithinInterval(now, { start: actStart, end: actEnd });
                 const isPast = isToday && actEnd < now;
@@ -423,7 +433,7 @@ const styles = StyleSheet.create({
   canvasWrapper: { flex: 1 },
   canvas: { flex: 1 },
 
-  timeline: { position: 'relative', width: '100%', height: TOTAL_CANVAS_HEIGHT },
+  timeline: { position: 'relative', width: '100%' },
 
   hourRow: {
     position: 'absolute', left: 0, right: 0,
