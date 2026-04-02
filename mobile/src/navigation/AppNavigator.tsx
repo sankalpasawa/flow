@@ -203,6 +203,7 @@ export function AppNavigator() {
                 presentation: 'transparentModal',
                 headerShown: false,
                 animation: 'slide_from_bottom',
+                gestureEnabled: true,
               }}
             />
             <Stack.Screen

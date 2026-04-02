@@ -1,7 +1,8 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
-  ScrollView, KeyboardAvoidingView, Platform,
+  ScrollView, KeyboardAvoidingView, Platform, Animated, PanResponder,
+  Dimensions,
 } from 'react-native';
 import { format, parseISO, addMinutes } from 'date-fns';
 import { useAuthStore } from '../../../store/authStore';
@@ -58,8 +59,11 @@ function formatTimeRange(startIso: string, durationMinutes: number): string {
 function defaultCompletion(activity: Activity): 0 | 50 | 100 {
   if (activity.status === 'COMPLETED') return 100;
   if (activity.status === 'SKIPPED') return 0;
-  return 100; // default for past activities
+  return 100;
 }
+
+const DISMISS_THRESHOLD = 120;
+const SCREEN_HEIGHT = Dimensions.get('window').height;
 
 // --- Component ---
 
@@ -75,7 +79,7 @@ export function ExperienceLogScreen({ route, navigation }: Props) {
 
   const existingLog = logs[activityId];
 
-  // Form state — pre-fill from existing log if available
+  // Form state
   const [mood, setMood] = useState<number | null>(existingLog?.mood ?? null);
   const [energy, setEnergy] = useState<number | null>(existingLog?.energy ?? null);
   const [completion, setCompletion] = useState<0 | 50 | 100>(
@@ -84,229 +88,299 @@ export function ExperienceLogScreen({ route, navigation }: Props) {
   const [reflection, setReflection] = useState(existingLog?.reflection ?? '');
   const [saving, setSaving] = useState(false);
 
+  // Swipe-to-dismiss
+  const translateY = useRef(new Animated.Value(0)).current;
+  const scrollRef = useRef<ScrollView>(null);
+  const isAtTop = useRef(true);
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, gesture) => {
+        // Only capture downward swipes when scrolled to top
+        return isAtTop.current && gesture.dy > 10 && Math.abs(gesture.dy) > Math.abs(gesture.dx);
+      },
+      onPanResponderMove: (_, gesture) => {
+        if (gesture.dy > 0) {
+          translateY.setValue(gesture.dy);
+        }
+      },
+      onPanResponderRelease: (_, gesture) => {
+        if (gesture.dy > DISMISS_THRESHOLD) {
+          Animated.timing(translateY, {
+            toValue: SCREEN_HEIGHT,
+            duration: 250,
+            useNativeDriver: true,
+          }).start(() => navigation.goBack());
+        } else {
+          Animated.spring(translateY, {
+            toValue: 0,
+            useNativeDriver: true,
+            tension: 100,
+            friction: 10,
+          }).start();
+        }
+      },
+    }),
+  ).current;
+
   if (!activity) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.errorText}>Activity not found.</Text>
+      <View style={styles.overlay}>
+        <View style={styles.sheet}>
+          <Text style={styles.errorText}>Activity not found.</Text>
+        </View>
       </View>
     );
   }
 
   const categoryIcon = activity.category?.icon ?? '';
 
-  const handleSave = async () => {
-    if (!user || !mood || !energy) return;
-    setSaving(true);
-    try {
-      await submitLog({
-        activity_id: activityId,
-        user_id: user.id,
-        mood,
-        energy,
-        completion_pct: completion,
-        reflection: reflection.trim() || undefined,
-        log_phase: 'AFTER',
-      });
-      navigation.goBack();
-    } catch {
-      setSaving(false);
+  const handleDone = async () => {
+    const canSave = mood !== null && energy !== null && user;
+    if (canSave) {
+      setSaving(true);
+      try {
+        await submitLog({
+          activity_id: activityId,
+          user_id: user!.id,
+          mood: mood!,
+          energy: energy!,
+          completion_pct: completion,
+          reflection: reflection.trim() || undefined,
+          log_phase: 'AFTER',
+        });
+      } catch {
+        // silent — still dismiss
+      }
     }
+    navigation.goBack();
   };
 
-  const canSave = mood !== null && energy !== null;
-
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
+    <View style={styles.overlay}>
+      {/* Tap outside to dismiss */}
+      <TouchableOpacity
+        style={styles.backdrop}
+        activeOpacity={1}
+        onPress={() => navigation.goBack()}
+      />
+
+      <Animated.View
+        style={[styles.sheet, { transform: [{ translateY }] }]}
+        {...panResponder.panHandlers}
       >
-        {/* Drag handle */}
-        <View style={styles.handleRow}>
-          <View style={styles.handle} />
-        </View>
-
-        {/* Activity header */}
-        <View style={styles.headerRow}>
-          <View style={styles.headerLeft}>
-            {categoryIcon ? (
-              <Text style={styles.headerIcon}>{categoryIcon}</Text>
-            ) : null}
-            <Text style={styles.headerTitle} numberOfLines={1}>
-              {activity.title}
-            </Text>
-            <Text style={styles.checkmark}>{'\u2713'}</Text>
-          </View>
-          <TouchableOpacity
-            style={styles.editBtn}
-            onPress={() => navigation.navigate('ActivityForm', { activityId })}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.editIcon}>{'\u270F\uFE0F'}</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Time range */}
-        {activity.start_time ? (
-          <Text style={styles.timeRange}>
-            {formatTimeRange(activity.start_time, activity.duration_minutes)}
-          </Text>
-        ) : null}
-
-        {/* MOOD */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>MOOD</Text>
-          <View style={styles.circleRow}>
-            {MOOD_OPTIONS.map((opt, idx) => {
-              const value = idx + 1;
-              const selected = mood === value;
-              return (
-                <TouchableOpacity
-                  key={value}
-                  style={styles.circleContainer}
-                  onPress={() => setMood(value)}
-                  activeOpacity={0.7}
-                >
-                  <View
-                    style={[
-                      styles.circle,
-                      selected && styles.circleMoodSelected,
-                    ]}
-                  >
-                    <Text style={styles.circleEmoji}>{opt.emoji}</Text>
-                  </View>
-                  <Text
-                    style={[
-                      styles.circleLabel,
-                      selected && styles.circleLabelSelected,
-                    ]}
-                  >
-                    {opt.label}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        </View>
-
-        {/* ENERGY */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>ENERGY</Text>
-          <View style={styles.circleRow}>
-            {ENERGY_OPTIONS.map((opt, idx) => {
-              const value = idx + 1;
-              const selected = energy === value;
-              return (
-                <TouchableOpacity
-                  key={value}
-                  style={styles.circleContainer}
-                  onPress={() => setEnergy(value)}
-                  activeOpacity={0.7}
-                >
-                  <View
-                    style={[
-                      styles.circle,
-                      selected && styles.circleEnergySelected,
-                    ]}
-                  >
-                    <Text style={styles.circleEmoji}>{opt.emoji}</Text>
-                  </View>
-                  <Text
-                    style={[
-                      styles.circleLabel,
-                      selected && styles.circleLabelSelected,
-                    ]}
-                  >
-                    {opt.label}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        </View>
-
-        {/* COMPLETION */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>COMPLETION</Text>
-          <View style={styles.chipRow}>
-            {COMPLETION_OPTIONS.map((opt) => {
-              const selected = completion === opt.value;
-              return (
-                <TouchableOpacity
-                  key={opt.value}
-                  style={[styles.chip, selected && styles.chipSelected]}
-                  onPress={() => setCompletion(opt.value)}
-                  activeOpacity={0.7}
-                >
-                  <Text
-                    style={[
-                      styles.chipText,
-                      selected && styles.chipTextSelected,
-                    ]}
-                  >
-                    {opt.label}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        </View>
-
-        {/* REFLECTION */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>REFLECTION</Text>
-          <TextInput
-            style={styles.reflectionInput}
-            placeholder="Any thoughts on how it went?"
-            placeholderTextColor={colors.muted}
-            value={reflection}
-            onChangeText={setReflection}
-            returnKeyType="done"
-          />
-        </View>
-
-        {/* Action button */}
-        <TouchableOpacity
-          style={[styles.actionBtn, !canSave && styles.actionBtnDisabled]}
-          onPress={handleSave}
-          activeOpacity={0.85}
-          disabled={!canSave || saving}
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={{ flex: 1 }}
         >
-          <Text style={styles.actionBtnText}>
-            {saving ? 'Saving...' : 'Reflect & Close'}
-          </Text>
-        </TouchableOpacity>
-      </ScrollView>
-    </KeyboardAvoidingView>
+          <ScrollView
+            ref={scrollRef}
+            contentContainerStyle={styles.scrollContent}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+            scrollEventThrottle={16}
+            onScroll={(e) => {
+              isAtTop.current = e.nativeEvent.contentOffset.y <= 0;
+            }}
+          >
+            {/* Drag handle */}
+            <View style={styles.handleRow}>
+              <View style={styles.handle} />
+            </View>
+
+            {/* Activity header */}
+            <View style={styles.headerRow}>
+              <View style={styles.headerLeft}>
+                {categoryIcon ? (
+                  <Text style={styles.headerIcon}>{categoryIcon}</Text>
+                ) : null}
+                <Text style={styles.headerTitle} numberOfLines={1}>
+                  {activity.title}
+                </Text>
+                <Text style={styles.checkmark}>{'\u2713'}</Text>
+              </View>
+              <TouchableOpacity
+                style={styles.editBtn}
+                onPress={() => navigation.navigate('ActivityForm', { activityId })}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.editIcon}>{'\u270F\uFE0F'}</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Time range */}
+            {activity.start_time ? (
+              <Text style={styles.timeRange}>
+                {formatTimeRange(activity.start_time, activity.duration_minutes)}
+              </Text>
+            ) : null}
+
+            {/* MOOD */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>MOOD</Text>
+              <View style={styles.circleRow}>
+                {MOOD_OPTIONS.map((opt, idx) => {
+                  const value = idx + 1;
+                  const selected = mood === value;
+                  return (
+                    <TouchableOpacity
+                      key={value}
+                      style={styles.circleContainer}
+                      onPress={() => setMood(value)}
+                      activeOpacity={0.7}
+                    >
+                      <View
+                        style={[
+                          styles.circle,
+                          selected && styles.circleMoodSelected,
+                        ]}
+                      >
+                        <Text style={styles.circleEmoji}>{opt.emoji}</Text>
+                      </View>
+                      <Text
+                        style={[
+                          styles.circleLabel,
+                          selected && styles.circleLabelSelected,
+                        ]}
+                      >
+                        {opt.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+
+            {/* ENERGY */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>ENERGY</Text>
+              <View style={styles.circleRow}>
+                {ENERGY_OPTIONS.map((opt, idx) => {
+                  const value = idx + 1;
+                  const selected = energy === value;
+                  return (
+                    <TouchableOpacity
+                      key={value}
+                      style={styles.circleContainer}
+                      onPress={() => setEnergy(value)}
+                      activeOpacity={0.7}
+                    >
+                      <View
+                        style={[
+                          styles.circle,
+                          selected && styles.circleEnergySelected,
+                        ]}
+                      >
+                        <Text style={styles.circleEmoji}>{opt.emoji}</Text>
+                      </View>
+                      <Text
+                        style={[
+                          styles.circleLabel,
+                          selected && styles.circleLabelSelected,
+                        ]}
+                      >
+                        {opt.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+
+            {/* COMPLETION */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>COMPLETION</Text>
+              <View style={styles.chipRow}>
+                {COMPLETION_OPTIONS.map((opt) => {
+                  const selected = completion === opt.value;
+                  return (
+                    <TouchableOpacity
+                      key={opt.value}
+                      style={[styles.chip, selected && styles.chipSelected]}
+                      onPress={() => setCompletion(opt.value)}
+                      activeOpacity={0.7}
+                    >
+                      <Text
+                        style={[
+                          styles.chipText,
+                          selected && styles.chipTextSelected,
+                        ]}
+                      >
+                        {opt.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+
+            {/* REFLECTION */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>REFLECTION</Text>
+              <TextInput
+                style={styles.reflectionInput}
+                placeholder="Any thoughts on how it went?"
+                placeholderTextColor={colors.muted}
+                value={reflection}
+                onChangeText={setReflection}
+                returnKeyType="done"
+              />
+            </View>
+
+            {/* Action button — always enabled */}
+            <TouchableOpacity
+              style={styles.actionBtn}
+              onPress={handleDone}
+              activeOpacity={0.85}
+              disabled={saving}
+            >
+              <Text style={styles.actionBtnText}>
+                {saving ? 'Saving...' : 'Done'}
+              </Text>
+            </TouchableOpacity>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </Animated.View>
+    </View>
   );
 }
 
 // --- Styles ---
 
-const CIRCLE_SIZE = 40;
+const CIRCLE_SIZE = 44;
 const ACCENT = '#C4795B';
 const ACCENT_BG = 'rgba(196,121,91,0.15)';
 const PRIMARY = colors.primary;
 const PRIMARY_BG = 'rgba(45,74,62,0.12)';
+const SHEET_BG = '#F5F0E8';
 
 const styles = StyleSheet.create({
-  container: {
+  overlay: {
     flex: 1,
-    backgroundColor: colors.glass.sheet,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    justifyContent: 'flex-end',
+  },
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  sheet: {
+    backgroundColor: SHEET_BG,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: '85%',
+    ...shadows.card,
   },
   scrollContent: {
     paddingHorizontal: spacing.screen,
     paddingBottom: 40,
   },
   errorText: {
-    color: colors.muted,
+    color: colors.text2,
     fontSize: 15,
+    fontWeight: '500',
     textAlign: 'center',
-    marginTop: 60,
+    marginTop: 40,
+    marginBottom: 40,
   },
 
   // Drag handle
@@ -340,8 +414,8 @@ const styles = StyleSheet.create({
     fontSize: 20,
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 16,
+    fontWeight: '700',
     color: colors.text,
     flexShrink: 1,
   },
@@ -366,8 +440,7 @@ const styles = StyleSheet.create({
   timeRange: {
     fontSize: 12,
     fontWeight: '500',
-    color: colors.muted,
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+    color: colors.text2,
     marginTop: 2,
     marginBottom: 8,
   },
@@ -378,10 +451,10 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 11,
-    fontWeight: '600',
-    letterSpacing: 0.8,
+    fontWeight: '700',
+    letterSpacing: 1,
     textTransform: 'uppercase',
-    color: colors.muted,
+    color: colors.text2,
     marginBottom: 10,
   },
 
@@ -413,17 +486,17 @@ const styles = StyleSheet.create({
     borderColor: PRIMARY,
   },
   circleEmoji: {
-    fontSize: 18,
+    fontSize: 20,
   },
   circleLabel: {
     fontSize: 10,
-    fontWeight: '500',
+    fontWeight: '600',
     color: colors.muted,
     marginTop: 4,
   },
   circleLabelSelected: {
     color: colors.text,
-    fontWeight: '600',
+    fontWeight: '700',
   },
 
   // Completion chips
@@ -445,12 +518,12 @@ const styles = StyleSheet.create({
   },
   chipText: {
     fontSize: 13,
-    fontWeight: '500',
-    color: colors.muted,
+    fontWeight: '600',
+    color: colors.text2,
   },
   chipTextSelected: {
     color: colors.primary,
-    fontWeight: '600',
+    fontWeight: '700',
   },
 
   // Reflection input
@@ -459,6 +532,7 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
     paddingVertical: 8,
     fontSize: 15,
+    fontWeight: '500',
     color: colors.text,
   },
 
@@ -472,13 +546,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     ...shadows.sm,
   },
-  actionBtnDisabled: {
-    opacity: 0.5,
-  },
   actionBtnText: {
     color: '#FFFFFF',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
   },
 });
 
