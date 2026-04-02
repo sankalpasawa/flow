@@ -253,11 +253,11 @@ export function DesignQAProvider({ children }: { children: React.ReactNode }) {
       {bannerVisible && (Platform.OS === 'ios' || Platform.OS === 'android') && (
         <>
           {/* Touch blocker — prevents user interaction during QA */}
-          <View style={{ position: 'absolute', top: 32, left: 0, right: 0, bottom: 0, zIndex: 9998, backgroundColor: 'rgba(0,0,0,0.02)' }} pointerEvents="box-only" />
+          <View style={{ position: 'absolute', top: 56, left: 0, right: 0, bottom: 0, zIndex: 9998, backgroundColor: 'rgba(0,0,0,0.02)' }} pointerEvents="box-only" />
 
           {/* QA Banner with exit button */}
           <TouchableOpacity
-            style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 32, backgroundColor: 'rgba(196,121,91,0.95)', zIndex: 9999, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingTop: 4 }}
+            style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 56, backgroundColor: 'rgba(196,121,91,0.95)', zIndex: 9999, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingTop: 28 }}
             onPress={async () => {
               try { await fetch(`${SERVER()}/qa/stop`, { method: 'POST' }); } catch {}
               qaActive = false;
