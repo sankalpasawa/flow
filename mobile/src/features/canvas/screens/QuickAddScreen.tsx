@@ -174,7 +174,9 @@ export function QuickAddScreen({ route, navigation }: Props) {
         case 'create':
         case 'add_task':
         default: {
+          const hasRecurrence = p.recurrence && p.recurrence !== 'NONE';
           if (p.time) {
+            // Timed activity → pill on canvas
             await addActivity({
               user_id: user.id,
               title: p.title,
@@ -184,7 +186,20 @@ export function QuickAddScreen({ route, navigation }: Props) {
               activity_type: 'TIME_BLOCK',
               recurrence_type: (p.recurrence ?? 'NONE') as any,
             });
+          } else if (hasRecurrence) {
+            // No time + recurring → watermark (untimed recurring activity)
+            await addActivity({
+              user_id: user.id,
+              title: p.title,
+              start_time: '',  // empty = no time
+              duration_minutes: 0,
+              category_id: p.categoryId || 'sys-personal',
+              activity_type: 'TASK',
+              is_scheduled: false,
+              recurrence_type: (p.recurrence ?? 'DAILY') as any,
+            });
           } else {
+            // No time, no recurrence → simple task in bottom bar
             await addTask({
               user_id: user.id,
               title: p.title,

@@ -80,22 +80,32 @@ export function parseActivityText(
 
   // ── 4. Recurrence (before time, because "every morning" sets both) ──
 
+  // "every N hours" / "every N minutes" — treat as DAILY recurring (no specific time = watermark)
+  const everyNHours = /\bevery\s+(\d+)\s*(?:hours?|hrs?)\b/i;
+  const everyNMin = /\bevery\s+(\d+)\s*(?:minutes?|mins?)\b/i;
+  const everyNMatch = remaining.match(everyNHours) || remaining.match(everyNMin);
+  if (everyNMatch) {
+    recurrence = 'DAILY';
+    // Don't set a time — this becomes a watermark (untimed + recurring)
+    remaining = strip(remaining, everyNMatch[0] ? new RegExp(everyNMatch[0].replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i') : everyNHours);
+  }
+
   // "every morning" / "every evening"
   const everyMorning = /\bevery\s+morning\b/i;
   const everyEvening = /\bevery\s+evening\b/i;
 
-  if (everyMorning.test(remaining)) {
+  if (!recurrence && everyMorning.test(remaining)) {
     recurrence = 'DAILY';
     time = '07:00';
     remaining = strip(remaining, everyMorning);
-  } else if (everyEvening.test(remaining)) {
+  } else if (!recurrence && everyEvening.test(remaining)) {
     recurrence = 'DAILY';
     time = '18:00';
     remaining = strip(remaining, everyEvening);
   }
 
-  // "every day" / "daily"
-  const everyDay = /\b(?:every\s+day|daily)\b/i;
+  // "every day" / "daily" / "regularly"
+  const everyDay = /\b(?:every\s+day|daily|regularly)\b/i;
   if (!recurrence && everyDay.test(remaining)) {
     recurrence = 'DAILY';
     remaining = strip(remaining, everyDay);
