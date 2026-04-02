@@ -56,6 +56,8 @@ function glassTintBackground(catHex: string): string {
 export function ActivityCard({ activity, log, onPress, onQuickComplete, onReschedule, isNow, isOverdue, height }: Props) {
   const cat = activity.category;
   const catColor = getCategoryColor(activity.category_id);
+  // Use the actual category color (vibrant) for pill tint, not the muted theme mapping
+  const tintColor = cat?.color || catColor.solid;
   const isDone = activity.status === 'COMPLETED';
   const isSkipped = activity.status === 'SKIPPED';
 
@@ -69,8 +71,8 @@ export function ActivityCard({ activity, log, onPress, onQuickComplete, onResche
 
   // Reset swipe animation when status changes (e.g. after completing)
   React.useEffect(() => {
-    translateX.value = 0;
-    disappearScale.value = 1;
+    translateX.value = withSpring(0, { damping: 15, stiffness: 200 });
+    disappearScale.value = withSpring(1, { damping: 15, stiffness: 200 });
   }, [activity.status]);
 
   // Drag time label state (JS thread)
@@ -234,7 +236,7 @@ export function ActivityCard({ activity, log, onPress, onQuickComplete, onResche
 
   const compact = height !== undefined && height < 50;
   const cardBorderRadius = compact ? 12 : 14;
-  const pillBg = glassTintBackground(catColor.solid);
+  const pillBg = glassTintBackground(tintColor);
 
   // Subtask progress
   const subtasks = activity.subtasks ?? [];

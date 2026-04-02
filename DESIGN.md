@@ -294,9 +294,10 @@ No exceptions. Never use `transparentModal` — it breaks swipe gesture on iOS. 
 
 ## Data Model Simplification
 - **Everything is an Activity.** One concept.
-- **Has time → pill on canvas**
-- **No time, no repeat → task in bottom bar**
-- **No time, has repeat → watermark chip**
+- **Has time + has duration → pill on canvas** (time block)
+- **Has time + zero duration → watermark at that time** (reminder, not a block)
+- **No time + recurring → watermark distributed evenly** (gentle recurring reminder)
+- **No time + not recurring → task in bottom bar**
 - **Required change:** Make `start_time` nullable (string | null)
 - **`is_scheduled` becomes derived:** `start_time !== null`
 - **Creation flow:** Title → time (optional) → repeat (optional) → category → mindset → done

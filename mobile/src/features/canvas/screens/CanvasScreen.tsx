@@ -147,24 +147,43 @@ export function CanvasScreen({ navigation }: Props) {
   const timedActivities = useMemo(() =>
     activities.filter((a) => {
       if (!a.start_time) return false;
+      if (a.duration_minutes === 0) return false; // zero duration = watermark, not pill
       const start = parseISO(a.start_time);
       return isSameDay(start, selectedDate) && start.getHours() >= START_HOUR;
     }),
     [activities, selectedDate]
   );
 
-  // Watermark activities: no start_time AND recurring (recurrence_type !== 'NONE')
+  // Watermark activities:
+  // 1. Has start_time but zero duration (time-anchored reminder)
+  // 2. No start_time + recurring (distributed evenly)
   const watermarkActivities = useMemo(() =>
-    activities.filter((a) => (!a.start_time || a.start_time === '') && a.recurrence_type !== 'NONE'),
+    activities.filter((a) => {
+      // Time-anchored reminders (has time, no duration)
+      if (a.start_time && a.start_time !== '' && a.duration_minutes === 0) return true;
+      // Untimed recurring
+      if ((!a.start_time || a.start_time === '') && a.recurrence_type !== 'NONE') return true;
+      return false;
+    }),
     [activities]
   );
 
   // Distribute watermark chips evenly through the day (every 90 min starting from 7:00)
   const watermarkPositions = useMemo(() => {
-    const WATERMARK_START_HOUR = 7; // start distributing from 7 AM
-    const WATERMARK_INTERVAL_MIN = 90; // 90 minutes apart
-    return watermarkActivities.map((a, i) => {
-      const minuteOffset = i * WATERMARK_INTERVAL_MIN;
+    const WATERMARK_START_HOUR = 7;
+    const WATERMARK_INTERVAL_MIN = 90;
+    let untimedIndex = 0;
+
+    return watermarkActivities.map((a) => {
+      // Time-anchored: use actual time
+      if (a.start_time && a.start_time !== '') {
+        const start = parseISO(a.start_time);
+        const top = (start.getHours() + start.getMinutes() / 60) * effectiveHourHeight;
+        return { activity: a, top };
+      }
+      // Untimed recurring: distribute evenly
+      const minuteOffset = untimedIndex * WATERMARK_INTERVAL_MIN;
+      untimedIndex++;
       const hour = WATERMARK_START_HOUR + minuteOffset / 60;
       const top = hour * effectiveHourHeight;
       return { activity: a, top };
@@ -541,8 +560,8 @@ const styles = StyleSheet.create({
     fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
   },
   hourNow: { color: colors.accent, fontWeight: '700', opacity: 1 },
-  hourLine: { flex: 1, height: 1, backgroundColor: colors.border, opacity: 0.2 },
-  hourLinePast: { opacity: 0.1 },
+  hourLine: { flex: 1, height: 1, backgroundColor: colors.border, opacity: 0.4 },
+  hourLinePast: { opacity: 0.2 },
 
   nowIndicator: {
     position: 'absolute', left: HOUR_LABEL_WIDTH - 4, right: 0,
