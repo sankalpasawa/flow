@@ -8,6 +8,7 @@ import { useAuthStore } from '../../../store/authStore';
 import { useActivitiesStore } from '../../../store/activitiesStore';
 import { getCategories } from '../../../lib/db/categories';
 import { parseActivityText, ParsedActivity } from '../../../lib/parseActivity';
+import { processText, ActionResult } from '../../../lib/actionEngine';
 import { SYSTEM_CATEGORIES } from '../../categories/systemCategories';
 import { Category } from '../../../types';
 import { colors, spacing, radii, motion } from '../../../theme';
@@ -76,10 +77,11 @@ const RECURRENCE_LABELS: Record<string, string> = {
 export function QuickAddScreen({ route, navigation }: Props) {
   const { date: paramDate, startHour } = route.params ?? {};
   const { user } = useAuthStore();
-  const { addActivity, addTask } = useActivitiesStore();
+  const { activities, addActivity, addTask, quickToggleComplete, editActivity } = useActivitiesStore();
 
   const [text, setText] = useState('');
   const [parsed, setParsed] = useState<ParsedActivity | null>(null);
+  const [action, setAction] = useState<ActionResult | null>(null);
   const [categories, setCategories] = useState<Category[]>(SYSTEM_CATEGORIES);
   const [saving, setSaving] = useState(false);
   const inputRef = useRef<TextInput>(null);
@@ -112,12 +114,13 @@ export function QuickAddScreen({ route, navigation }: Props) {
     }
 
     debounceRef.current = setTimeout(() => {
-      const result = parseActivityText(
-        value,
-        categories.map((c) => ({ id: c.id, name: c.name })),
-        new Date(),
-      );
+      const catList = categories.map((c) => ({ id: c.id, name: c.name }));
+      const result = parseActivityText(value, catList, new Date());
       setParsed(result);
+
+      // Run action engine for intent detection + conflict resolution
+      const actionResult = processText(value, activities, catList, new Date());
+      setAction(actionResult);
     }, 600);
   }, [categories]);
 
@@ -134,42 +137,72 @@ export function QuickAddScreen({ route, navigation }: Props) {
     return { name: cat.name, color: colorPair.solid };
   }, [categories]);
 
-  // Create handler
-  const handleCreate = useCallback(async () => {
-    if (!parsed || !user || saving) return;
+  // Action handler — handles create, move, complete, cancel
+  const handleAction = useCallback(async () => {
+    if (!user || saving) return;
+    if (!action && !parsed) return;
     setSaving(true);
 
     try {
-      const activityDate = parsed.date ?? dateStr;
+      const actionType = action?.type ?? 'create';
+      const p = action?.parsed ?? parsed!;
+      const activityDate = p.date ?? dateStr;
 
-      if (parsed.time) {
-        // TIME_BLOCK — has a time set
-        await addActivity({
-          user_id: user.id,
-          title: parsed.title,
-          start_time: `${activityDate}T${parsed.time}:00`,
-          duration_minutes: parsed.duration ?? 30,
-          category_id: parsed.categoryId ?? '',
-          activity_type: 'TIME_BLOCK',
-          recurrence_type: parsed.recurrence ?? 'NONE',
-        });
-      } else {
-        // TASK — no time set
-        await addTask({
-          user_id: user.id,
-          title: parsed.title,
-          category_id: parsed.categoryId ?? undefined,
-          assigned_date: activityDate,
-        });
+      switch (actionType) {
+        case 'complete': {
+          if (action?.targetActivity) {
+            await quickToggleComplete(action.targetActivity.id);
+          }
+          break;
+        }
+
+        case 'cancel': {
+          if (action?.targetActivity) {
+            await editActivity(action.targetActivity.id, { status: 'SKIPPED' });
+          }
+          break;
+        }
+
+        case 'move': {
+          if (action?.targetActivity && p.time) {
+            const newStart = `${activityDate}T${p.time}:00`;
+            await editActivity(action.targetActivity.id, { start_time: newStart });
+          }
+          break;
+        }
+
+        case 'create':
+        case 'add_task':
+        default: {
+          if (p.time) {
+            await addActivity({
+              user_id: user.id,
+              title: p.title,
+              start_time: `${activityDate}T${p.time}:00`,
+              duration_minutes: p.duration ?? 30,
+              category_id: p.categoryId ?? '',
+              activity_type: 'TIME_BLOCK',
+              recurrence_type: (p.recurrence ?? 'NONE') as any,
+            });
+          } else {
+            await addTask({
+              user_id: user.id,
+              title: p.title,
+              category_id: p.categoryId ?? undefined,
+              assigned_date: activityDate,
+            });
+          }
+          break;
+        }
       }
 
       navigation.goBack();
     } catch (err) {
-      console.error('[QuickAdd] Failed to create:', err);
+      console.error('[QuickAdd] Action failed:', err);
     } finally {
       setSaving(false);
     }
-  }, [parsed, user, saving, dateStr, addActivity, addTask, navigation]);
+  }, [action, parsed, user, saving, dateStr, addActivity, addTask, quickToggleComplete, editActivity, navigation]);
 
   // Navigate to full form, carrying parsed fields
   const goToForm = useCallback(() => {
@@ -224,16 +257,23 @@ export function QuickAddScreen({ route, navigation }: Props) {
           </View>
         )}
 
-        {/* Create button */}
+        {/* Action message */}
+        {action?.message && action.conflict.exists && (
+          <View style={styles.actionMessage}>
+            <Text style={styles.actionMessageText}>{action.message}</Text>
+          </View>
+        )}
+
+        {/* Action button */}
         {hasChips && (
           <TouchableOpacity
             style={[styles.createBtn, saving && styles.createBtnDisabled]}
-            onPress={handleCreate}
+            onPress={handleAction}
             disabled={saving}
             activeOpacity={0.8}
           >
             <Text style={styles.createBtnText}>
-              {saving ? 'Creating...' : 'Create'}
+              {saving ? 'Working...' : action?.type === 'complete' ? 'Done' : action?.type === 'cancel' ? 'Cancel Activity' : action?.type === 'move' ? 'Move' : 'Create'}
             </Text>
           </TouchableOpacity>
         )}
@@ -317,5 +357,18 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
+  },
+  actionMessage: {
+    backgroundColor: 'rgba(196,121,91,0.08)',
+    borderRadius: 10,
+    padding: 10,
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  actionMessageText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#C4795B',
+    lineHeight: 18,
   },
 });
