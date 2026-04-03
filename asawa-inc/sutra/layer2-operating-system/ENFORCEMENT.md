@@ -4,6 +4,18 @@
 
 Every protocol in Sutra is HARD-enforced unless explicitly marked as soft. If a document says "do X," that means X is mandatory. Not a suggestion. Not a guideline. Mandatory.
 
+## Complexity Tiers
+
+Sutra OS is mandatory for all companies. The depth of enforcement scales with company complexity. See `COMPLEXITY-TIERS.md` for the full protocol.
+
+| Tier | Who | Enforcement depth |
+|------|-----|-------------------|
+| 1 (Personal) | Solo founder, no external users | Core OS mandatory. Metrics, compliance, shipping log scaled down. Hooks soft. |
+| 2 (Product) | External users depend on it | Full OS minus department functions. Hooks hard for boundaries. |
+| 3 (Company) | Team, revenue, or regulation | Full OS. Everything hard. Nothing optional. |
+
+When evaluating compliance, check the company's tier first. A Tier 1 company missing a shipping log is compliant. A Tier 2 company missing one is not.
+
 ## How Enforcement Works
 
 ### Level 1: Document-Level Enforcement
@@ -113,6 +125,29 @@ When Sutra runs its own session, it checks all clients:
 | Metrics logged per feature per mode | HARD |
 | Data decides mode after test completes | HARD |
 | Founder can override at any time | FOUNDER-OVERRIDE |
+
+---
+
+## Infrastructure Isolation Rule
+
+ENFORCEMENT: HARD (Tier 2+), SOFT (Tier 1)
+
+**Principle**: Before running parallel infrastructure operations (deploys, DB migrations, CI jobs), verify they target different resources (project names, DB schemas, environments).
+
+**Why**: Parallel deploys to the same platform can collide when directory or project names overlap, causing one deploy to overwrite another. This was discovered when two Vercel deploys from identically-named `website/` directories assigned the same project name.
+
+**Checklist (before any parallel infra operation):**
+1. Verify unique project name per deploy target
+2. Verify unique domain or subdomain per deploy
+3. Verify no collision with existing active deploys
+4. For DB migrations: verify targeting different schemas or environments
+
+**Tier behavior:**
+| Tier | Enforcement |
+|------|-------------|
+| Tier 1 (Personal) | SOFT — flag if parallel operations detected, don't block |
+| Tier 2 (Product) | HARD — block parallel operations unless isolation verified |
+| Tier 3 (Company) | HARD — block + require written verification in deploy log |
 
 ---
 

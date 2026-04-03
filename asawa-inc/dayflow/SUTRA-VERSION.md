@@ -1,7 +1,7 @@
 # DayFlow — Sutra Version
 
-**Pinned to: Sutra v1.0**
-**Last updated: 2026-04-03**
+**Pinned to: Sutra v1.1**
+**Last updated: 2026-04-04**
 
 ## What v1.0 Includes
 - Stage 1 Pre-Launch OS (12 rules) → `asawa-inc/sutra/layer3-modules/b2c-consumer-app/STAGE-1-PRE-LAUNCH.md`

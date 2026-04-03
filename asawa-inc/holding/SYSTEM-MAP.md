@@ -42,6 +42,9 @@ DONE: SESSION-ISOLATION.md — 5 levels (instructions, hooks, directory, agent, 
 ### "I want hard enforcement of rules"
 DONE: ENFORCEMENT.md — default HARD, compliance checks, violation handling
 
+### "I want the OS to scale with company complexity"
+DONE: COMPLEXITY-TIERS.md — 3 tiers (Personal → Product → Company). OS is mandatory, depth scales. Tier assigned during onboarding, affects enforcement, metrics, process weight.
+
 ### "I want findings to flow to the right place"
 DONE: CONTINUOUS-IMPROVEMENT.md — bugs → TODO, process gaps → feedback-to-sutra/
 
@@ -81,7 +84,7 @@ DONE: 5 processes in layer2/processes/ (standup, weekly planning, decision-makin
 | Sutra v1.1 (incorporating all feedback from this session) | Sutra releases | MEDIUM |
 | DayFlow validation of new protocols | dayflow/feedback-from-sutra/ | MEDIUM — next DayFlow session |
 | MCP server for hiding Sutra internals | Sutra distribution | LOW — when real clients exist |
-| Founder involvement level config per company | Sutra onboarding Phase 1 | HIGH |
+| ~~Founder involvement level config per company~~ | ~~Sutra onboarding Phase 1~~ | DONE — replaced by COMPLEXITY-TIERS.md |
 | More product type templates beyond B2C | Sutra layer 3 modules | MEDIUM — as new companies onboard |
 | Vercel deployment of websites | Requires `vercel login` | HIGH |
 

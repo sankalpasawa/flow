@@ -10,28 +10,28 @@ import { Card, CardContent } from "@/components/ui/card";
 
 const STYLES = [
   {
-    name: "Sherwani",
+    name: "Lehenga",
     when: "Main ceremony",
-    desc: "The classic. 2026 is all about tone-on-tone threadwork, cape silhouettes, and angrakha wraps. Less bling, more craft.",
-    image: "https://images.unsplash.com/photo-1604502058630-e06e4ada67a1?w=600&h=400&fit=crop",
+    desc: "Still the queen. 2026 is about ombre gradients, lighter fabrics, and corset blouses. Less zardozi, more movement. The skirt moves, the blouse is the hero.",
+    image: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=600&h=400&fit=crop",
   },
   {
-    name: "Bandhgala",
-    when: "Reception / Cocktail",
-    desc: "Biggest trend jump this year. Sharp tailoring, velvet-suede blends, raw silk. European ceremony jacket with Indian soul.",
-    image: "https://images.unsplash.com/photo-1593030761757-71fae45fa0e7?w=600&h=400&fit=crop",
+    name: "Saree",
+    when: "Reception / Sangeet",
+    desc: "Pre-draped is the new norm. Tissue and organza, sheer with hand-placed crystals. Ethereal and effortless. Alia Bhatt's ivory saree started a revolution.",
+    image: "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=600&h=400&fit=crop",
   },
   {
-    name: "Indo-Western",
-    when: "Sangeet / Cocktail",
-    desc: "Asymmetric achkans, draped bandhgalas, jacket-sherwanis with detachable elements. Western tailoring + Indian embellishment.",
-    image: "https://images.unsplash.com/photo-1617137968427-85924c800a22?w=600&h=400&fit=crop",
+    name: "Sharara / Gharara",
+    when: "Mehendi / Nikah",
+    desc: "Flared palazzo-style bottoms with kurtas. Surging as a lehenga alternative. Comfortable, fun, and photographs beautifully.",
+    image: "https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=600&h=400&fit=crop",
   },
   {
-    name: "Kurta Set",
-    when: "Mehendi / Haldi",
-    desc: "Hip-length, straight trousers, minimal embellishment. Focus on fabric and fit. The easy, comfortable choice.",
-    image: "https://images.unsplash.com/photo-1611312449412-6cefac5dc3e4?w=600&h=400&fit=crop",
+    name: "Cape Lehenga",
+    when: "Cocktail / Reception",
+    desc: "Lehenga skirt + sheer embroidered cape replacing the dupatta. Modern, dramatic, zero pinning required. The 2026 statement silhouette.",
+    image: "https://images.unsplash.com/photo-1519741497674-611481863552?w=600&h=400&fit=crop",
   },
 ];
 
@@ -39,90 +39,100 @@ const DESIGNERS = [
   {
     name: "Sabyasachi",
     ig: "sabyasachiofficial",
+    bridalIg: "bridesofsabyasachi",
     vibe: "Heritage maximalism",
-    price: "3L+",
-    known: "Ivory & gold sherwanis, heirloom embroidery. Vicky Kaushal & Ranveer wore him.",
+    price: "5L+",
+    known: "THE bridal designer. Layered embroidery, jewel tones, heirloom fabrics. Every A-list bride's first call.",
   },
   {
     name: "Manish Malhotra",
     ig: "manishmalhotra05",
     vibe: "Bollywood glamour",
-    price: "2L+",
-    known: "Velvet sherwanis, cinematic embellishment. Sidharth Malhotra's gold sherwani.",
-  },
-  {
-    name: "Raghavendra Rathore",
-    ig: "raghavendra.rathore",
-    vibe: "Princely minimalism",
-    price: "1.5L+",
-    known: "The Jodhpuri suit master. Clean lines, zero excess. Bespoke only.",
-  },
-  {
-    name: "Shantanu & Nikhil",
-    ig: "shantanunikhil",
-    vibe: "Modern power dressing",
-    price: "1L+",
-    known: "Structured couture, military-inspired, dramatic silhouettes.",
-  },
-  {
-    name: "Kunal Rawal",
-    ig: "kunalrawaldotcom",
-    vibe: "Edgy experimentalist",
-    price: "80K+",
-    known: "Bold colors, unusual fabrics. The cocktail/sangeet king.",
+    price: "3L+",
+    known: "Sequin and zardozi work, cinematic polish. Heavy embellishment done tastefully.",
   },
   {
     name: "Tarun Tahiliani",
     ig: "taruntahiliani",
-    vibe: "Sculptural grace",
-    price: "1.5L+",
-    known: "Fluid draping, embroidered stoles. Also runs Tasva (accessible line).",
+    vibe: "Architectural precision",
+    price: "2L+",
+    known: "Indian craft + Western construction. Draped gowns, precise tailoring. For the bride who wants structure.",
   },
   {
     name: "Anita Dongre",
     ig: "anitadongre",
     vibe: "Sustainable elegance",
     price: "80K+",
-    known: "Light eco-conscious fabrics, pastels, destination weddings.",
+    known: "Floral motifs, earthy palettes, organic fabrics. Perfect for destination and day weddings.",
   },
   {
-    name: "Manyavar",
-    ig: "manyavar",
-    vibe: "Accessible for everyone",
-    price: "15K+",
-    known: "Widest range, all budgets, pan-India stores. Good starting point.",
+    name: "Falguni Shane Peacock",
+    ig: "falgunishanepeacock",
+    vibe: "High-octane glamour",
+    price: "3L+",
+    known: "Crystal embellishment, sequin lehengas, reception gowns. For brides who want to sparkle.",
+  },
+  {
+    name: "Anamika Khanna",
+    ig: "anamikakhanna",
+    vibe: "Fluid minimalism",
+    price: "2L+",
+    known: "Unstructured draping, earthy minimalism, fusion styling. The anti-maximalist bride's designer.",
+  },
+  {
+    name: "Rahul Mishra",
+    ig: "rahulmishra_6",
+    vibe: "Sustainable couture",
+    price: "3L+",
+    known: "Hand-embroidery inspired by nature. Paris couture week regular. Art meets bridal wear.",
+  },
+  {
+    name: "Kalki Fashion",
+    ig: "kalkifashion",
+    vibe: "Accessible luxury",
+    price: "10K+",
+    known: "Widest range online. Bridal lehengas, sarees, and matching sets at every price point.",
   },
 ];
 
 const INSPO_ACCOUNTS = [
-  { handle: "indiangroom", followers: "109K", desc: "Curated groom looks from real weddings" },
-  { handle: "lakshay_thakur", followers: "239K", desc: "Men's traditional fashion styling" },
-  { handle: "manishmalhotravows", followers: "–", desc: "MM's wedding-specific account" },
-  { handle: "weddingsutra", followers: "1.2M", desc: "India's top wedding platform" },
-  { handle: "wedmegood", followers: "3M", desc: "Real wedding looks + vendor discovery" },
-  { handle: "weddingbazaar", followers: "500K", desc: "Wedding inspo + planning" },
+  { handle: "bridesofsabyasachi", followers: "2M+", desc: "Real brides in Sabyasachi — the reference account" },
+  { handle: "wedmegood", followers: "3M", desc: "India's largest wedding platform, huge bridal library" },
+  { handle: "weddingsutra", followers: "1.2M", desc: "Celebrity and editorial bridal looks" },
+  { handle: "masoomminawala", followers: "1.3M", desc: "Global Indian fashion influencer, luxury lehengas" },
+  { handle: "vaborellindia", followers: "–", desc: "Vogue India — high fashion bridal editorial" },
+  { handle: "brides_of_india", followers: "200K+", desc: "Aggregated real bride looks from across India" },
 ];
 
 const CELEB_LOOKS = [
-  { name: "Vicky Kaushal", designer: "Sabyasachi", desc: "Ivory sherwani, emerald jewelry, Banarasi safa. THE reference look.", tag: "vickykaushalwedding" },
-  { name: "Ranveer Singh", designer: "Sabyasachi", desc: "Deep red for ceremony, ivory + silver for reception. Two moods, both iconic.", tag: "ranveersinghwedding" },
-  { name: "Sidharth Malhotra", designer: "Manish Malhotra", desc: "Metallic gold with ivory threadwork. Modern Bollywood royalty.", tag: "sidharthmalhotrawedding" },
-  { name: "Ranbir Kapoor", designer: "Sabyasachi", desc: "Clean understated ivory. Less is more, perfectly done.", tag: "ranbirkapoorwedding" },
+  { name: "Alia Bhatt", designer: "Sabyasachi", desc: "Ivory hand-embroidered saree. THE minimalist revolution. Most replicated bridal look of the decade.", tag: "aliabhatt" },
+  { name: "Rashmika Mandanna", designer: "Sabyasachi", desc: "Feb 2026, Udaipur. One of the most-watched celebrity weddings of 2026.", tag: "rashmikamandanna" },
+  { name: "Alekha Advani", designer: "Manish Malhotra + FSP", desc: "Sleek ivory MM saree + gold FSP reception lehenga. Two distinct looks, both viral.", tag: "aadarjain" },
+  { name: "Priyanka Chopra", designer: "Custom Varanasi", desc: "Handwoven Varanasi silk with kundan jewelry. Celebrating craft over excess.", tag: "priyankachopra" },
 ];
 
 const COLORS = [
-  { group: "Pastels (trending)", items: ["Powder Pink", "Dusty Lavender", "Ice Blue", "Sage Mint", "Champagne"], hexes: ["#E8C4C4", "#B4A7D6", "#B5D4E8", "#B5C9B3", "#E8D5B7"] },
-  { group: "Jewel Tones", items: ["Deep Plum", "Midnight Blue", "Emerald", "Wine", "Amber"], hexes: ["#6B3A5E", "#1B3A5C", "#2D6A4F", "#722F37", "#B8860B"] },
-  { group: "Classics", items: ["Ivory", "Cream", "Gold", "Charcoal", "Stone"], hexes: ["#FFFFF0", "#FFFDD0", "#C9A84C", "#36454F", "#928E85"] },
+  { group: "Pastels (trending)", items: ["Blush Pink", "Lilac", "Sage Green", "Butter Yellow", "Dusty Rose"], hexes: ["#F4C2C2", "#C8A2C8", "#B2AC88", "#F5E6A3", "#DCAE96"] },
+  { group: "Jewel Tones", items: ["Deep Emerald", "Sapphire", "Terracotta", "Magenta", "Ruby"], hexes: ["#046307", "#0F52BA", "#C04000", "#FF0090", "#9B111E"] },
+  { group: "Modern Bridal", items: ["Ivory", "Champagne", "Gold", "Ombre Pink", "Copper"], hexes: ["#FFFFF0", "#F7E7CE", "#C9A84C", "#E8B4B8", "#B87333"] },
+];
+
+const JEWELRY = [
+  { name: "Layered Necklace Stack", desc: "Choker + medium + rani haar. The 2026 bridal formula. Three layers, one statement." },
+  { name: "Polki + Emerald", desc: "Uncut diamond with deep green stones. The #1 combination this year. Heritage meets drama." },
+  { name: "Oversized Jhumkas", desc: "Replacing smaller earrings as the focal point. Chandbali (crescent moon) shapes are back." },
+  { name: "Mathapatti", desc: "Forehead chain jewelry making a strong comeback. Bolder, more elaborate drops than before." },
+  { name: "Oversized Nath", desc: "Nose ring with chain — the bold statement accessory for fashion-forward brides." },
+  { name: "Embroidered Juttis", desc: "Mirror work, zardozi, or thread embroidery. Custom-matched to outfit color." },
 ];
 
 const SHOPS = [
-  { name: "Manyavar", url: "https://www.manyavar.com", note: "All budgets" },
-  { name: "Tasva", url: "https://www.tasva.com", note: "Tarun Tahiliani's line" },
-  { name: "Pernia's Pop-Up Shop", url: "https://www.perniaspopupshop.com", note: "Multi-designer luxury" },
-  { name: "AZA Fashions", url: "https://www.azafashions.com", note: "Designer menswear" },
-  { name: "Kalki Fashion", url: "https://www.kalkifashion.com", note: "Groom + bridal sets" },
-  { name: "Rathore", url: "https://www.rathore.com", note: "Bespoke Jodhpuri" },
+  { name: "Sabyasachi", url: "https://www.sabyasachi.com", note: "Ultra-luxury direct" },
+  { name: "Anita Dongre", url: "https://www.anitadongre.com", note: "Sustainable, 80K+" },
+  { name: "Kalki Fashion", url: "https://www.kalkifashion.com", note: "All budgets, widest range" },
+  { name: "Pernia's Pop-Up Shop", url: "https://www.perniaspopupshop.com", note: "100+ designers curated" },
+  { name: "Aashni + Co", url: "https://aashniandco.com", note: "Premium luxury multi-designer" },
+  { name: "WedMeGood Shop", url: "https://www.wedmegood.com", note: "Vetted vendors by city" },
 ];
 
 /* ─── Component ─────────────────────────────────────── */
@@ -143,14 +153,14 @@ function InstagramLink({ handle }: { handle: string }) {
   );
 }
 
-export function GroomFashionContent() {
+export function BrideFashionContent() {
   return (
     <div className="space-y-8">
       {/* Hero */}
       <div className="relative overflow-hidden rounded-xl">
         <Image
-          src="https://images.unsplash.com/photo-1519741497674-611481863552?w=1200&h=400&fit=crop"
-          alt="Groom fashion"
+          src="https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=1200&h=400&fit=crop"
+          alt="Bridal fashion"
           width={1200}
           height={400}
           className="h-48 w-full object-cover brightness-50 sm:h-56"
@@ -158,7 +168,7 @@ export function GroomFashionContent() {
         />
         <div className="absolute inset-0 flex flex-col justify-end p-5">
           <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
-            Groom Fashion 2026
+            Bride Fashion 2026
           </h1>
           <p className="mt-1 text-sm text-white/80">
             What to wear, who to follow, where to buy
@@ -189,6 +199,22 @@ export function GroomFashionContent() {
             </Card>
           ))}
         </div>
+      </section>
+
+      <Separator />
+
+      {/* ─── What's NEW in 2026 ─── */}
+      <section>
+        <h2 className="mb-4 text-lg font-semibold">What Changed in 2026</h2>
+        <Card>
+          <CardContent className="pt-4 space-y-2 text-sm text-muted-foreground">
+            <p><strong className="text-foreground">Non-red is now mainstream.</strong> Ivory, pastels, and jewel tones are no longer "bold choices" — they're the new normal.</p>
+            <p><strong className="text-foreground">Ombre lehengas.</strong> Two or three colors blending in one outfit. THE silhouette innovation of 2026.</p>
+            <p><strong className="text-foreground">Corset blouses.</strong> Boned bodice construction replacing traditional fitted blouses. The blouse is the hero piece now.</p>
+            <p><strong className="text-foreground">Heirloom repurposing.</strong> Converting mom's or grandma's wedding saree into a modern lehenga or cape. A genuine trend, not just influencer content.</p>
+            <p><strong className="text-foreground">Sheer dupattas.</strong> Tulle, organza, net with minimal embroidery replacing heavy embellished dupattas.</p>
+          </CardContent>
+        </Card>
       </section>
 
       <Separator />
@@ -231,8 +257,11 @@ export function GroomFashionContent() {
                     <span className="text-xs text-muted-foreground">({d.vibe})</span>
                   </div>
                   <p className="mt-1 text-sm text-muted-foreground">{d.known}</p>
-                  <div className="mt-2">
+                  <div className="mt-2 flex flex-wrap gap-3">
                     <InstagramLink handle={d.ig} />
+                    {"bridalIg" in d && d.bridalIg && (
+                      <InstagramLink handle={d.bridalIg} />
+                    )}
                   </div>
                 </div>
                 <Badge variant="secondary" className="shrink-0 text-xs">
@@ -302,31 +331,46 @@ export function GroomFashionContent() {
 
       <Separator />
 
+      {/* ─── Jewelry ─── */}
+      <section>
+        <h2 className="mb-4 text-lg font-semibold">Trending Jewelry & Accessories</h2>
+        <div className="grid gap-3 sm:grid-cols-2">
+          {JEWELRY.map((j) => (
+            <Card key={j.name}>
+              <CardContent className="pt-4">
+                <h3 className="font-semibold text-sm">{j.name}</h3>
+                <p className="mt-1 text-sm text-muted-foreground">{j.desc}</p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </section>
+
+      <Separator />
+
       {/* ─── Quick Guide ─── */}
       <section>
         <h2 className="mb-4 text-lg font-semibold">Quick Guide</h2>
-
         <div className="grid gap-4 sm:grid-cols-2">
           <Card>
             <CardContent className="pt-4">
               <h3 className="font-semibold text-sm mb-2">By Function</h3>
               <div className="space-y-1.5 text-sm text-muted-foreground">
-                <p><strong className="text-foreground">Pheras:</strong> Long sherwani + safa + jewelry</p>
-                <p><strong className="text-foreground">Reception:</strong> Bandhgala or Jodhpuri suit</p>
-                <p><strong className="text-foreground">Sangeet:</strong> Indo-western or bold kurta</p>
-                <p><strong className="text-foreground">Mehendi:</strong> Light kurta set, pastels</p>
+                <p><strong className="text-foreground">Wedding:</strong> Lehenga or saree + full jewelry stack</p>
+                <p><strong className="text-foreground">Reception:</strong> Cape lehenga, gown, or pre-draped saree</p>
+                <p><strong className="text-foreground">Sangeet:</strong> Sharara set or lighter lehenga, fun colors</p>
+                <p><strong className="text-foreground">Mehendi:</strong> Floral print, sharara, or tissue saree</p>
               </div>
             </CardContent>
           </Card>
-
           <Card>
             <CardContent className="pt-4">
               <h3 className="font-semibold text-sm mb-2">By Budget</h3>
               <div className="space-y-1.5 text-sm text-muted-foreground">
-                <p><strong className="text-foreground">Under 50K:</strong> Manyavar, Tasva, Kalki</p>
-                <p><strong className="text-foreground">50K - 2L:</strong> Kunal Rawal, Anita Dongre</p>
-                <p><strong className="text-foreground">2L - 5L:</strong> Rathore, Tarun Tahiliani</p>
-                <p><strong className="text-foreground">5L+:</strong> Sabyasachi, Manish Malhotra</p>
+                <p><strong className="text-foreground">Under 50K:</strong> Kalki Fashion, Mirraw, Frontier Raas</p>
+                <p><strong className="text-foreground">50K - 2L:</strong> Anita Dongre, Payal Singhal, Ridhi Mehra</p>
+                <p><strong className="text-foreground">2L - 5L:</strong> Tarun Tahiliani, Anamika Khanna, FSP</p>
+                <p><strong className="text-foreground">5L+:</strong> Sabyasachi, Manish Malhotra, Rahul Mishra</p>
               </div>
             </CardContent>
           </Card>
@@ -367,7 +411,7 @@ export function GroomFashionContent() {
           onClick={() => {
             const url = window.location.href;
             if (navigator.share) {
-              navigator.share({ title: "Groom Fashion 2026", url });
+              navigator.share({ title: "Bride Fashion 2026", url });
             } else {
               navigator.clipboard.writeText(url);
               alert("Link copied!");

@@ -1,19 +1,36 @@
 # PPR — Sutra Configuration
 
-## A/B Test Config
+## Complexity Tier: 1 (Personal)
 
-| Feature # | Feature | Mode | Why |
-|-----------|---------|------|-----|
-| 1 | Task management | SUTRA | First feature — use full pipeline to establish baseline |
-| 2 | Research pages | DIRECT | Speed matters — 93 days to wedding |
-| 3 | Comparison boards | SUTRA | Creative feature — benefits from brainstorming |
-| 4 | Greeting card creator | DIRECT | Build fast, iterate on design |
-| 5 | Shareable pages | DIRECT | Infrastructure feature — just ship it |
+Solo founder, personal wedding tool, hard deadline (July 5, 2026), 0 external users.
+See `asawa-inc/sutra/layer2-operating-system/COMPLEXITY-TIERS.md` for tier definitions.
 
-## Mode Definitions
+### What's mandatory at Tier 1
+- Product brief, tech stack, architecture rules, build order, categories ✅ (done at onboarding)
+- TODO.md as source of truth ✅ (done)
+- Session isolation ✅ (done)
+- Feedback to Sutra after incidents or at end of session
+- Self-check compliance every 3rd feature
 
-**SUTRA mode**: `/office-hours` -> `/autoplan` -> build -> `/qa` -> `/ship` -> `/canary`
-**DIRECT mode**: build -> `/review` -> `/ship`
+### What's scaled down
+- Metrics: track 2-3 success metrics, no shipping log required
+- Process: single-track (need → build → test → ship). No SUTRA/DIRECT mode switching.
+- Enforcement hooks: soft (flag, don't block)
+
+### What's skipped
+- A/B testing (SUTRA vs DIRECT mode)
+- Department-level functions
+- Agent incentives
+- Daily Pulse / standup protocol
+
+## Process
+
+```
+NEED → Is it P0? → YES → Build → Test on phone → Deploy → Share URL
+                  → NO  → Add to TODO.md
+```
+
+No mode switching. Ship fast. Wedding is the deadline.
 
 ## Founder Involvement
 
@@ -22,3 +39,7 @@ Level: **Hands-on** (initially, adaptive later)
 - All business/product/strategy decisions require founder approval
 - Execution decisions (file structure, code patterns) are Sutra's
 - Design taste decisions surface to founder
+
+## Re-classification Trigger
+
+Move to Tier 2 when PPR is offered to other couples (post-wedding). At that point: activate shipping log, weekly metrics, compliance checks, and A/B testing.

@@ -2,11 +2,11 @@
 
 ## Current Version
 
-Sutra v1.0
+Sutra v1.1
 
 ## Pinned On
 
-2026-04-03
+2026-04-04
 
 ## What's Included
 

@@ -28,18 +28,18 @@ DAYFLOW (decides when to upgrade: stay on v1.0 or fetch v1.1)
 
 ## The Versioning
 
-### Sutra v1.0 (current — what DayFlow runs today)
+### Sutra v1.1 (current)
+- Complexity tiers: OS is mandatory for all companies, depth scales with company complexity (Personal → Product → Company)
+- Infrastructure guardrail: parallel operations require isolation verification (from PPR deploy collision feedback)
+- Enforcement tiering: compliance checks, metrics logging, and shipping log requirements scale with tier
+- Clients: DayFlow (Tier 2), PPR (Tier 1)
+
+### Sutra v1.0
 - Stage 1 Pre-Launch OS (12 rules)
 - Basic product knowledge system (shearing layers, flow maps, sensors)
 - Functional principles (product, design, eng, security, quality)
 - Intent + boundaries + effort delegation model
 - One process: idea → PR/FAQ → P1 → mockup → build → test → ship
-
-### Sutra v1.1 (next — when DayFlow sends first feedback)
-- Whatever DayFlow learned from running v1.0
-- Bug patterns discovered (e.g., virtual ID handling)
-- Principles that worked vs didn't
-- Missing principles discovered in practice
 
 ### Sutra v2.0 (future — when DayFlow hits Stage 2: 25 users)
 - Analytics and metrics process
@@ -84,9 +84,11 @@ DAYFLOW (decides when to upgrade: stay on v1.0 or fetch v1.1)
 | Company | Pinned to | Status |
 |---------|-----------|--------|
 | DayFlow | Sutra v1.0 | Running. No feedback sent yet. |
+| PPR | Sutra v1.0 | Running. First feedback sent (parallel deploy collision). |
 
 ## Release History
 
 | Version | Date | What changed | Triggered by |
 |---------|------|-------------|-------------|
 | v1.0 | 2026-04-03 | Initial: Stage 1 OS, 12 rules, basic knowledge system | DayFlow creation |
+| v1.1 | 2026-04-04 | Complexity tiers, infrastructure guardrail, enforcement tiering | PPR onboarding + parallel deploy collision |

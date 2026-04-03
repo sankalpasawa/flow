@@ -17,4 +17,4 @@ Add to Sutra's operating principles:
 - Deploy checklist should include: unique project name, unique domain, verify no collision with existing deploys.
 
 ## Status
-PENDING
+RESOLVED — Incorporated into Sutra v1.1 — infrastructure isolation rule added to ENFORCEMENT.md

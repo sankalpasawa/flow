@@ -1,64 +1,11 @@
-[2026-04-02T08:27:28.938Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-04-02T08:27:29.012Z] [warning] "shadow*" style props are deprecated. Use "boxShadow".
-[2026-04-02T08:27:29.024Z] [log] Running application "main" with appParams:
- {rootTag: #root, hydrate: undefined} 
-Development-level warnings: ON.
-Performance optimizations: OFF.
-[2026-04-02T08:27:29.174Z] [log] [DayFlow] Seeded 207 activities, 39 logs, and 5 goals for Sankalp
-[2026-04-02T08:27:29.175Z] [log] [DayFlow] Dev mode — auto-login as sankalp@dayflow.app
-[2026-04-02T08:27:29.188Z] [warning] props.pointerEvents is deprecated. Use style.pointerEvents
-[2026-04-02T08:30:44.281Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-04-02T08:30:44.349Z] [warning] "shadow*" style props are deprecated. Use "boxShadow".
-[2026-04-02T08:30:44.360Z] [log] Running application "main" with appParams:
- {rootTag: #root, hydrate: undefined} 
-Development-level warnings: ON.
-Performance optimizations: OFF.
-[2026-04-02T08:30:44.499Z] [log] [DayFlow] Dev mode — auto-login as sankalp@dayflow.app
-[2026-04-02T08:30:44.502Z] [warning] props.pointerEvents is deprecated. Use style.pointerEvents
-[2026-04-02T08:30:48.565Z] [warning] Animated: `useNativeDriver` is not supported because the native animated module is missing. Falling back to JS-based animation. To resolve this, add `RCTAnimation` module to this app, or remove `useNativeDriver`. Make sure to run `bundle exec pod install` first. Read more about autolinking: https://github.com/react-native-community/cli/blob/master/docs/autolinking.md
-[2026-04-02T08:33:13.949Z] [warning] %s
-
-%s
- An error occurred in the <FlatList> component. Consider adding an error boundary to your tree to customize error handling behavior.
-Visit https://react.dev/link/error-boundaries to learn more about error boundaries.
-[2026-04-02T08:33:13.959Z] [log] [DayFlow] Dev mode — auto-login as sankalp@dayflow.app
-[2026-04-02T08:37:27.778Z] [log] [DayFlow] Dev mode — auto-login as sankalp@dayflow.app
-[2026-04-02T08:37:32.621Z] [log] [DayFlow] Dev mode — auto-login as sankalp@dayflow.app
-[2026-04-02T08:37:35.632Z] [log] [DayFlow] Dev mode — auto-login as sankalp@dayflow.app
-[2026-04-02T08:37:41.833Z] [log] [DayFlow] Dev mode — auto-login as sankalp@dayflow.app
-[2026-04-02T08:37:42.528Z] [log] [DayFlow] Dev mode — auto-login as sankalp@dayflow.app
-[2026-04-02T08:37:46.970Z] [log] [DayFlow] Seeded 181 activities, 52 logs, and 5 goals for Sankalp
-[2026-04-02T08:37:46.970Z] [log] [DayFlow] Dev mode — auto-login as sankalp@dayflow.app
-[2026-04-02T08:37:51.308Z] [log] [DayFlow] Dev mode — auto-login as sankalp@dayflow.app
-[2026-04-02T08:37:55.546Z] [log] [DayFlow] Dev mode — auto-login as sankalp@dayflow.app
-[2026-04-02T08:38:01.460Z] [log] [DayFlow] Dev mode — auto-login as sankalp@dayflow.app
-[2026-04-02T08:38:07.806Z] [log] [DayFlow] Dev mode — auto-login as sankalp@dayflow.app
-[2026-04-02T08:38:11.268Z] [log] [DayFlow] Dev mode — auto-login as sankalp@dayflow.app
-[2026-04-02T08:38:36.448Z] [log] [DayFlow] Dev mode — auto-login as sankalp@dayflow.app
-[2026-04-02T08:38:49.612Z] [log] [DayFlow] Dev mode — auto-login as sankalp@dayflow.app
-[2026-04-02T08:38:54.785Z] [log] [DayFlow] Dev mode — auto-login as sankalp@dayflow.app
-[2026-04-02T08:39:00.677Z] [log] [DayFlow] Dev mode — auto-login as sankalp@dayflow.app
-[2026-04-02T08:39:04.656Z] [log] [DayFlow] Dev mode — auto-login as sankalp@dayflow.app
-[2026-04-02T08:39:19.223Z] [warning] %s
-
-%s
- An error occurred in the <BottomTaskBar> component. Consider adding an error boundary to your tree to customize error handling behavior.
-Visit https://react.dev/link/error-boundaries to learn more about error boundaries.
-[2026-04-02T08:39:24.245Z] [log] [DayFlow] Dev mode — auto-login as sankalp@dayflow.app
-[2026-04-02T08:39:51.882Z] [log] [DayFlow] Dev mode — auto-login as sankalp@dayflow.app
-[2026-04-02T08:44:37.814Z] [log] [DayFlow] Dev mode — auto-login as sankalp@dayflow.app
-[2026-04-02T08:44:41.861Z] [log] [DayFlow] Dev mode — auto-login as sankalp@dayflow.app
-[2026-04-02T08:48:03.487Z] [log] [DayFlow] Dev mode — auto-login as sankalp@dayflow.app
-[2026-04-02T08:48:13.490Z] [log] [DayFlow] Dev mode — auto-login as sankalp@dayflow.app
-[2026-04-02T08:48:35.803Z] [log] [DayFlow] Dev mode — auto-login as sankalp@dayflow.app
-[2026-04-02T08:48:41.118Z] [log] [DayFlow] Dev mode — auto-login as sankalp@dayflow.app
-[2026-04-02T08:48:47.885Z] [log] [DayFlow] Dev mode — auto-login as sankalp@dayflow.app
-[2026-04-02T08:48:51.954Z] [log] [DayFlow] Dev mode — auto-login as sankalp@dayflow.app
-[2026-04-02T08:48:57.024Z] [log] [DayFlow] Dev mode — auto-login as sankalp@dayflow.app
-[2026-04-02T08:53:38.258Z] [log] [DayFlow] Dev mode — auto-login as sankalp@dayflow.app
-[2026-04-02T08:53:56.807Z] [log] [DayFlow] Dev mode — auto-login as sankalp@dayflow.app
-[2026-04-02T08:55:30.785Z] [log] [DayFlow] Dev mode — auto-login as sankalp@dayflow.app
-[2026-04-02T08:56:44.702Z] [log] [DayFlow] Dev mode — auto-login as sankalp@dayflow.app
-[2026-04-02T08:56:50.394Z] [log] [DayFlow] Dev mode — auto-login as sankalp@dayflow.app
-[2026-04-02T08:58:47.028Z] [log] [DayFlow] Dev mode — auto-login as sankalp@dayflow.app
-[2026-04-02T08:58:57.614Z] [log] [DayFlow] Dev mode — auto-login as sankalp@dayflow.app
+[2026-04-03T21:09:41.476Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[2026-04-03T21:09:41.525Z] [log] [HMR] connected
+[2026-04-03T21:11:55.400Z] [log] [HMR] connected
+[2026-04-03T21:11:55.758Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[2026-04-03T21:11:55.775Z] [log] [HMR] connected
+[2026-04-03T21:13:35.548Z] [log] [Fast Refresh] rebuilding
+[2026-04-03T21:13:35.686Z] [log] [Fast Refresh] done in 187ms
+[2026-04-03T21:13:35.968Z] [log] [Fast Refresh] rebuilding
+[2026-04-03T21:13:36.522Z] [log] [Fast Refresh] done in 655ms
+[2026-04-03T21:13:54.423Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[2026-04-03T21:13:54.440Z] [log] [HMR] connected

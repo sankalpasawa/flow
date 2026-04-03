@@ -26,6 +26,17 @@
     ]
   },
   "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/daily-pulse.sh"
+          }
+        ]
+      }
+    ],
     "PreToolUse": [
       {
         "matcher": "Edit|Write",
@@ -33,6 +44,26 @@
           {
             "type": "command",
             "command": "bash .claude/hooks/enforce-boundaries.sh"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/process-compliance.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/session-feedback-check.sh"
           }
         ]
       }
