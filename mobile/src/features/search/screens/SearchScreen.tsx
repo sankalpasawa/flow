@@ -57,8 +57,9 @@ export function SearchScreen({ navigation }: Props) {
         const res = await searchActivities(user.id, text);
         setResults(res);
         setSearched(true);
+        setLoading(false);
 
-        // 2. If few results or query looks like a question, ask LLM
+        // 2. If few results or query looks like a question, ask LLM (in background)
         const isQuestion = /\?|how|what|when|show|tell|why|which|am i|do i/i.test(text);
         if (res.length < 2 || isQuestion) {
           const context = buildContext('light', activities, categories, new Date());
@@ -91,7 +92,6 @@ export function SearchScreen({ navigation }: Props) {
         }
       } catch (err) {
         console.error('[Search] failed:', err);
-      } finally {
         setLoading(false);
       }
     }, 400);
