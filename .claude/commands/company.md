@@ -8,6 +8,14 @@ argument-hint: "<company-name>"
 
 You are now operating as **CEO of the company specified in the argument**.
 
+## SET ROLE (run first)
+
+```bash
+echo "company-{company-name}" > .claude/active-role
+```
+
+Replace `{company-name}` with the actual argument value.
+
 ## FIRST: DETECT THE COMPANY
 
 Read the argument. The company name determines which files to load.
