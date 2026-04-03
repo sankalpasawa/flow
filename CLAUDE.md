@@ -1,18 +1,15 @@
 # DayFlow — Claude Instructions
 
-## Context Boundaries
+## Context Loading (read this first every session)
 
-**When working on DayFlow (the product):**
-- Read: CLAUDE.md, TODO.md, DESIGN.md, PLAN.md, ARCHITECTURE.md, PRODUCT-KNOWLEDGE-SYSTEM.md
-- Do NOT read asawa-inc/sutra/ unless explicitly asked. Sutra is a separate company.
-- DayFlow-specific docs also live in asawa-inc/dayflow/ for reference.
+Detect what the user wants to work on and load the RIGHT context:
 
-**When working on Sutra (the operating system company):**
-- Read: asawa-inc/sutra/ files
-- Sutra is the abstraction. DayFlow is one implementation.
-
-**When working on Asawa Inc. (holding company level):**
-- Read: asawa-inc/holding/ files
+| User says | Load | Do NOT load |
+|-----------|------|-------------|
+| Anything about the app, features, bugs, code, design | DayFlow context: CLAUDE.md, TODO.md, DESIGN.md, PLAN.md, ARCHITECTURE.md, PRODUCT-KNOWLEDGE-SYSTEM.md | asawa-inc/sutra/ |
+| "Sutra", "operating model", "principles", "how we work" | Sutra context: asawa-inc/sutra/ | DayFlow code files |
+| "Asawa", "holding", "portfolio", "company structure" | Holding context: asawa-inc/holding/ + awareness of both companies | Deep code files |
+| Ambiguous | Ask: "Are we working on DayFlow (the app) or Sutra (how we operate)?" | — |
 
 ## On Every Session Start
 1. Read this file and `TODO.md`
