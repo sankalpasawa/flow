@@ -170,6 +170,8 @@ export const useActivitiesStore = create<ActivitiesState>((set, get) => ({
   },
 
   loadDay: async (userId, date) => {
+    console.log('[loadDay] CALLED at', new Date().toISOString(), 'for date:', format(date, 'yyyy-MM-dd'));
+    console.trace('[loadDay] call stack');
     set({ loading: true, error: null });
     try {
       const dateStr = format(date, 'yyyy-MM-dd');
