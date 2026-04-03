@@ -204,6 +204,7 @@ export const useActivitiesStore = create<ActivitiesState>((set, get) => ({
           console.error(`[DayFlow] Failed to load log for activity ${a.id}:`, err);
         }
       }));
+      console.log('[loadDay] final activities:', acts.map(a => ({ id: a.id, title: a.title, duration: a.duration_minutes })));
       set({ activities: acts, untimedTasks: untimed, logs: logsMap, loading: false });
     } catch (err) {
       console.error('[DayFlow] Failed to load activities:', err);
@@ -251,16 +252,22 @@ export const useActivitiesStore = create<ActivitiesState>((set, get) => ({
 
   editActivity: async (id, updates) => {
     try {
+      console.log('[editActivity] ID:', id, 'Updates:', JSON.stringify(updates));
       await updateActivity(id, updates);
       const updated = await import('../lib/db/activities').then(m => m.getActivity(id));
+      console.log('[editActivity] Read back from DB:', updated?.id, 'duration:', updated?.duration_minutes);
       if (updated) {
-        set((s) => ({
-          // Match by exact ID or prefix (real ID matches virtual uuid_date)
-          activities: s.activities.map((a) =>
+        set((s) => {
+          const newActivities = s.activities.map((a) =>
             (a.id === id || a.id.split('_')[0] === id)
               ? { ...updated, id: a.id } : a
-          ),
-        }));
+          );
+          console.log('[editActivity] patched store. Matching activities:', newActivities.filter(a => a.id === id || a.id.split('_')[0] === id).map(a => ({ id: a.id, duration: a.duration_minutes })));
+          return {
+            // Match by exact ID or prefix (real ID matches virtual uuid_date)
+            activities: newActivities,
+          };
+        });
         if (updates.start_time || updates.duration_minutes) {
           scheduleLogNudge(updated).catch((err) =>
             console.warn('[DayFlow] Failed to reschedule nudge:', err)

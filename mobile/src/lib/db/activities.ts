@@ -60,10 +60,13 @@ export async function getActivitiesForDay(userId: string, dateStr: string): Prom
     [userId, 1]
   );
   const recurringActivities = recurringRows.map(mapRow);
+  console.log('[getActivitiesForDay] recurring count:', recurringActivities.length,
+    'durations:', recurringActivities.map(a => ({ id: a.id, title: a.title, duration: a.duration_minutes })));
 
   // 3. Generate virtual recurring instances for this date
   const targetDate = new Date(dateStr + 'T00:00:00');
   const virtualInstances = generateRecurringInstances(recurringActivities, targetDate);
+  console.log('[getActivitiesForDay] virtual instances:', virtualInstances.map(v => ({ id: v.id, title: v.title, duration: v.duration_minutes })));
 
   // 4. Filter out virtual instances that already have an explicit entry on this date
   //    Deduplicate by: original activity ID (virtual IDs contain the original ID prefix)
@@ -301,10 +304,11 @@ export async function updateActivity(id: string, updates: UpdateActivityInput): 
   if (updates.actual_end !== undefined) { fields.push('actual_end = ?'); values.push(updates.actual_end); }
 
   values.push(id);
-  await db.runAsync(
-    `UPDATE activities SET ${fields.join(', ')} WHERE id = ?`,
-    values as SQLiteBindValue[]
-  );
+  const sql = `UPDATE activities SET ${fields.join(', ')} WHERE id = ?`;
+  console.log('[updateActivity] SQL:', sql);
+  console.log('[updateActivity] id:', id, 'values:', JSON.stringify(values));
+  const result = await db.runAsync(sql, values as SQLiteBindValue[]);
+  console.log('[updateActivity] result:', JSON.stringify(result));
 }
 
 export async function deleteActivity(id: string): Promise<void> {
@@ -324,7 +328,9 @@ export async function getActivity(id: string): Promise<Activity | null> {
      WHERE a.id = ? AND a.deleted = 0`,
     [id]
   );
-  return row ? mapRow(row) : null;
+  const result = row ? mapRow(row) : null;
+  console.log('[getActivity] id:', id, 'found:', !!result, 'duration:', result?.duration_minutes);
+  return result;
 }
 
 export async function searchActivities(userId: string, query: string): Promise<Activity[]> {

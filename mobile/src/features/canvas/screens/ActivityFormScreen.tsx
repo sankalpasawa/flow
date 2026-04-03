@@ -339,6 +339,7 @@ export function ActivityFormScreen({ route, navigation }: Props) {
       if (existingActivity) {
         // Use activityId (real DB ID from navigation), not existingActivity.id
         // which may be a virtual ID (uuid_YYYY-MM-DD) for recurring activities
+        console.log('[ActivityForm handleSave] activityId:', activityId, 'duration:', duration, 'existingActivity.id:', existingActivity.id, 'existingActivity.duration:', existingActivity.duration_minutes);
         await editActivity(activityId!, {
           title: title.trim(),
           description: description.trim() || null,
