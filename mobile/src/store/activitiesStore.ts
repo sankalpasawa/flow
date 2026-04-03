@@ -255,7 +255,11 @@ export const useActivitiesStore = create<ActivitiesState>((set, get) => ({
       const updated = await import('../lib/db/activities').then(m => m.getActivity(id));
       if (updated) {
         set((s) => ({
-          activities: s.activities.map((a) => (a.id === id ? updated : a)),
+          // Match by exact ID or prefix (real ID matches virtual uuid_date)
+          activities: s.activities.map((a) =>
+            (a.id === id || a.id.split('_')[0] === id)
+              ? { ...updated, id: a.id } : a
+          ),
         }));
         if (updates.start_time || updates.duration_minutes) {
           scheduleLogNudge(updated).catch((err) =>
