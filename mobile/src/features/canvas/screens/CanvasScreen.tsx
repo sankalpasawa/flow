@@ -31,11 +31,17 @@ function computeOverlapLayout(activities: Activity[]): Map<string, { column: num
   const result = new Map<string, { column: number; totalColumns: number }>();
   if (activities.length === 0) return result;
 
-  const parsed = activities.map((a) => {
-    const start = parseISO(a.start_time!).getTime();
-    const end = start + a.duration_minutes * 60000;
-    return { id: a.id, start, end };
-  });
+  const parsed = activities
+    .filter((a) => a.start_time && a.start_time !== '')
+    .map((a) => {
+      const startDate = parseISO(a.start_time!);
+      const start = startDate.getTime();
+      if (isNaN(start)) return null;
+      const end = start + a.duration_minutes * 60000;
+      return { id: a.id, start, end };
+    })
+    .filter((p): p is NonNullable<typeof p> => p !== null);
+  if (parsed.length === 0) return result;
   parsed.sort((a, b) => a.start - b.start || (b.end - b.start) - (a.end - a.start));
 
   const groups: (typeof parsed)[] = [];
