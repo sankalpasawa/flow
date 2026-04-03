@@ -163,24 +163,25 @@ IDEA → Is it P0? → Is it funny?
 
 Ship fast, measure funny, iterate.
 
-## gstack Skills Active
+## Skills (89 available — gstack + GSD)
 
-| Skill | When | Why |
-|-------|------|-----|
-| `/office-hours` | New feature ideation | Validate before building |
-| `/autoplan` | SUTRA mode features | Full CEO + design + eng review |
-| `/design-shotgun` | Visual decisions | Explore multiple options |
-| `/design-html` | After design approval | Production HTML/CSS |
-| `/qa` | After every feature | Test + fix + verify loop |
-| `/design-review` | After deploy | Visual QA on live site |
-| `/review` | Before every merge | Code review |
-| `/ship` | Every deploy | PR + version bump |
-| `/canary` | After every deploy | 10-min health watch |
-| `/benchmark` | Weekly | Core Web Vitals tracking |
-| `/investigate` | On bug | Root cause analysis |
-| `/document-release` | After ship | Keep docs current |
-| `/retro` | Weekly | What shipped, trends |
-| `/cso` | Monthly | Security audit |
+Full catalog: `asawa-inc/sutra/layer2-operating-system/SKILL-CATALOG.md`
+
+**Quick start for Hehe:**
+```
+New feature (SUTRA mode):
+  /office-hours → /gsd:discuss-phase → /gsd:plan-phase → /gsd:execute-phase
+  → /qa → /design-review → /ship → /canary → /document-release
+
+Bug fix (DIRECT mode):
+  /investigate → fix → /review → /ship → /canary
+
+Start of day:
+  /gsd:progress → /gsd:resume-work (if continuing)
+
+End of day:
+  /gsd:pause-work → /retro (weekly)
+```
 
 ---
 
