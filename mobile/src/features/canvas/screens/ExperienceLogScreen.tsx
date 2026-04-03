@@ -72,12 +72,14 @@ export function ExperienceLogScreen({ route, navigation }: Props) {
   const { user } = useAuthStore();
   const { activities, logs, submitLog } = useActivitiesStore();
 
+  // Match by exact ID or prefix (real ID matches virtual uuid_date)
   const activity = useMemo(
-    () => activities.find((a) => a.id === activityId),
+    () => activities.find((a) => a.id === activityId || a.id.split('_')[0] === activityId),
     [activities, activityId],
   );
 
-  const existingLog = logs[activityId];
+  // Check logs by both real and virtual ID
+  const existingLog = logs[activityId] || (activity ? logs[activity.id] : undefined);
 
   // Form state
   const [mood, setMood] = useState<number | null>(existingLog?.mood ?? null);
