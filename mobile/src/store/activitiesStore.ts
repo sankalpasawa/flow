@@ -262,7 +262,7 @@ export const useActivitiesStore = create<ActivitiesState>((set, get) => ({
         set((s) => {
           const newActivities = s.activities.map((a) =>
             (a.id === id || a.id.split('_')[0] === id)
-              ? { ...updated, id: a.id } : a
+              ? { ...a, ...updates, id: a.id } : a
           );
           console.log('[editActivity] patched store. Matching activities:', newActivities.filter(a => a.id === id || a.id.split('_')[0] === id).map(a => ({ id: a.id, duration: a.duration_minutes })));
           return {
