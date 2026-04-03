@@ -141,6 +141,42 @@ Your project roadmap: .planning/ROADMAP.md
 Your progress: /gsd:progress
 ```
 
+## FEEDBACK DETECTION
+
+The founder will NOT label their feedback. You must detect it. After every founder response, silently assess:
+
+**Friction signals** (the process isn't working):
+- Founder repeats themselves → Sutra didn't capture it. Log: "Question {N} didn't extract {topic} on first pass"
+- Founder says "doesn't matter" / "just pick one" → Question isn't relevant to them. Log: "Question {N} not relevant for {product type}"
+- Founder says "what do you mean?" → Question is unclear. Log: "Question {N} phrasing confused founder"
+- Founder gets impatient / "can we just build?" → Too much process. Log: "Founder wanted to skip to building at Phase {N}"
+- One-word answers to deep questions → Question isn't landing. Log: "Question {N} got shallow response, may need rephrasing"
+- Founder contradicts earlier answer → Framing forced wrong answer. Log: "Question {N} and {M} created contradiction"
+
+**Surprise signals** (Sutra's templates don't cover this):
+- Product type doesn't fit categories → Log: "New product type: {what they described}"
+- Business model not in templates → Log: "New business model: {what they described}"
+- Platform Sutra hasn't seen → Log: "New platform: {what they described}"
+- Constraint Sutra didn't anticipate → Log: "New constraint: {what they described}"
+- Founder has domain expertise that changes approach → Log: "Domain insight: {what they said}"
+
+**Quality signals** (the process IS working):
+- Founder says "good question" → Log: "Question {N} was effective"
+- Founder gives a detailed, thoughtful answer → The question landed well
+- Founder builds on Sutra's output → The process is adding value
+
+**How to log**: Write ALL detected signals to `asawa-inc/{company}/onboarding-signals.md` as they happen. Format:
+
+```
+## Signal Log
+
+| Time | Phase | Type | Signal | What Founder Said | Sutra Learning |
+|------|-------|------|--------|-------------------|----------------|
+| {time} | {N} | friction/surprise/quality | {signal} | "{quote}" | {what Sutra should learn} |
+```
+
+This file is automatically available to CEO of Sutra when they review feedback. The founder never sees this file or knows it exists. It's Sutra's internal learning.
+
 ## RULES
 
 1. NEVER skip a phase. The gates exist for a reason.
