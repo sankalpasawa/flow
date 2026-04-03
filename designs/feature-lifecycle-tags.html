@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Adding "Tags" — Full Lifecycle</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-snap-type: y mandatory; }
+  body { font-family: 'Inter', -apple-system, sans-serif; color: #1A1714; -webkit-font-smoothing: antialiased; }
+
+  .slide { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 48px 28px; scroll-snap-align: start; position: relative; }
+  .slide-inner { max-width: 720px; width: 100%; }
+  .bg-cream { background: #F5F0E8; }
+  .bg-green { background: #2D5A3E; color: #fff; }
+  .bg-dark { background: #1A1714; color: #F5F0E8; }
+  .bg-warm { background: linear-gradient(135deg, #F5F0E8, #EDE5D8); }
+  .bg-accent { background: linear-gradient(160deg, #C4795B, #A05A3E); color: #fff; }
+  .bg-blue { background: linear-gradient(160deg, #3B82F6, #1D4ED8); color: #fff; }
+  .bg-purple { background: linear-gradient(160deg, #8B5CF6, #6D28D9); color: #fff; }
+  .deco { position: absolute; border-radius: 50%; opacity: 0.06; }
+
+  .mega { font-size: clamp(32px, 5.5vw, 56px); font-weight: 900; letter-spacing: -2px; line-height: 1.05; }
+  .big { font-size: clamp(24px, 3.8vw, 36px); font-weight: 800; letter-spacing: -1px; line-height: 1.15; }
+  .medium { font-size: clamp(17px, 2.5vw, 24px); font-weight: 700; }
+  .body-lg { font-size: clamp(13px, 1.8vw, 16px); font-weight: 400; line-height: 1.7; opacity: 0.75; }
+  .label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; opacity: 0.4; margin-bottom: 14px; }
+  .center { text-align: center; }
+  .mt-8 { margin-top: 8px; } .mt-16 { margin-top: 16px; } .mt-24 { margin-top: 24px; } .mt-32 { margin-top: 32px; }
+  .slide-num { position: absolute; bottom: 20px; right: 28px; font-size: 10px; font-weight: 600; opacity: 0.15; }
+
+  /* Timeline */
+  .timeline { position: relative; padding-left: 32px; margin-top: 24px; }
+  .timeline::before { content:''; position: absolute; left: 10px; top: 8px; bottom: 8px; width: 2px; border-radius: 1px; }
+  .tl-green::before { background: linear-gradient(to bottom, #2D5A3E, #10B981); }
+  .tl-blue::before { background: linear-gradient(to bottom, #3B82F6, #8B5CF6); }
+  .tl-red::before { background: linear-gradient(to bottom, #EF4444, #F97316); }
+
+  .tl-item { position: relative; padding: 10px 0 20px; }
+  .tl-dot { position: absolute; left: -27px; top: 14px; width: 12px; height: 12px; border-radius: 6px; border: 2.5px solid; background: #F5F0E8; }
+  .tl-dot.filled { background: currentColor; }
+  .bg-dark .tl-dot { background: #1A1714; }
+  .bg-green .tl-dot { background: #2D5A3E; }
+
+  .tl-who { font-size: 9px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; opacity: 0.5; }
+  .tl-action { font-size: 14px; font-weight: 700; margin-top: 2px; }
+  .tl-detail { font-size: 11px; opacity: 0.6; margin-top: 3px; line-height: 1.5; }
+  .tl-file { font-size: 9px; font-family: Menlo, monospace; opacity: 0.3; margin-top: 3px; }
+  .tl-output { display: inline-block; font-size: 9px; font-weight: 700; padding: 2px 8px; border-radius: 6px; margin-top: 4px; }
+
+  /* Cards */
+  .card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
+  .card-grid.three { grid-template-columns: 1fr 1fr 1fr; }
+  .card { padding: 14px; border-radius: 12px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.1); }
+  .card-light { background: rgba(255,255,255,0.65); border: 1px solid rgba(255,255,255,0.75); box-shadow: 0 3px 8px rgba(0,0,0,0.04); }
+  .card-emoji { font-size: 22px; margin-bottom: 6px; }
+  .card-title { font-size: 13px; font-weight: 700; }
+  .card-desc { font-size: 11px; opacity: 0.6; margin-top: 3px; line-height: 1.4; }
+  .card-tag { font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 4px; display: inline-block; margin-top: 6px; }
+
+  /* Layer diagram */
+  .layer-touch { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 16px; }
+  .layer-chip { padding: 6px 12px; border-radius: 8px; font-size: 11px; font-weight: 600; }
+  .lc-yes { background: rgba(239,68,68,0.1); color: #EF4444; border: 1px solid rgba(239,68,68,0.2); }
+  .lc-no { background: rgba(16,185,129,0.06); color: #10B981; border: 1px solid rgba(16,185,129,0.15); }
+
+  /* Comparison */
+  .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 20px; }
+  .cmp-side { padding: 14px; border-radius: 12px; }
+  .cmp-bad { background: rgba(239,68,68,0.06); border: 1px solid rgba(239,68,68,0.12); }
+  .cmp-good { background: rgba(16,185,129,0.06); border: 1px solid rgba(16,185,129,0.12); }
+  .cmp-label { font-size: 9px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px; }
+  .cmp-bad .cmp-label { color: #EF4444; }
+  .cmp-good .cmp-label { color: #10B981; }
+  .cmp-text { font-size: 11px; line-height: 1.6; color: #4A4540; }
+
+  /* Scale issues */
+  .issue-row { display: flex; gap: 12px; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.08); align-items: flex-start; }
+  .issue-icon { font-size: 20px; flex-shrink: 0; margin-top: 2px; }
+  .issue-title { font-size: 13px; font-weight: 700; }
+  .issue-desc { font-size: 11px; opacity: 0.6; margin-top: 2px; line-height: 1.4; }
+  .issue-solve { font-size: 10px; color: #10B981; font-weight: 600; margin-top: 4px; }
+</style>
+</head>
+<body>
+
+<!-- SLIDE 1 -->
+<div class="slide bg-cream">
+  <div class="deco" style="width:300px;height:300px;background:#2D5A3E;top:-80px;right:-80px;"></div>
+  <div class="slide-inner center">
+    <p class="label">Feature lifecycle — complete walkthrough</p>
+    <h1 class="mega">Adding<br>"Tags"</h1>
+    <p class="body-lg mt-16">From idea to shipped feature.<br>Every department. Every layer. Every check.</p>
+    <p class="body-lg mt-8" style="opacity:0.4;font-size:12px;">Replacing single-category with multiple tags per activity</p>
+  </div>
+  <div class="slide-num">01 / 12</div>
+</div>
+
+<!-- SLIDE 2: What Layers Does This Touch? -->
+<div class="slide bg-warm">
+  <div class="slide-inner">
+    <p class="label">Step 0: Impact scan</p>
+    <h2 class="big">Which layers does<br>"Tags" touch?</h2>
+    <p class="body-lg">Before anything else, scan the shearing layers. Red = changes needed.</p>
+
+    <div class="layer-touch">
+      <div class="layer-chip lc-yes">0. Vision ✗ (no change)</div>
+      <div class="layer-chip lc-yes">1. Data Model 🔴</div>
+      <div class="layer-chip lc-yes">2. Business Logic 🔴</div>
+      <div class="layer-chip lc-yes">3. Product Features 🔴</div>
+      <div class="layer-chip lc-yes">4. Design System 🔴</div>
+      <div class="layer-chip lc-yes">5. UI Components 🔴</div>
+      <div class="layer-chip lc-no">6. Content (minor copy)</div>
+      <div class="layer-chip lc-no">7. Ops (no change)</div>
+    </div>
+
+    <p class="body-lg mt-24" style="font-size:12px;"><strong>5 of 8 layers affected.</strong> This is a high-impact change. Layer 1 (data model) changes — everything downstream cascades. This is NOT a quick feature. It touches the foundation.</p>
+
+    <p class="body-lg mt-8" style="font-size:12px; color:#C4795B; opacity:1; font-weight:600;">Decision point: Is this worth doing right now? Or should we ship to 25 beta users first?</p>
+  </div>
+  <div class="slide-num">02 / 12</div>
+</div>
+
+<!-- SLIDE 3: Org Agents Weigh In -->
+<div class="slide bg-dark">
+  <div class="slide-inner">
+    <p class="label" style="color:#8C857D;">Step 1: Org agents consult</p>
+    <h2 class="big">Every department<br>weighs in</h2>
+    <p class="body-lg">Before writing code, specialized agents analyze from their perspective.</p>
+
+    <div class="card-grid three" style="margin-top:20px;">
+      <div class="card">
+        <div class="card-emoji">📦</div>
+        <div class="card-title">Product (CPO)</div>
+        <div class="card-desc">Tags allow multiple labels per activity. More flexible than single category. But: adds complexity to creation flow. RICE: Reach 6, Impact 5, Confidence 4, Effort 3 = score 40 (P1).</div>
+        <div class="card-tag" style="background:rgba(249,115,22,0.15);color:#F97316;">P1 — build soon</div>
+      </div>
+      <div class="card">
+        <div class="card-emoji">🎨</div>
+        <div class="card-title">Design (CDO)</div>
+        <div class="card-desc">Tags as small glass chips below the title. Multiple chips with wrap. Color: each tag gets its own tint (same 12% tint system). Pill tint: blend all tag colors? Or use primary tag?</div>
+        <div class="card-tag" style="background:rgba(236,72,153,0.15);color:#EC4899;">Design decision needed</div>
+      </div>
+      <div class="card">
+        <div class="card-emoji">⚡</div>
+        <div class="card-title">Engineering (CTO)</div>
+        <div class="card-desc">Currently: category_id (single FK). Tags: many-to-many. Need activity_tags join table OR JSON array column. JSON is simpler for SQLite. Migration required. All queries that filter by category must update.</div>
+        <div class="card-tag" style="background:rgba(59,130,246,0.15);color:#3B82F6;">High effort — Layer 1 change</div>
+      </div>
+      <div class="card">
+        <div class="card-emoji">🔒</div>
+        <div class="card-title">Security (CISO)</div>
+        <div class="card-desc">Tags are user-generated strings. Need sanitization (no HTML, no XSS). Max length limit. Max tags per activity limit. RLS: tags scoped to user_id.</div>
+        <div class="card-tag" style="background:rgba(239,68,68,0.15);color:#EF4444;">Input validation required</div>
+      </div>
+      <div class="card">
+        <div class="card-emoji">📊</div>
+        <div class="card-title">Data (CDaO)</div>
+        <div class="card-desc">Track: tags_created, tags_per_activity_avg, most_used_tags. This tells us if users want fine-grained categorization. A/B test: tags vs categories vs both.</div>
+        <div class="card-tag" style="background:rgba(139,92,246,0.15);color:#8B5CF6;">Events to track</div>
+      </div>
+      <div class="card">
+        <div class="card-emoji">✅</div>
+        <div class="card-title">Quality (CQO)</div>
+        <div class="card-desc">Test cases: create with 0 tags, 1 tag, 5 tags, 20 tags. Search by tag. Filter by tag. Pill rendering with multiple tag tints. Migration from category to tags (backwards compat).</div>
+        <div class="card-tag" style="background:rgba(16,185,129,0.15);color:#10B981;">15+ new test cases</div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num" style="color:rgba(255,255,255,0.15)">03 / 12</div>
+</div>
+
+<!-- SLIDE 4: Knowledge System Check -->
+<div class="slide bg-warm">
+  <div class="slide-inner">
+    <p class="label">Step 2: Knowledge system check</p>
+    <h2 class="big">Change Flow Map</h2>
+    <p class="body-lg">The Product Knowledge System tells us exactly what files are affected.</p>
+
+    <div style="background:rgba(255,255,255,0.7);border:1px solid rgba(255,255,255,0.8);border-radius:14px;padding:16px;margin-top:20px;font-size:12px;font-family:Menlo,monospace;line-height:2;color:#4A4540;">
+      <span style="color:#EF4444;font-weight:700;">IF YOU CHANGE: types/index.ts (add tags field)</span><br>
+      &nbsp;&nbsp;CHECK: activitiesStore.ts (editActivity, addActivity)<br>
+      &nbsp;&nbsp;CHECK: activities.ts (all DB queries — 15+ functions)<br>
+      &nbsp;&nbsp;CHECK: ActivityFormScreen.tsx (tag input UI)<br>
+      &nbsp;&nbsp;CHECK: ActivityCard.tsx (pill tint — which tag color?)<br>
+      &nbsp;&nbsp;CHECK: CanvasScreen.tsx (filtering by tag?)<br>
+      &nbsp;&nbsp;CHECK: SearchScreen.tsx (search by tag)<br>
+      &nbsp;&nbsp;CHECK: InsightsScreen.tsx (tag-based analytics)<br>
+      &nbsp;&nbsp;CHECK: recurrence.ts (virtual instances inherit tags)<br>
+      &nbsp;&nbsp;CHECK: seed.ts (seed data needs tags)<br>
+      &nbsp;&nbsp;CHECK: parseActivity.ts (parse tags from text?)<br>
+      &nbsp;&nbsp;CHECK: commandLayer.ts (APP_SCHEMA needs tags)<br>
+      <br>
+      <span style="color:#C4795B;font-weight:700;">LAYER CROSSINGS: 1→2, 1→3, 1→5, 1→7</span><br>
+      <span style="color:#2D5A3E;font-weight:700;">BOUNDARY CONTRACTS: 4 crossings, each needs verification</span>
+    </div>
+
+    <p class="body-lg mt-16" style="font-size:12px;"><strong>12 files affected.</strong> This is why the impact scan said "high impact." A Layer 1 change cascades everywhere.</p>
+  </div>
+  <div class="slide-num">04 / 12</div>
+</div>
+
+<!-- SLIDE 5: Design Spec -->
+<div class="slide bg-cream">
+  <div class="slide-inner">
+    <p class="label">Step 3: Design spec (CDO)</p>
+    <h2 class="big">How tags look</h2>
+    <p class="body-lg">CDO creates a design spec before any code. Mockup in designs/ folder.</p>
+
+    <div class="card-grid" style="grid-template-columns:1fr;">
+      <div class="card card-light">
+        <div class="card-title" style="margin-bottom:8px;">Pill with tags</div>
+        <div style="background:rgba(236,72,153,0.12);border:1px solid rgba(255,255,255,0.75);border-radius:14px;padding:12px;">
+          <div style="display:flex;align-items:center;gap:6px;">
+            <span style="font-size:15px;">💪</span>
+            <span style="font-size:14px;font-weight:700;">Gym — Upper body</span>
+          </div>
+          <div style="font-size:9.5px;font-style:italic;color:#4A4540;opacity:0.6;margin-top:2px;">Focus on form over speed.</div>
+          <div style="display:flex;gap:4px;margin-top:6px;flex-wrap:wrap;">
+            <span style="font-size:9px;font-weight:600;padding:2px 8px;border-radius:10px;background:rgba(16,185,129,0.12);color:#10B981;">health</span>
+            <span style="font-size:9px;font-weight:600;padding:2px 8px;border-radius:10px;background:rgba(236,72,153,0.12);color:#EC4899;">morning</span>
+            <span style="font-size:9px;font-weight:600;padding:2px 8px;border-radius:10px;background:rgba(59,130,246,0.12);color:#3B82F6;">routine</span>
+          </div>
+        </div>
+        <div class="card-desc" style="margin-top:8px;">Tags show as small tinted chips below mindset. Max 3 visible, "+N" for overflow. First tag determines pill tint.</div>
+      </div>
+
+      <div class="card card-light">
+        <div class="card-title" style="margin-bottom:8px;">Tag input in form</div>
+        <div style="display:flex;gap:4px;flex-wrap:wrap;padding:8px 0;">
+          <span style="font-size:11px;font-weight:500;padding:4px 10px;border-radius:10px;background:#2D5A3E;color:#fff;">health ✕</span>
+          <span style="font-size:11px;font-weight:500;padding:4px 10px;border-radius:10px;background:#2D5A3E;color:#fff;">morning ✕</span>
+          <span style="font-size:11px;font-weight:500;padding:4px 10px;border-radius:10px;background:rgba(255,255,255,0.55);color:#4A4540;border:1px dashed #E0D9CE;">+ add tag</span>
+        </div>
+        <div class="card-desc">Type to create or search existing tags. Autocomplete from previously used tags. Tap ✕ to remove.</div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num">05 / 12</div>
+</div>
+
+<!-- SLIDE 6: Tech Spec -->
+<div class="slide bg-dark">
+  <div class="slide-inner">
+    <p class="label" style="color:#8C857D;">Step 4: Tech spec (CTO)</p>
+    <h2 class="big">How tags work</h2>
+
+    <div style="margin-top:20px;">
+      <div class="card" style="font-family:Menlo,monospace;font-size:11px;line-height:1.8;">
+        <div style="color:#10B981;font-weight:700;font-family:Inter;font-size:12px;margin-bottom:8px;">Data Model Change (Layer 1)</div>
+        <span style="color:#8B5CF6;">// types/index.ts</span><br>
+        interface Activity {<br>
+        &nbsp;&nbsp;...<br>
+        &nbsp;&nbsp;tags: string[];&nbsp;&nbsp;<span style="color:#8C857D;">// NEW — array of tag strings</span><br>
+        }<br><br>
+        <span style="color:#8B5CF6;">// DB: stored as JSON text column</span><br>
+        ALTER TABLE activities ADD COLUMN tags TEXT DEFAULT '[]';
+      </div>
+
+      <div class="card" style="margin-top:8px;">
+        <div style="color:#3B82F6;font-weight:700;font-size:12px;margin-bottom:4px;">Migration Strategy</div>
+        <div class="card-desc">
+          1. Add tags column with default '[]' (no data loss)<br>
+          2. Existing category_id stays (backwards compat)<br>
+          3. Auto-populate tags from category name: category "Health" → tags ["health"]<br>
+          4. Future: deprecate category_id, use tags only
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:8px;">
+        <div style="color:#F97316;font-weight:700;font-size:12px;margin-bottom:4px;">Boundary Contracts Affected</div>
+        <div class="card-desc">
+          Layer 1→2: Store must read/write tags as JSON<br>
+          Layer 2→3: ActivityForm adds tag input, EditActivity passes tags<br>
+          Layer 3→4: Tag chips use design tokens (12% tint per tag color)<br>
+          Layer 4→5: ActivityCard renders tag chips in row 3
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num" style="color:rgba(255,255,255,0.15)">06 / 12</div>
+</div>
+
+<!-- SLIDE 7: Implementation Order -->
+<div class="slide bg-green">
+  <div class="deco" style="width:400px;height:400px;background:#fff;bottom:-150px;right:-150px;"></div>
+  <div class="slide-inner">
+    <p class="label" style="color:rgba(255,255,255,0.4);">Step 5: Build (one layer at a time)</p>
+    <h2 class="big">Implementation<br>order matters</h2>
+    <p class="body-lg" style="opacity:0.7;">Bottom-up. Slow layers first. One commit per layer crossing.</p>
+
+    <div class="timeline tl-green" style="margin-top:24px;">
+      <div class="tl-item"><div class="tl-dot filled" style="color:#8B5CF6;border-color:#8B5CF6;"></div><div class="tl-who">Layer 1 — Data Model</div><div class="tl-action">Add tags to Activity type + DB migration</div><div class="tl-file">types/index.ts, activities.ts (migration)</div><div class="tl-output" style="background:rgba(139,92,246,0.2);color:#DDD5F9;">Commit 1</div></div>
+
+      <div class="tl-item"><div class="tl-dot filled" style="color:#3B82F6;border-color:#3B82F6;"></div><div class="tl-who">Layer 2 — Business Logic</div><div class="tl-action">Store reads/writes tags. Search includes tags.</div><div class="tl-file">activitiesStore.ts, activities.ts (queries), commandLayer.ts (schema)</div><div class="tl-output" style="background:rgba(59,130,246,0.2);color:#BFDBFE;">Commit 2</div></div>
+
+      <div class="tl-item"><div class="tl-dot filled" style="color:#EC4899;border-color:#EC4899;"></div><div class="tl-who">Layer 4 — Design System</div><div class="tl-action">Tag chip component spec. Colors. Sizes.</div><div class="tl-file">DESIGN.md, FEATURE-SPECS.md, theme.ts (if new tokens)</div><div class="tl-output" style="background:rgba(236,72,153,0.2);color:#FBCFE8;">Commit 3</div></div>
+
+      <div class="tl-item"><div class="tl-dot filled" style="color:#10B981;border-color:#10B981;"></div><div class="tl-who">Layer 3 + 5 — Features + Components</div><div class="tl-action">Tag input in form. Tag chips on pills. Tag filter in search.</div><div class="tl-file">ActivityFormScreen, ActivityCard, SearchScreen, CanvasScreen</div><div class="tl-output" style="background:rgba(16,185,129,0.2);color:#A7F3D0;">Commit 4</div></div>
+
+      <div class="tl-item"><div class="tl-dot filled" style="color:#78716C;border-color:#78716C;"></div><div class="tl-who">Sensors</div><div class="tl-action">Run all 5 sensors. Update Change Flow Map with tags entries.</div><div class="tl-file">PRODUCT-KNOWLEDGE-SYSTEM.md</div><div class="tl-output" style="background:rgba(120,113,108,0.2);color:#D6D3D1;">Commit 5</div></div>
+    </div>
+  </div>
+  <div class="slide-num" style="color:rgba(255,255,255,0.15)">07 / 12</div>
+</div>
+
+<!-- SLIDE 8: QA + Ship -->
+<div class="slide bg-warm">
+  <div class="slide-inner">
+    <p class="label">Step 6: QA + Ship</p>
+    <h2 class="big">Verify and deploy</h2>
+
+    <div class="card-grid" style="grid-template-columns:1fr;">
+      <div class="card card-light">
+        <div class="card-title">Quality checks (CQO)</div>
+        <div class="card-desc" style="line-height:2;margin-top:6px;">
+          ✅ Create activity with 0 tags → works like before<br>
+          ✅ Create with 3 tags → tags saved and visible on pill<br>
+          ✅ Edit tags → changes persist (check virtual ID handling!)<br>
+          ✅ Search by tag name → results found<br>
+          ✅ Pill tint uses first tag's color<br>
+          ✅ Tag chips use 12% tint on glass<br>
+          ✅ 20+ tags → "+N" overflow, no layout break<br>
+          ✅ Design token grep → zero hardcoded colors<br>
+          ✅ Virtual ID sensor → tags survive on recurring activities<br>
+          ✅ Migration → existing activities get tag from category name
+        </div>
+      </div>
+    </div>
+
+    <div class="card-grid" style="margin-top:12px;">
+      <div class="card card-light">
+        <div class="card-emoji">🔒</div>
+        <div class="card-title">Security (CISO)</div>
+        <div class="card-desc">Tag strings sanitized. Max 50 chars per tag. Max 10 tags per activity. No HTML in tags.</div>
+      </div>
+      <div class="card card-light">
+        <div class="card-emoji">📊</div>
+        <div class="card-title">Data (CDaO)</div>
+        <div class="card-desc">Events: tag_created, tag_removed, search_by_tag. Dashboard: avg tags per activity, most popular tags.</div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num">08 / 12</div>
+</div>
+
+<!-- SLIDE 9: How Org + Knowledge System Work Together -->
+<div class="slide bg-dark">
+  <div class="slide-inner">
+    <p class="label" style="color:#8C857D;">The integration</p>
+    <h2 class="big">Org + Knowledge<br>System together</h2>
+
+    <div class="compare">
+      <div class="cmp-side" style="background:rgba(196,121,91,0.1);border:1px solid rgba(196,121,91,0.2);">
+        <div class="cmp-label" style="color:#C4795B;">Org Agents Answer</div>
+        <div class="cmp-text">
+          <strong>WHAT</strong> to think about<br>
+          <strong>WHETHER</strong> to do it<br>
+          <strong>WHO</strong> cares about this change<br><br>
+          "CDO: the pill tint needs a design spec"<br>
+          "CISO: sanitize tag input"<br>
+          "CDaO: track tag usage events"<br>
+          "CQO: 15 test cases needed"
+        </div>
+      </div>
+      <div class="cmp-side" style="background:rgba(45,90,62,0.1);border:1px solid rgba(45,90,62,0.2);">
+        <div class="cmp-label" style="color:#2D5A3E;">Knowledge System Answers</div>
+        <div class="cmp-text">
+          <strong>HOW</strong> to do it safely<br>
+          <strong>WHAT</strong> files are affected<br>
+          <strong>WHERE</strong> boundaries are crossed<br><br>
+          "Layer 1 change → 12 files affected"<br>
+          "Boundary 1→2: store must parse tags JSON"<br>
+          "Sensor: grep for hardcoded tag colors"<br>
+          "Change order: bottom-up, slow layers first"
+        </div>
+      </div>
+    </div>
+
+    <p class="body-lg mt-24" style="font-size:12px;">The org provides <strong>specialized lenses</strong>. The knowledge system provides <strong>structural connections</strong>. Together: you think about everything AND you don't break things.</p>
+  </div>
+  <div class="slide-num" style="color:rgba(255,255,255,0.15)">09 / 12</div>
+</div>
+
+<!-- SLIDE 10: What Breaks at 10M Users -->
+<div class="slide bg-accent">
+  <div class="deco" style="width:400px;height:400px;background:#fff;top:-150px;left:-150px;"></div>
+  <div class="slide-inner">
+    <p class="label" style="color:rgba(255,255,255,0.4);">At scale</p>
+    <h2 class="big">What breaks with<br>10 million users</h2>
+    <p class="body-lg" style="opacity:0.8;">Even with this system. LLMs have limits.</p>
+
+    <div style="margin-top:20px;">
+      <div class="issue-row">
+        <div class="issue-icon">🧠</div>
+        <div>
+          <div class="issue-title">Context window exhaustion</div>
+          <div class="issue-desc">At 10M users, the codebase is 500K+ lines. The knowledge system is 10K+ lines. Even 1M tokens can't hold it all. The LLM must selectively load context.</div>
+          <div class="issue-solve">Need: Intelligent context retrieval. RAG over the knowledge graph. Load only the relevant subgraph per task.</div>
+        </div>
+      </div>
+      <div class="issue-row">
+        <div class="issue-icon">🔀</div>
+        <div>
+          <div class="issue-title">Concurrent changes</div>
+          <div class="issue-desc">Multiple agents changing the same files simultaneously. Agent A changes the store while Agent B changes a screen that depends on it. Merge conflicts.</div>
+          <div class="issue-solve">Need: File-level locking. Task dependency DAG. Sequential execution for same-layer changes.</div>
+        </div>
+      </div>
+      <div class="issue-row">
+        <div class="issue-icon">📊</div>
+        <div>
+          <div class="issue-title">Real user data vs seed data</div>
+          <div class="issue-desc">With 10M users, bugs affect real people. You can't "just revert." Database migrations are irreversible. A/B tests have real statistical power.</div>
+          <div class="issue-solve">Need: Feature flags. Staged rollouts. Automated rollback. Real monitoring (not just sensors).</div>
+        </div>
+      </div>
+      <div class="issue-row">
+        <div class="issue-icon">🤝</div>
+        <div>
+          <div class="issue-title">Taste and judgment calls</div>
+          <div class="issue-desc">LLMs can't judge: "Is this delightful?" "Does this feel right?" "Will users love or hate this?" Product taste requires human intuition that no amount of context fixes.</div>
+          <div class="issue-solve">Need: Humans for taste decisions. LLMs for execution. Clear boundary between the two.</div>
+        </div>
+      </div>
+      <div class="issue-row" style="border-bottom:none;">
+        <div class="issue-icon">🌊</div>
+        <div>
+          <div class="issue-title">Emergent complexity</div>
+          <div class="issue-desc">At scale, dependencies form that nobody designed. Feature A interacts with Feature B in ways neither team predicted. The knowledge graph becomes incomplete by definition (Weinberg's Law).</div>
+          <div class="issue-solve">Need: Observability > documentation. Watch production behavior. The system tells you what's connected by what fails together.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num" style="color:rgba(255,255,255,0.15)">10 / 12</div>
+</div>
+
+<!-- SLIDE 11: What LLMs Need That Doesn't Exist Yet -->
+<div class="slide bg-dark">
+  <div class="slide-inner">
+    <p class="label" style="color:#8C857D;">What we still need to build</p>
+    <h2 class="big">Gaps in the<br>current system</h2>
+
+    <div class="card-grid" style="margin-top:20px;">
+      <div class="card">
+        <div class="card-emoji">🔍</div>
+        <div class="card-title">Smart context loader</div>
+        <div class="card-desc">Instead of reading the entire knowledge system, load only the subgraph relevant to the current task. "I'm changing editActivity" → auto-load its flow map entry + boundary contracts + callers.</div>
+      </div>
+      <div class="card">
+        <div class="card-emoji">🧪</div>
+        <div class="card-title">Automated sensors in CI</div>
+        <div class="card-desc">Today sensors are manual grep commands. They should run automatically on every commit. GitHub Actions checks design tokens, virtual IDs, boundary contracts.</div>
+      </div>
+      <div class="card">
+        <div class="card-emoji">🗺️</div>
+        <div class="card-title">Auto-updating flow maps</div>
+        <div class="card-desc">The Change Flow Map is manually written. It should auto-generate from static analysis (imports, function calls, type usage). Tree-sitter + custom rules.</div>
+      </div>
+      <div class="card">
+        <div class="card-emoji">🔄</div>
+        <div class="card-title">Feedback from production</div>
+        <div class="card-desc">The knowledge system is pre-production. With real users, production errors should auto-add to the Failure Flow Map. "This edge function timed out 50 times" → auto-flag.</div>
+      </div>
+      <div class="card">
+        <div class="card-emoji">🧑‍🤝‍🧑</div>
+        <div class="card-title">Human taste layer</div>
+        <div class="card-desc">A formal interface where the human makes taste decisions and the system records + applies them. Not just CLAUDE.md rules but structured design preferences that agents can query.</div>
+      </div>
+      <div class="card">
+        <div class="card-emoji">📈</div>
+        <div class="card-title">Learning from incidents</div>
+        <div class="card-desc">Every bug should auto-update the knowledge system. "Virtual ID bug in editActivity" → auto-add to Change Flow Map + Failure Flow Map + Sensors. The system gets smarter from every mistake.</div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num" style="color:rgba(255,255,255,0.15)">11 / 12</div>
+</div>
+
+<!-- SLIDE 12: The Philosophy -->
+<div class="slide bg-blue">
+  <div class="deco" style="width:500px;height:500px;background:#fff;bottom:-200px;right:-200px;"></div>
+  <div class="slide-inner center">
+    <p class="label" style="color:rgba(255,255,255,0.4);">The philosophy</p>
+    <h2 class="mega" style="font-size:clamp(28px,5vw,48px);">Org says<br>what to think about.<br><br>Knowledge system says<br>how to do it safely.<br><br>Sensors catch<br>what both missed.</h2>
+  </div>
+  <div class="slide-num" style="color:rgba(255,255,255,0.15)">12 / 12</div>
+</div>
+
+</body>
+</html>

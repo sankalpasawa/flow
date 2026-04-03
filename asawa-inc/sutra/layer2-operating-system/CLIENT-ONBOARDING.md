@@ -73,20 +73,20 @@ founder_skills: "{what they can build}"
 two_year_vision: "{where it goes}"
 ```
 
-### Hehe Example:
+### Example:
 
 ```yaml
-company: "Hehe"
-one_liner: "A humor app that makes people laugh in under 30 seconds"
-user_persona: "Maya, 28, product manager. Long meetings. Opens phone between calls, needs a reset."
-job_to_be_done: "Give me a quick laugh so I can go back to work with better energy"
-current_alternative: "Reddit r/funny, Twitter memes, texting a funny friend, TikTok"
-switch_reason: "Reddit is a time sink (opens for 1 min, stays 30). Twitter is toxic. Friends aren't always available. TikTok is addictive and mostly not funny."
-core_bet: "This works IF people will open a dedicated humor app daily when the hit rate is >70% funny"
-first_version: "Web feed of curated + AI-generated jokes, category filter, upvote/downvote, one-tap share"
-platform: "Web (fast to ship, no app store wait, jokes are shareable via URL)"
-founder_skills: "Full-stack JS/TS, React, Supabase, LLM APIs"
-two_year_vision: "The default place people go to laugh. Personalized comedy engine. Creator marketplace for comedians."
+company: "ExampleCo"
+one_liner: "A {product type} that {solves this problem}"
+user_persona: "{Name}, {age}, {role}. {Context}. {Need}."
+job_to_be_done: "{What they hire this to do}"
+current_alternative: "{What they do today}"
+switch_reason: "{Why current solution fails}"
+core_bet: "This works IF {hypothesis}"
+first_version: "{Smallest experiment that tests the bet}"
+platform: "{web/ios/android} ({why this platform first})"
+founder_skills: "{What they can build}"
+two_year_vision: "{Where it goes if it works}"
 ```
 
 ---
@@ -138,30 +138,20 @@ technical_landscape: "{what APIs/tools exist}"
 key_insight: "{the one thing that changes our approach}"
 ```
 
-### Hehe Example:
+### Example:
 
 ```yaml
 competitors:
-  - name: "Reddit r/funny"
-    what_they_do: "User-submitted humor content"
-    strengths: "Infinite content, community-driven, free"
-    weaknesses: "Time sink, quality varies wildly, not just humor (politics, news), addictive feed"
-    business_model: "Ads, Reddit Premium"
-  - name: "9GAG"
-    what_they_do: "Meme/humor aggregator"
-    strengths: "Large library, categories, community"
-    weaknesses: "Dated, ad-heavy, mostly reposts, meme-focused (not text jokes)"
-    business_model: "Ads"
-  - name: "Joke apps (various)"
-    what_they_do: "Static joke databases"
-    strengths: "Simple, focused"
-    weaknesses: "No personalization, content gets stale, no AI, feels like 2010"
-    business_model: "In-app purchases, ads"
+  - name: "{Competitor 1}"
+    what_they_do: "{brief}"
+    strengths: "{what they do well}"
+    weaknesses: "{what users complain about}"
+    business_model: "{how they make money}"
 
-market_gap: "No AI-powered, personalized humor app. All existing products are either too broad (Reddit) or too static (joke databases). Nobody learns what makes YOU laugh."
-market_size: "Entertainment app market: $20B+. Humor is a subset but universally needed."
-technical_landscape: "Joke APIs exist (JokeAPI, icanhazdadjoke). LLMs can generate jokes (Gemini, Claude). Humor is hard for AI but improving fast."
-key_insight: "The upvote/downvote loop IS the product. If the AI learns your taste in 20 votes, you have something nobody else has: a comedy engine that knows you."
+market_gap: "{what nobody does well}"
+market_size: "{back-of-napkin TAM}"
+technical_landscape: "{what APIs/tools exist}"
+key_insight: "{the one thing that changes our approach}"
 ```
 
 ---
@@ -566,7 +556,7 @@ SUTRA Agent Incentives fire:
 ### Client ↔ Client (cross-pollination)
 
 ```
-HEHE discovers: "design-in-code is faster for web MVPs"
+CLIENT B discovers: "design-in-code is faster for web MVPs"
   → writes feedback to Sutra
 
 SUTRA incorporates into v1.1:
@@ -575,7 +565,7 @@ SUTRA incorporates into v1.1:
 DAYFLOW reads v1.1 release notes:
   → "Not applicable (we're iOS), but good to know for future web components"
 
-HEHE discovers: "content quality metrics > code quality metrics for content apps"
+CLIENT B discovers: "content quality metrics > code quality metrics for content apps"
   → writes feedback to Sutra
 
 SUTRA adds content-app metrics template to v1.1:
@@ -608,4 +598,3 @@ Sutra publishes a new version when:
 | # | Company | Type | Platform | Stage | Sutra Version | Mode | Onboarded | Status |
 |---|---------|------|----------|-------|---------------|------|-----------|--------|
 | 1 | DayFlow | Productivity tool | iOS (Expo) | Pre-launch | v1.0 | A/B Test | 2026-04-01 | Active |
-| 2 | Hehe | Content platform | Web (Next.js) | Pre-launch | v1.0 | A/B Test | 2026-04-02 | Active |

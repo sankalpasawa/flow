@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DayFlow — Operating Model</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-snap-type: y mandatory; }
+  body { font-family: 'Inter', -apple-system, sans-serif; color: #1A1714; -webkit-font-smoothing: antialiased; }
+
+  .slide { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 40px 24px; scroll-snap-align: start; position: relative; }
+  .inner { max-width: 680px; width: 100%; }
+  .bg-cream { background: #F5F0E8; }
+  .bg-green { background: #2D5A3E; color: #fff; }
+  .bg-dark { background: #1A1714; color: #F5F0E8; }
+  .bg-warm { background: linear-gradient(135deg, #F5F0E8, #EDE5D8); }
+  .bg-accent { background: linear-gradient(160deg, #C4795B, #A05A3E); color: #fff; }
+  .deco { position: absolute; border-radius: 50%; opacity: 0.05; }
+
+  .mega { font-size: clamp(28px, 5vw, 48px); font-weight: 900; letter-spacing: -2px; line-height: 1.05; }
+  .big { font-size: clamp(20px, 3.5vw, 32px); font-weight: 800; letter-spacing: -1px; line-height: 1.2; }
+  .body { font-size: clamp(12px, 1.6vw, 14px); line-height: 1.7; opacity: 0.7; }
+  .label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; opacity: 0.35; margin-bottom: 12px; }
+  .center { text-align: center; }
+  .mt-8 { margin-top: 8px; } .mt-16 { margin-top: 16px; } .mt-24 { margin-top: 24px; }
+  .sn { position: absolute; bottom: 16px; right: 24px; font-size: 9px; font-weight: 600; opacity: 0.1; }
+
+  /* Flow nodes */
+  .flow { display: flex; flex-direction: column; align-items: center; gap: 0; }
+  .node { width: 100%; border-radius: 12px; padding: 14px 16px; position: relative; }
+  .node-title { font-size: 13px; font-weight: 700; }
+  .node-sub { font-size: 10px; opacity: 0.55; margin-top: 2px; line-height: 1.5; }
+  .node-who { font-size: 8px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; opacity: 0.4; }
+  .node-output { font-size: 9px; font-weight: 600; margin-top: 6px; padding: 3px 8px; border-radius: 6px; display: inline-block; }
+  .arrow { font-size: 14px; opacity: 0.25; padding: 3px 0; }
+  .arrow-branch { font-size: 10px; opacity: 0.3; padding: 2px 0; }
+
+  /* Colors for different types */
+  .n-idea { background: rgba(196,121,91,0.08); border: 1px solid rgba(196,121,91,0.15); }
+  .n-strategy { background: rgba(196,121,91,0.12); border: 1px solid rgba(196,121,91,0.2); }
+  .n-decision { background: rgba(196,121,91,0.18); border: 2px solid #C4795B; }
+  .n-spec { background: rgba(59,130,246,0.08); border: 1px solid rgba(59,130,246,0.15); }
+  .n-negotiate { background: rgba(139,92,246,0.08); border: 1px solid rgba(139,92,246,0.15); }
+  .n-build { background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.15); }
+  .n-verify { background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.2); }
+  .n-ship { background: #2D5A3E; color: #fff; border: none; }
+  .n-monitor { background: rgba(139,92,246,0.08); border: 1px solid rgba(139,92,246,0.15); }
+  .n-incident { background: rgba(239,68,68,0.08); border: 2px solid #EF4444; }
+  .n-feedback { background: rgba(249,115,22,0.08); border: 1px dashed rgba(249,115,22,0.3); }
+
+  .o-strategy { background: rgba(196,121,91,0.12); color: #C4795B; }
+  .o-spec { background: rgba(59,130,246,0.12); color: #3B82F6; }
+  .o-build { background: rgba(16,185,129,0.12); color: #10B981; }
+  .o-ship { background: rgba(45,90,62,0.15); color: #2D5A3E; }
+  .o-alert { background: rgba(239,68,68,0.12); color: #EF4444; }
+
+  /* Parallel indicator */
+  .parallel { display: flex; gap: 6px; width: 100%; }
+  .parallel > * { flex: 1; }
+
+  /* Feedback loop arrow */
+  .loop-back {
+    border: 2px dashed rgba(249,115,22,0.25); border-radius: 0 12px 12px 0;
+    border-left: none; width: 40px; position: absolute; right: -50px;
+    top: 0; bottom: 0;
+  }
+
+  /* Complication callout */
+  .complication {
+    font-size: 10px; padding: 8px 12px; border-radius: 8px;
+    background: rgba(249,115,22,0.06); border-left: 3px solid #F97316;
+    margin-top: 6px; color: #92400E; line-height: 1.5;
+  }
+  .complication strong { color: #C4795B; }
+
+  /* Legend */
+  .legend { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 16px; }
+  .leg { font-size: 9px; font-weight: 600; padding: 3px 8px; border-radius: 6px; }
+</style>
+</head>
+<body>
+
+<!-- SLIDE 1: Title -->
+<div class="slide bg-cream">
+  <div class="deco" style="width:300px;height:300px;background:#2D5A3E;top:-80px;right:-80px;"></div>
+  <div class="inner center">
+    <p class="label">The operating model</p>
+    <h1 class="mega">How a Change<br>Actually Happens</h1>
+    <p class="body mt-8">Not the ideal flow. The real flow.<br>With complications, feedback loops, and judgment calls.</p>
+  </div>
+  <div class="sn">01 / 07</div>
+</div>
+
+<!-- SLIDE 2: The Full Flow (overview) -->
+<div class="slide bg-dark">
+  <div class="inner">
+    <p class="label" style="color:#8C857D;">Overview</p>
+    <h2 class="big">The real flow has<br>loops, not just lines</h2>
+    <p class="body">Clean version: Idea → Spec → Build → Ship. Real version: Idea → Evaluate → Spec → Negotiate → Revise → Build → Discover → Revise → Verify → Fix → Ship → Monitor → Learn → Next Idea.</p>
+
+    <div class="flow mt-16">
+      <div class="node n-idea"><div class="node-title">💡 Idea arrives</div></div>
+      <div class="arrow">↓</div>
+      <div class="node n-strategy"><div class="node-title">📊 Evaluate (should we?)</div></div>
+      <div class="arrow">↓</div>
+      <div class="node n-decision"><div class="node-title">👑 Founder decides: Go / Defer / Kill</div></div>
+      <div class="arrow">↓</div>
+      <div class="node n-spec"><div class="node-title">📐 Spec (design + tech + test plan)</div></div>
+      <div class="arrow">↓</div>
+      <div class="node n-negotiate"><div class="node-title">🔄 Negotiate (specs conflict, simplify, scope)</div></div>
+      <div class="arrow">↓</div>
+      <div class="node n-decision"><div class="node-title">👑 Founder: approve specs + P1/P2/P3 scope</div></div>
+      <div class="arrow">↓</div>
+      <div class="node n-build"><div class="node-title">🔨 Build (layer by layer)</div></div>
+      <div class="arrow">↓</div>
+      <div class="node n-verify"><div class="node-title">✅ Verify (QA + sensors + design check)</div></div>
+      <div class="arrow">↓</div>
+      <div class="node n-ship"><div class="node-title">🚀 Ship</div></div>
+      <div class="arrow">↓</div>
+      <div class="node n-monitor"><div class="node-title">📊 Monitor (analytics, errors, feedback)</div></div>
+      <div class="arrow">↓</div>
+      <div class="node n-feedback"><div class="node-title">🔁 Learn → feeds into next idea</div></div>
+    </div>
+
+    <div class="legend">
+      <div class="leg" style="background:rgba(196,121,91,0.15);color:#C4795B;">Strategy</div>
+      <div class="leg" style="background:rgba(59,130,246,0.15);color:#3B82F6;">Specification</div>
+      <div class="leg" style="background:rgba(139,92,246,0.15);color:#8B5CF6;">Negotiation</div>
+      <div class="leg" style="background:rgba(16,185,129,0.15);color:#10B981;">Execution</div>
+      <div class="leg" style="background:rgba(196,121,91,0.2);color:#C4795B;border:2px solid #C4795B;">Founder Decision</div>
+      <div class="leg" style="background:rgba(249,115,22,0.1);color:#F97316;border:1px dashed #F97316;">Feedback Loop</div>
+    </div>
+  </div>
+  <div class="sn" style="color:rgba(255,255,255,0.1)">02 / 07</div>
+</div>
+
+<!-- SLIDE 3: Evaluate + Decide -->
+<div class="slide bg-warm">
+  <div class="inner">
+    <p class="label">Phase 1: Should we?</p>
+    <h2 class="big">Evaluate + Decide</h2>
+
+    <div class="flow mt-16">
+      <div class="node n-idea">
+        <div class="node-who">You or anyone</div>
+        <div class="node-title">💡 "Let's add tags"</div>
+      </div>
+      <div class="arrow">↓</div>
+
+      <div class="parallel">
+        <div class="node n-strategy" style="font-size:11px;">
+          <div class="node-who">CPO agent</div>
+          <div class="node-title">📦 Product analysis</div>
+          <div class="node-sub">RICE score, user need, competitor check</div>
+        </div>
+        <div class="node n-strategy" style="font-size:11px;">
+          <div class="node-who">All agents parallel</div>
+          <div class="node-title">🔍 Impact scan</div>
+          <div class="node-sub">Security, legal, analytics, growth, cost</div>
+        </div>
+      </div>
+      <div class="arrow">↓</div>
+
+      <div class="node n-strategy">
+        <div class="node-who">Knowledge system</div>
+        <div class="node-title">🗺️ Layer scan</div>
+        <div class="node-sub">Which shearing layers touched? How many files? What's the blast radius?</div>
+        <div class="node-output o-strategy">5 of 8 layers affected — high impact</div>
+      </div>
+      <div class="arrow">↓</div>
+
+      <div class="complication">
+        <strong>Complication:</strong> CISO flags "tags = user content = GDPR". Privacy policy needed first. Legal blocker.
+      </div>
+      <div class="arrow">↓</div>
+
+      <div class="complication">
+        <strong>Complication:</strong> CPO says "Sunsama just shipped tags. Market pressure." Rush or quality?
+      </div>
+      <div class="arrow">↓</div>
+
+      <div class="node n-decision">
+        <div class="node-who">Founder (you)</div>
+        <div class="node-title">👑 Decision</div>
+        <div class="node-sub">
+          Trade-offs surfaced. You choose:<br>
+          • Build or defer?<br>
+          • Rush (1 week, simplified) or quality (3 weeks, full)?<br>
+          • Privacy policy first or parallel?
+        </div>
+        <div class="node-output o-strategy">GO — quality path, privacy policy in parallel</div>
+      </div>
+
+      <div style="font-size:10px;color:#8C857D;text-align:center;margin-top:8px;">
+        📄 PRD.md + IMPACT.md + decision record → org/features/tags/
+      </div>
+    </div>
+  </div>
+  <div class="sn">03 / 07</div>
+</div>
+
+<!-- SLIDE 4: Spec + Negotiate -->
+<div class="slide bg-cream">
+  <div class="inner">
+    <p class="label">Phase 2: How to build it</p>
+    <h2 class="big">Spec, Negotiate, Scope</h2>
+
+    <div class="flow mt-16">
+      <div class="parallel">
+        <div class="node n-spec" style="font-size:11px;">
+          <div class="node-who">CDO agent</div>
+          <div class="node-title">🎨 Design spec</div>
+          <div class="node-sub">Mockup, colors, gestures, states, accessibility</div>
+        </div>
+        <div class="node n-spec" style="font-size:11px;">
+          <div class="node-who">CTO agent</div>
+          <div class="node-title">⚡ Tech spec</div>
+          <div class="node-sub">HLD, LLD, migration, files, build order</div>
+        </div>
+        <div class="node n-spec" style="font-size:11px;">
+          <div class="node-who">CQO agent</div>
+          <div class="node-title">✅ Test plan</div>
+          <div class="node-sub">Unit tests, design QA, sensors, edge cases</div>
+        </div>
+      </div>
+      <div class="arrow">↓</div>
+
+      <div class="node n-negotiate">
+        <div class="node-title">🔄 Negotiation round</div>
+        <div class="node-sub">Agents review each other's specs. Conflicts surface.</div>
+      </div>
+      <div class="arrow-branch">↕</div>
+
+      <div class="complication">
+        <strong>Design → Tech conflict:</strong> CDO wants color-coded tag chips. CTO says "per-tag color needs a new table, not JSON array. Adds 2 days."
+      </div>
+      <div class="arrow-branch">↕</div>
+      <div class="complication">
+        <strong>Tech → Design feedback:</strong> CTO says "JSON array means no server-side tag search. Design around client-side filtering."
+      </div>
+      <div class="arrow-branch">↕</div>
+      <div class="complication">
+        <strong>Scope question:</strong> Full version = 3 weeks. Simplified P1 = 1 week. But P1 creates tech debt for P2.
+      </div>
+      <div class="arrow">↓</div>
+
+      <div class="node n-spec">
+        <div class="node-title">📐 Revised specs</div>
+        <div class="node-sub">Design adjusted for tech constraints. Tech adjusted for design needs. Trade-offs documented.</div>
+      </div>
+      <div class="arrow">↓</div>
+
+      <div class="node n-strategy">
+        <div class="node-title">🏷️ P1 / P2 / P3 roadmap</div>
+        <div class="node-sub">
+          P1: tag input + display on pills + search (1 week)<br>
+          P2: autocomplete + colors + filter (2 weeks)<br>
+          P3: hierarchy + smart groups (future)<br>
+          Cross-feature: update AI schema, seed data, Play screen
+        </div>
+      </div>
+      <div class="arrow">↓</div>
+
+      <div class="node n-decision">
+        <div class="node-who">Founder (you)</div>
+        <div class="node-title">👑 Review + approve</div>
+        <div class="node-sub">You see the mockup. Taste call on design. Approve P1 scope. Go.</div>
+        <div class="node-output o-spec">Specs approved → build P1</div>
+      </div>
+
+      <div style="font-size:10px;color:#8C857D;text-align:center;margin-top:8px;">
+        📄 DESIGN-SPEC.md + TECH-SPEC.md + TEST-PLAN.md + ROADMAP.md<br>
+        🖼️ designs/tags-mockup.html
+      </div>
+    </div>
+  </div>
+  <div class="sn">04 / 07</div>
+</div>
+
+<!-- SLIDE 5: Build + Discover + Fix -->
+<div class="slide bg-green">
+  <div class="deco" style="width:300px;height:300px;background:#fff;bottom:-100px;right:-100px;"></div>
+  <div class="inner">
+    <p class="label" style="color:rgba(255,255,255,0.3);">Phase 3: Build it</p>
+    <h2 class="big">Build, Discover, Fix</h2>
+
+    <div class="flow mt-16">
+      <div class="node" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);">
+        <div class="node-who">Main agent (me)</div>
+        <div class="node-title">📖 Read specs + knowledge system</div>
+        <div class="node-sub">Change flow map → 12 files affected. Build order: Layer 1 → 2 → 4 → 3+5</div>
+      </div>
+      <div class="arrow" style="color:rgba(255,255,255,0.3);">↓</div>
+
+      <div class="node" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);">
+        <div class="node-title">🔨 Build Layer 1 (data model) → commit</div>
+      </div>
+      <div class="arrow" style="color:rgba(255,255,255,0.3);">↓</div>
+      <div class="node" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);">
+        <div class="node-title">🔨 Build Layer 2 (store, queries) → commit</div>
+      </div>
+      <div class="arrow" style="color:rgba(255,255,255,0.3);">↓</div>
+
+      <div class="complication" style="background:rgba(249,115,22,0.1);border-color:#F97316;color:rgba(255,255,255,0.8);">
+        <strong style="color:#F97316;">Discovery:</strong> 8 tag chips overflow pill width. Design spec assumed max 3.
+      </div>
+      <div class="arrow" style="color:rgba(255,255,255,0.3);">↓</div>
+
+      <div class="node n-feedback" style="border-color:rgba(249,115,22,0.4);">
+        <div class="node-title" style="color:#F97316;">🔁 Spec revision</div>
+        <div class="node-sub" style="color:rgba(255,255,255,0.6);">CDO agent updates: "Show max 3 tags + '+N' badge." Builder continues with revised spec.</div>
+      </div>
+      <div class="arrow" style="color:rgba(255,255,255,0.3);">↓</div>
+
+      <div class="node" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);">
+        <div class="node-title">🔨 Build Layer 4 (design tokens) + Layer 3+5 (screens) → commit</div>
+      </div>
+      <div class="arrow" style="color:rgba(255,255,255,0.3);">↓</div>
+
+      <div class="parallel">
+        <div class="node" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);font-size:11px;">
+          <div class="node-who">CQO agent</div>
+          <div class="node-title">✅ Tests</div>
+        </div>
+        <div class="node" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);font-size:11px;">
+          <div class="node-who">CDO agent</div>
+          <div class="node-title">🎨 Design QA</div>
+        </div>
+        <div class="node" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);font-size:11px;">
+          <div class="node-who">Sensors</div>
+          <div class="node-title">🔍 Auto-check</div>
+        </div>
+      </div>
+      <div class="arrow" style="color:rgba(255,255,255,0.3);">↓</div>
+
+      <div class="node n-ship">
+        <div class="node-title">🚀 Ship</div>
+        <div class="node-sub">Commit, push, deploy. Update TODO. Update knowledge system with new flow map entries.</div>
+      </div>
+
+      <div style="font-size:10px;color:rgba(255,255,255,0.4);text-align:center;margin-top:8px;">
+        📄 QA-REPORT.md + PRODUCT-KNOWLEDGE-SYSTEM.md updated
+      </div>
+    </div>
+  </div>
+  <div class="sn" style="color:rgba(255,255,255,0.1)">05 / 07</div>
+</div>
+
+<!-- SLIDE 6: Monitor + Learn + Incidents -->
+<div class="slide bg-dark">
+  <div class="inner">
+    <p class="label" style="color:#8C857D;">Phase 4: After shipping</p>
+    <h2 class="big">Monitor, Learn,<br>Handle Incidents</h2>
+
+    <div class="flow mt-16">
+      <div class="node n-monitor">
+        <div class="node-who">CDaO agent (analytics)</div>
+        <div class="node-title">📊 Monitor adoption</div>
+        <div class="node-sub">Tag usage rate, avg tags per activity, search by tag frequency</div>
+      </div>
+      <div class="arrow">↓</div>
+
+      <div class="parallel">
+        <div class="node n-feedback" style="flex:1;">
+          <div class="node-title" style="font-size:12px;">📈 Positive signal</div>
+          <div class="node-sub">"40% use tags. Retention 1.3x for tag users." → Validate P2. Build autocomplete.</div>
+        </div>
+        <div class="node n-feedback" style="flex:1;">
+          <div class="node-title" style="font-size:12px;">📉 Negative signal</div>
+          <div class="node-sub">"80% use 0 tags. No retention lift." → Pivot. AI auto-suggest tags instead.</div>
+        </div>
+      </div>
+      <div class="arrow">↓</div>
+
+      <div class="node n-feedback">
+        <div class="node-title">🔁 Learn → next cycle</div>
+        <div class="node-sub">Data updates RICE scores. Informs next feature decision. The system gets smarter.</div>
+      </div>
+
+      <div style="height:20px;"></div>
+
+      <div class="node n-incident">
+        <div class="node-title">🚨 P0 Incident</div>
+        <div class="node-sub">
+          "Users losing activity data after tag migration"<br><br>
+          <strong>Bypasses all process. Speed first.</strong><br>
+          Detect (minutes) → Triage (15 min) → Fix (1 hour) → Deploy<br>
+          Post-mortem (24 hours) → Update sensors + knowledge system
+        </div>
+        <div class="node-output o-alert">ALL HANDS — drop everything</div>
+      </div>
+      <div class="arrow">↓</div>
+
+      <div class="node n-feedback">
+        <div class="node-title">📝 Post-mortem updates the system</div>
+        <div class="node-sub">New sensor: "check NULL values before migration." New failure flow entry. System learns from pain.</div>
+      </div>
+    </div>
+  </div>
+  <div class="sn" style="color:rgba(255,255,255,0.1)">06 / 07</div>
+</div>
+
+<!-- SLIDE 7: Operating Intensity + Who Does What -->
+<div class="slide bg-warm">
+  <div class="inner">
+    <p class="label">How much process per change</p>
+    <h2 class="big">Operating Intensity</h2>
+    <p class="body">Not every change needs the full flow. The process scales with the size of the change.</p>
+
+    <div class="mt-16">
+      <!-- Small -->
+      <div style="background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.12);border-radius:12px;padding:14px;margin-bottom:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div style="font-size:13px;font-weight:700;">🟢 Small (bug fix, copy change)</div>
+            <div style="font-size:10px;color:#4A4540;margin-top:2px;">Read knowledge system → fix → sensors → commit</div>
+          </div>
+          <div style="font-size:10px;font-weight:700;color:#10B981;">5-30 min</div>
+        </div>
+        <div style="font-size:9px;color:#8C857D;margin-top:6px;">Skip strategy. Skip specs. Just read the change flow map and fix at the right boundary.</div>
+      </div>
+
+      <!-- Medium -->
+      <div style="background:rgba(59,130,246,0.06);border:1px solid rgba(59,130,246,0.12);border-radius:12px;padding:14px;margin-bottom:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div style="font-size:13px;font-weight:700;">🔵 Medium (new screen, UI rework)</div>
+            <div style="font-size:10px;color:#4A4540;margin-top:2px;">Brief strategy → design mockup → build → verify</div>
+          </div>
+          <div style="font-size:10px;font-weight:700;color:#3B82F6;">1-3 days</div>
+        </div>
+        <div style="font-size:9px;color:#8C857D;margin-top:6px;">CPO + CDO weigh in. Design mockup for your approval. Then build. No full impact scan unless crossing Layer 1.</div>
+      </div>
+
+      <!-- Large -->
+      <div style="background:rgba(196,121,91,0.06);border:1px solid rgba(196,121,91,0.12);border-radius:12px;padding:14px;margin-bottom:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div style="font-size:13px;font-weight:700;">🟠 Large (new data model, major feature)</div>
+            <div style="font-size:10px;color:#4A4540;margin-top:2px;">Full strategy → all specs → negotiate → scope → build → full QA</div>
+          </div>
+          <div style="font-size:10px;font-weight:700;color:#C4795B;">1-3 weeks</div>
+        </div>
+        <div style="font-size:9px;color:#8C857D;margin-top:6px;">All agents involved. Full impact scan. P1/P2/P3 scope. Layer-by-layer build. This is the complete flow.</div>
+      </div>
+
+      <!-- Emergency -->
+      <div style="background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.12);border-radius:12px;padding:14px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div style="font-size:13px;font-weight:700;">🔴 Emergency (P0, data loss, crash)</div>
+            <div style="font-size:10px;color:#4A4540;margin-top:2px;">Fix first → process second → post-mortem updates system</div>
+          </div>
+          <div style="font-size:10px;font-weight:700;color:#EF4444;">Minutes</div>
+        </div>
+        <div style="font-size:9px;color:#8C857D;margin-top:6px;">Skip everything. Fix the problem. Then do the post-mortem. The system learns after the crisis, not during.</div>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;font-size:11px;color:#4A4540;line-height:1.6;text-align:center;">
+      <strong>The trigger:</strong> Does this change cross a shearing layer boundary?<br>
+      No → Small. One boundary → Medium. Multiple boundaries → Large.
+    </div>
+  </div>
+  <div class="sn">07 / 07</div>
+</div>
+
+</body>
+</html>

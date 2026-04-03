@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Product Knowledge System — How It Works</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-snap-type: y mandatory; }
+  body { font-family: 'Inter', -apple-system, sans-serif; color: #1A1714; -webkit-font-smoothing: antialiased; }
+
+  .slide {
+    min-height: 100vh; display: flex; flex-direction: column;
+    justify-content: center; align-items: center;
+    padding: 60px 32px; scroll-snap-align: start; position: relative; overflow: hidden;
+  }
+  .slide-inner { max-width: 760px; width: 100%; z-index: 1; }
+
+  .bg-cream { background: #F5F0E8; }
+  .bg-green { background: #2D5A3E; color: #fff; }
+  .bg-dark { background: #1A1714; color: #F5F0E8; }
+  .bg-warm { background: linear-gradient(135deg, #F5F0E8, #EDE5D8); }
+  .bg-accent { background: linear-gradient(160deg, #C4795B, #A05A3E); color: #fff; }
+
+  .deco { position: absolute; border-radius: 50%; opacity: 0.06; }
+
+  .mega { font-size: clamp(36px, 6vw, 60px); font-weight: 900; letter-spacing: -2px; line-height: 1.05; }
+  .big { font-size: clamp(26px, 4vw, 40px); font-weight: 800; letter-spacing: -1px; line-height: 1.15; }
+  .medium { font-size: clamp(18px, 3vw, 26px); font-weight: 700; letter-spacing: -0.3px; }
+  .body-lg { font-size: clamp(14px, 2vw, 17px); font-weight: 400; line-height: 1.7; opacity: 0.75; }
+  .label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; opacity: 0.4; margin-bottom: 16px; }
+  .center { text-align: center; }
+  .mt-16 { margin-top: 16px; } .mt-24 { margin-top: 24px; } .mt-32 { margin-top: 32px; }
+  .slide-num { position: absolute; bottom: 24px; right: 32px; font-size: 11px; font-weight: 600; opacity: 0.15; }
+
+  /* Layers diagram */
+  .layers { display: flex; flex-direction: column; gap: 4px; margin-top: 32px; }
+  .layer-row {
+    display: flex; align-items: center; border-radius: 12px; padding: 14px 16px;
+    position: relative; overflow: hidden;
+  }
+  .layer-num { width: 28px; height: 28px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; flex-shrink: 0; margin-right: 12px; }
+  .layer-name { font-size: 14px; font-weight: 700; flex: 1; }
+  .layer-rate { font-size: 11px; font-weight: 600; opacity: 0.5; }
+  .layer-bar { position: absolute; left: 0; top: 0; bottom: 0; opacity: 0.15; }
+
+  .l0 { background: rgba(196,121,91,0.08); } .l0 .layer-num { background: #C4795B; color: #fff; } .l0 .layer-bar { width: 100%; background: #C4795B; }
+  .l1 { background: rgba(139,92,246,0.08); } .l1 .layer-num { background: #8B5CF6; color: #fff; } .l1 .layer-bar { width: 85%; background: #8B5CF6; }
+  .l2 { background: rgba(59,130,246,0.08); } .l2 .layer-num { background: #3B82F6; color: #fff; } .l2 .layer-bar { width: 70%; background: #3B82F6; }
+  .l3 { background: rgba(16,185,129,0.08); } .l3 .layer-num { background: #10B981; color: #fff; } .l3 .layer-bar { width: 55%; background: #10B981; }
+  .l4 { background: rgba(236,72,153,0.08); } .l4 .layer-num { background: #EC4899; color: #fff; } .l4 .layer-bar { width: 40%; background: #EC4899; }
+  .l5 { background: rgba(249,115,22,0.08); } .l5 .layer-num { background: #F97316; color: #fff; } .l5 .layer-bar { width: 25%; background: #F97316; }
+  .l6 { background: rgba(120,113,108,0.08); } .l6 .layer-num { background: #78716C; color: #fff; } .l6 .layer-bar { width: 15%; background: #78716C; }
+  .l7 { background: rgba(45,90,62,0.08); } .l7 .layer-num { background: #2D5A3E; color: #fff; } .l7 .layer-bar { width: 8%; background: #2D5A3E; }
+
+  /* Flow maps */
+  .flow-card {
+    background: rgba(255,255,255,0.65); border: 1px solid rgba(255,255,255,0.75);
+    border-radius: 16px; padding: 20px; margin-bottom: 12px;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.06);
+  }
+  .flow-title { font-size: 15px; font-weight: 700; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+  .flow-icon { font-size: 20px; }
+  .flow-desc { font-size: 12px; color: #4A4540; line-height: 1.5; }
+  .flow-example { font-size: 11px; color: #8C857D; margin-top: 8px; font-style: italic; }
+
+  /* Scenario walkthrough */
+  .scenario { margin-top: 24px; }
+  .scenario-step {
+    display: flex; gap: 14px; padding: 14px 0; border-bottom: 1px solid rgba(255,255,255,0.1);
+  }
+  .scenario-step:last-child { border-bottom: none; }
+  .step-num { width: 28px; height: 28px; border-radius: 14px; background: rgba(255,255,255,0.15); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; flex-shrink: 0; }
+  .step-content { flex: 1; }
+  .step-action { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
+  .step-detail { font-size: 11px; opacity: 0.6; }
+  .step-file { font-size: 10px; font-family: 'Menlo', monospace; opacity: 0.4; margin-top: 2px; }
+
+  .step-good { border-left: 3px solid #10B981; padding-left: 12px; margin-left: -15px; }
+  .step-bad { border-left: 3px solid #EF4444; padding-left: 12px; margin-left: -15px; }
+  .step-neutral { border-left: 3px solid #3B82F6; padding-left: 12px; margin-left: -15px; }
+
+  /* Sensor cards */
+  .sensor-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 24px; }
+  .sensor-card {
+    padding: 16px; border-radius: 14px;
+    background: rgba(255,255,255,0.65); border: 1px solid rgba(255,255,255,0.75);
+  }
+  .sensor-name { font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+  .sensor-what { font-size: 11px; color: #4A4540; line-height: 1.4; }
+  .sensor-when { font-size: 10px; color: #2D5A3E; font-weight: 600; margin-top: 6px; }
+
+  /* Before/after comparison */
+  .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 24px; }
+  .compare-side { padding: 16px; border-radius: 14px; }
+  .compare-bad { background: rgba(239,68,68,0.06); border: 1px solid rgba(239,68,68,0.15); }
+  .compare-good { background: rgba(16,185,129,0.06); border: 1px solid rgba(16,185,129,0.15); }
+  .compare-label { font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px; }
+  .compare-label.bad { color: #EF4444; }
+  .compare-label.good { color: #10B981; }
+  .compare-text { font-size: 12px; line-height: 1.6; color: #4A4540; }
+</style>
+</head>
+<body>
+
+<!-- SLIDE 1: Title -->
+<div class="slide bg-cream">
+  <div class="deco" style="width:400px;height:400px;background:#2D5A3E;top:-100px;right:-100px;"></div>
+  <div class="slide-inner center">
+    <p class="label">How we build</p>
+    <h1 class="mega">Product<br>Knowledge<br>System</h1>
+    <p class="body-lg mt-24">Not an org chart. Not documentation.<br>A living map of how things connect.</p>
+  </div>
+  <div class="slide-num">01 / 08</div>
+</div>
+
+<!-- SLIDE 2: The Problem -->
+<div class="slide bg-dark">
+  <div class="slide-inner center">
+    <p class="label" style="color:#8C857D;">The problem</p>
+    <h2 class="big">When you change one thing,<br>what else breaks?</h2>
+    <p class="body-lg mt-24" style="max-width:500px;margin:0 auto;">We changed how activity IDs work in the store. It broke every screen that opens an activity. We didn't know those screens were connected.</p>
+    <p class="body-lg mt-16" style="opacity:0.4;">The connection was invisible. Now we make it visible.</p>
+  </div>
+  <div class="slide-num" style="color:rgba(255,255,255,0.15)">02 / 08</div>
+</div>
+
+<!-- SLIDE 3: Shearing Layers -->
+<div class="slide bg-warm">
+  <div class="slide-inner">
+    <p class="label">Concept 1</p>
+    <h2 class="big">Shearing Layers</h2>
+    <p class="body-lg">Things that change at different speeds must be loosely coupled. The bar shows how slowly each layer changes.</p>
+
+    <div class="layers">
+      <div class="layer-row l0"><div class="layer-bar"></div><div class="layer-num">0</div><div class="layer-name">Vision</div><div class="layer-rate">Changes yearly</div></div>
+      <div class="layer-row l1"><div class="layer-bar"></div><div class="layer-num">1</div><div class="layer-name">Data Model</div><div class="layer-rate">Changes quarterly</div></div>
+      <div class="layer-row l2"><div class="layer-bar"></div><div class="layer-num">2</div><div class="layer-name">Business Logic</div><div class="layer-rate">Changes monthly</div></div>
+      <div class="layer-row l3"><div class="layer-bar"></div><div class="layer-num">3</div><div class="layer-name">Product Features</div><div class="layer-rate">Changes weekly</div></div>
+      <div class="layer-row l4"><div class="layer-bar"></div><div class="layer-num">4</div><div class="layer-name">Design System</div><div class="layer-rate">Changes biweekly</div></div>
+      <div class="layer-row l5"><div class="layer-bar"></div><div class="layer-num">5</div><div class="layer-name">UI Components</div><div class="layer-rate">Changes daily</div></div>
+      <div class="layer-row l6"><div class="layer-bar"></div><div class="layer-num">6</div><div class="layer-name">Content / Copy</div><div class="layer-rate">Changes anytime</div></div>
+      <div class="layer-row l7"><div class="layer-bar"></div><div class="layer-num">7</div><div class="layer-name">Ops / Config</div><div class="layer-rate">Changes on deploy</div></div>
+    </div>
+
+    <p class="body-lg mt-24" style="font-size:13px;"><strong>The rule:</strong> Change freely within your layer. When you cross a layer boundary, check the flow maps.</p>
+  </div>
+  <div class="slide-num">03 / 08</div>
+</div>
+
+<!-- SLIDE 4: Four Flow Maps -->
+<div class="slide bg-cream">
+  <div class="slide-inner">
+    <p class="label">Concept 2</p>
+    <h2 class="big">Four Flow Maps</h2>
+    <p class="body-lg">Four different ways to see how things connect. Each reveals dependencies the others miss.</p>
+
+    <div class="mt-24">
+      <div class="flow-card">
+        <div class="flow-title"><span class="flow-icon">📊</span> Data Flow</div>
+        <div class="flow-desc">Where data is created, transformed, and consumed. User types text → parser extracts fields → store writes to DB → recurrence engine generates virtual instances → screen renders pills.</div>
+        <div class="flow-example">Reveals: the virtual ID flows from recurrence.ts through the store to every screen. If the ID format changes, everything downstream breaks.</div>
+      </div>
+
+      <div class="flow-card">
+        <div class="flow-title"><span class="flow-icon">🎯</span> Decision Flow</div>
+        <div class="flow-desc">Whose intent constrains whose actions. Founder sets vision → Architecture doc constrains what to build → Design spec constrains how it looks → Code implements within those constraints.</div>
+        <div class="flow-example">Reveals: code should never force a change to the design spec. If it does, the dependency is pointing the wrong way.</div>
+      </div>
+
+      <div class="flow-card">
+        <div class="flow-title"><span class="flow-icon">💥</span> Failure Flow</div>
+        <div class="flow-desc">When X fails, what else fails. Edge function fails → Play screen falls back to local HTML. DB write with virtual ID → silent no-op, edit lost with NO error.</div>
+        <div class="flow-example">Reveals: the most dangerous failures are silent. The virtual ID bug produced no error message — the edit just disappeared.</div>
+      </div>
+
+      <div class="flow-card">
+        <div class="flow-title"><span class="flow-icon">🔄</span> Change Flow</div>
+        <div class="flow-desc">When X changes, what else must change. If you change editActivity → check 6 screens that call it. If you change theme.ts → grep every component for the old value.</div>
+        <div class="flow-example">Reveals: exactly which files to check before committing. This is the map that prevents bugs.</div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num">04 / 08</div>
+</div>
+
+<!-- SLIDE 5: Sensors -->
+<div class="slide bg-warm">
+  <div class="slide-inner">
+    <p class="label">Concept 3</p>
+    <h2 class="big">Sensors</h2>
+    <p class="body-lg">Automated checks that detect broken dependencies. Run before every commit. You don't need to map everything — sensors catch problems you didn't predict.</p>
+
+    <div class="sensor-grid">
+      <div class="sensor-card">
+        <div class="sensor-name">🎨 Design Tokens</div>
+        <div class="sensor-what">Grep for hardcoded hex colors in .tsx files. Zero results = pass.</div>
+        <div class="sensor-when">Before every commit</div>
+      </div>
+      <div class="sensor-card">
+        <div class="sensor-name">🆔 Virtual ID Safety</div>
+        <div class="sensor-what">Verify every editActivity caller resolves virtual IDs before calling.</div>
+        <div class="sensor-when">When touching store or screens</div>
+      </div>
+      <div class="sensor-card">
+        <div class="sensor-name">📐 Rendering Rules</div>
+        <div class="sensor-what">Check pill/watermark/task filters match the spec in DESIGN.md.</div>
+        <div class="sensor-when">When touching CanvasScreen</div>
+      </div>
+      <div class="sensor-card">
+        <div class="sensor-name">🌱 Seed Safety</div>
+        <div class="sensor-what">No INSERT OR REPLACE for activity data. Seeds must not overwrite user edits.</div>
+        <div class="sensor-when">When touching seed files</div>
+      </div>
+      <div class="sensor-card">
+        <div class="sensor-name">📝 Theme ↔ Spec</div>
+        <div class="sensor-what">Verify theme.ts values match DESIGN.md spec exactly.</div>
+        <div class="sensor-when">When touching theme or design</div>
+      </div>
+      <div class="sensor-card">
+        <div class="sensor-name">🔗 Cross-Layer Check</div>
+        <div class="sensor-what">If change crosses a layer boundary, verify the boundary contract holds.</div>
+        <div class="sensor-when">When any change crosses layers</div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num">05 / 08</div>
+</div>
+
+<!-- SLIDE 6: Real Example — The Bug -->
+<div class="slide bg-green">
+  <div class="deco" style="width:500px;height:500px;background:#fff;top:-200px;left:-200px;"></div>
+  <div class="slide-inner">
+    <p class="label" style="color:rgba(255,255,255,0.4);">Real example</p>
+    <h2 class="big">The Bug That<br>Broke Everything</h2>
+    <p class="body-lg mt-16" style="opacity:0.7;">Editing "Morning water" didn't save. Here's how it happened, and how the system would have prevented it.</p>
+
+    <div class="compare">
+      <div class="compare-side compare-bad">
+        <div class="compare-label bad">Without the system</div>
+        <div class="compare-text">
+          1. Bug report: edit doesn't save<br>
+          2. Look at editActivity in store<br>
+          3. Think: "the ID must be wrong"<br>
+          4. Change the store to strip IDs<br>
+          5. Break all activity editing<br>
+          6. Try to fix the fix<br>
+          7. Break more things<br>
+          8. Revert everything<br>
+          9. 45 minutes wasted
+        </div>
+      </div>
+      <div class="compare-side compare-good">
+        <div class="compare-label good">With the system</div>
+        <div class="compare-text">
+          1. Bug report: edit doesn't save<br>
+          2. Read Change Flow Map for editActivity<br>
+          3. See: "Virtual ID resolution at CALLER"<br>
+          4. Check navigateToActivity<br>
+          5. Find: passes virtual ID to form<br>
+          6. Fix: one line, extract real ID<br>
+          7. Run sensors: all pass<br>
+          8. Done. 5 minutes.
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num" style="color:rgba(255,255,255,0.15)">06 / 08</div>
+</div>
+
+<!-- SLIDE 7: How a Change Flows -->
+<div class="slide bg-dark">
+  <div class="slide-inner">
+    <p class="label" style="color:#8C857D;">How it works in practice</p>
+    <h2 class="big">A Change Flows<br>Through the System</h2>
+    <p class="body-lg">Say you want to add a new field to Activity (like "energy_level").</p>
+
+    <div class="scenario">
+      <div class="scenario-step">
+        <div class="step-num">1</div>
+        <div class="step-content step-neutral">
+          <div class="step-action">Identify the layer</div>
+          <div class="step-detail">Adding a field to Activity = Layer 1 (Data Model). Changes quarterly. High impact.</div>
+        </div>
+      </div>
+      <div class="scenario-step">
+        <div class="step-num">2</div>
+        <div class="step-content step-neutral">
+          <div class="step-action">Read the Change Flow Map</div>
+          <div class="step-detail">"IF YOU CHANGE types/index.ts → CHECK: store, DB functions, every screen that renders Activity, recurrence.ts, seed.ts"</div>
+          <div class="step-file">Layer crossing: 1 → 2, 3, 5</div>
+        </div>
+      </div>
+      <div class="scenario-step">
+        <div class="step-num">3</div>
+        <div class="step-content step-good">
+          <div class="step-action">Change Layer 1: Add the field</div>
+          <div class="step-detail">Add energy_level to types/index.ts. Add column to DB schema.</div>
+          <div class="step-file">types/index.ts, activities.ts (migration)</div>
+        </div>
+      </div>
+      <div class="scenario-step">
+        <div class="step-num">4</div>
+        <div class="step-content step-good">
+          <div class="step-action">Cross boundary: Layer 1 → Layer 2</div>
+          <div class="step-detail">Update store to read/write the new field. Update DB queries.</div>
+          <div class="step-file">activitiesStore.ts, activities.ts (queries)</div>
+        </div>
+      </div>
+      <div class="scenario-step">
+        <div class="step-num">5</div>
+        <div class="step-content step-good">
+          <div class="step-action">Cross boundary: Layer 2 → Layer 3</div>
+          <div class="step-detail">Add energy_level to ActivityForm. Add to ExperienceLog.</div>
+          <div class="step-file">ActivityFormScreen.tsx, ExperienceLogScreen.tsx</div>
+        </div>
+      </div>
+      <div class="scenario-step">
+        <div class="step-num">6</div>
+        <div class="step-content step-good">
+          <div class="step-action">Cross boundary: Layer 3 → Layer 4</div>
+          <div class="step-detail">Design the energy_level UI. Add to DESIGN.md and FEATURE-SPECS.md.</div>
+          <div class="step-file">DESIGN.md, FEATURE-SPECS.md, theme.ts (if new color)</div>
+        </div>
+      </div>
+      <div class="scenario-step">
+        <div class="step-num">7</div>
+        <div class="step-content step-good">
+          <div class="step-action">Run sensors</div>
+          <div class="step-detail">Design tokens ✓, Virtual ID safety ✓, Rendering rules ✓, Seed safety ✓, Theme ↔ Spec ✓</div>
+        </div>
+      </div>
+      <div class="scenario-step">
+        <div class="step-num">8</div>
+        <div class="step-content step-good">
+          <div class="step-action">Update the Change Flow Map</div>
+          <div class="step-detail">Add energy_level to the "IF YOU CHANGE types/index.ts" entry. Future changes know about it.</div>
+          <div class="step-file">PRODUCT-KNOWLEDGE-SYSTEM.md</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num" style="color:rgba(255,255,255,0.15)">07 / 08</div>
+</div>
+
+<!-- SLIDE 8: The Principle -->
+<div class="slide bg-accent">
+  <div class="deco" style="width:500px;height:500px;background:#fff;bottom:-200px;right:-200px;"></div>
+  <div class="slide-inner center">
+    <p class="label" style="color:rgba(255,255,255,0.5);">The principle</p>
+    <h2 class="mega">Make the<br>invisible<br>visible.</h2>
+    <p class="body-lg mt-32" style="opacity:0.8;max-width:500px;margin:0 auto;">
+      Dependencies exist whether you map them or not.<br>
+      The map doesn't prevent change. It prevents surprise.<br><br>
+      Layers tell you what's safe to change.<br>
+      Flow maps tell you what connects to what.<br>
+      Sensors catch what you missed.<br><br>
+      That's the whole system.
+    </p>
+  </div>
+  <div class="slide-num" style="color:rgba(255,255,255,0.15)">08 / 08</div>
+</div>
+
+</body>
+</html>

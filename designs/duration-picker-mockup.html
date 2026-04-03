@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DayFlow — Duration Picker Options</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', -apple-system, sans-serif; background: #F5F0E8; color: #1A1714; padding: 40px 20px; }
+
+  h1 { font-size: 22px; font-weight: 700; text-align: center; margin-bottom: 8px; letter-spacing: -0.3px; }
+  .sub { font-size: 13px; color: #8C857D; text-align: center; margin-bottom: 40px; }
+  .option-title { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+  .option-desc { font-size: 12px; color: #4A4540; margin-bottom: 16px; line-height: 1.5; }
+  .label { font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: #8C857D; margin-bottom: 12px; }
+  .divider { height: 1px; background: #E0D9CE; margin: 32px 0; }
+  .rec { display: inline-block; font-size: 9px; font-weight: 700; background: #2D5A3E; color: #fff; padding: 2px 6px; border-radius: 4px; margin-left: 8px; vertical-align: middle; }
+
+  /* Phone frame */
+  .phone {
+    width: 340px; margin: 0 auto 32px; background: #F5F0E8;
+    border-radius: 28px; overflow: hidden;
+    box-shadow: 0 12px 36px rgba(0,0,0,0.1); border: 1px solid #E0D9CE;
+    padding: 20px;
+  }
+
+  /* Shared chip row */
+  .chip-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; }
+  .chip {
+    padding: 8px 14px; border-radius: 10px; font-size: 13px; font-weight: 500;
+    background: rgba(255,255,255,0.55); color: #4A4540; cursor: pointer;
+    border: 1px solid transparent;
+  }
+  .chip.selected { background: #2D5A3E; color: #fff; }
+  .chip.muted-sel { background: #E0D9CE; color: #8C857D; }
+  .chip.custom-btn {
+    font-size: 16px; padding: 8px 12px; color: #8C857D;
+  }
+
+  /* ═══ OPTION A: Scroll wheel ═══ */
+  .wheel-container {
+    background: rgba(255,255,255,0.65); border: 1px solid rgba(255,255,255,0.75);
+    border-radius: 14px; padding: 16px; margin-top: 8px;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.06);
+  }
+  .wheel-row {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .wheel {
+    width: 70px; height: 140px; overflow: hidden; position: relative;
+    border-radius: 10px; background: rgba(255,255,255,0.5);
+  }
+  .wheel-track {
+    display: flex; flex-direction: column; align-items: center;
+    padding-top: 50px;
+  }
+  .wheel-item {
+    height: 40px; display: flex; align-items: center; justify-content: center;
+    font-size: 22px; font-weight: 600; color: #E0D9CE;
+    transition: all 0.2s;
+  }
+  .wheel-item.active {
+    color: #1A1714; font-size: 26px; font-weight: 700;
+  }
+  .wheel-highlight {
+    position: absolute; top: 50px; left: 0; right: 0; height: 40px;
+    background: rgba(45,90,62,0.06); border-top: 1px solid rgba(45,90,62,0.15);
+    border-bottom: 1px solid rgba(45,90,62,0.15);
+    pointer-events: none;
+  }
+  .wheel-label {
+    font-size: 14px; font-weight: 600; color: #8C857D;
+  }
+  .wheel-colon {
+    font-size: 24px; font-weight: 700; color: #2D5A3E; margin: 0 2px;
+  }
+  .wheel-preview {
+    text-align: center; margin-top: 12px;
+    font-size: 13px; color: #2D5A3E; font-weight: 600;
+  }
+  .wheel-done {
+    display: block; width: 100%; margin-top: 12px;
+    background: #2D5A3E; color: #fff; border: none;
+    padding: 12px; border-radius: 10px;
+    font-size: 14px; font-weight: 600; cursor: pointer;
+  }
+
+  /* ═══ OPTION B: Stepper ═══ */
+  .stepper {
+    display: flex; align-items: center; justify-content: center; gap: 16px;
+    background: rgba(255,255,255,0.65); border: 1px solid rgba(255,255,255,0.75);
+    border-radius: 14px; padding: 20px; margin-top: 8px;
+  }
+  .stepper-btn {
+    width: 40px; height: 40px; border-radius: 20px;
+    background: rgba(255,255,255,0.7); border: 1px solid #E0D9CE;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; font-weight: 600; color: #2D5A3E; cursor: pointer;
+  }
+  .stepper-value {
+    text-align: center;
+  }
+  .stepper-num { font-size: 32px; font-weight: 700; color: #1A1714; }
+  .stepper-label { font-size: 11px; color: #8C857D; font-weight: 500; margin-top: 2px; }
+  .stepper-presets {
+    display: flex; gap: 6px; justify-content: center; margin-top: 12px;
+  }
+  .stepper-preset {
+    padding: 4px 10px; border-radius: 8px;
+    font-size: 11px; font-weight: 600; color: #8C857D;
+    background: rgba(255,255,255,0.5); border: 1px solid rgba(255,255,255,0.65);
+    cursor: pointer;
+  }
+
+  /* ═══ OPTION C: Slider ═══ */
+  .slider-container {
+    background: rgba(255,255,255,0.65); border: 1px solid rgba(255,255,255,0.75);
+    border-radius: 14px; padding: 20px; margin-top: 8px;
+  }
+  .slider-value {
+    text-align: center; font-size: 28px; font-weight: 700; color: #2D5A3E;
+    margin-bottom: 16px;
+  }
+  .slider-track {
+    width: 100%; height: 6px; background: #E0D9CE; border-radius: 3px;
+    position: relative;
+  }
+  .slider-fill {
+    height: 100%; background: #2D5A3E; border-radius: 3px; width: 25%;
+  }
+  .slider-thumb {
+    width: 24px; height: 24px; border-radius: 12px;
+    background: #fff; border: 2px solid #2D5A3E;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    position: absolute; top: -9px; left: 23%;
+    margin-left: -12px;
+  }
+  .slider-labels {
+    display: flex; justify-content: space-between; margin-top: 8px;
+    font-size: 9px; color: #8C857D; font-weight: 600;
+  }
+
+  .compare-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
+    max-width: 720px; margin: 0 auto;
+  }
+  .compare-grid .phone { margin: 0; }
+</style>
+</head>
+<body>
+
+<h1>Duration Picker — Custom Input</h1>
+<p class="sub">Three options for how the custom duration input works</p>
+
+<!-- ═══ OPTION A: Scroll Wheel (iPhone Timer Style) ═══ -->
+<p class="label">Option A: Scroll Wheel <span class="rec">RECOMMENDED</span></p>
+<div class="option-desc">iPhone timer-style scroll picker. Hours and minutes wheels side by side. Feels native. Most familiar pattern on iOS. Tap the <strong>…</strong> chip to open, scroll to set, tap Done.</div>
+
+<div class="phone">
+  <!-- Chip row with … selected -->
+  <div class="chip-row">
+    <div class="chip muted-sel">—</div>
+    <div class="chip">15m</div>
+    <div class="chip">30m</div>
+    <div class="chip">1h</div>
+    <div class="chip selected" style="font-size:16px;">…</div>
+  </div>
+
+  <!-- Scroll wheel picker -->
+  <div class="wheel-container">
+    <div class="wheel-row">
+      <!-- Hours wheel -->
+      <div class="wheel">
+        <div class="wheel-highlight"></div>
+        <div class="wheel-track">
+          <div class="wheel-item" style="color:#E0D9CE;">0</div>
+          <div class="wheel-item active">0</div>
+          <div class="wheel-item" style="color:#E0D9CE;">1</div>
+        </div>
+      </div>
+      <div class="wheel-label">hr</div>
+
+      <div class="wheel-colon">:</div>
+
+      <!-- Minutes wheel -->
+      <div class="wheel">
+        <div class="wheel-highlight"></div>
+        <div class="wheel-track">
+          <div class="wheel-item">05</div>
+          <div class="wheel-item active">10</div>
+          <div class="wheel-item">15</div>
+        </div>
+      </div>
+      <div class="wheel-label">min</div>
+    </div>
+
+    <div class="wheel-preview">10 minutes</div>
+    <button class="wheel-done">Done</button>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ═══ OPTION B: Stepper ═══ -->
+<p class="label">Option B: Stepper with quick presets</p>
+<div class="option-desc">Plus/minus buttons with a big number in the center. Quick preset chips below for common values. Simple, accessible, no scroll physics needed.</div>
+
+<div class="phone">
+  <div class="chip-row">
+    <div class="chip muted-sel">—</div>
+    <div class="chip">15m</div>
+    <div class="chip">30m</div>
+    <div class="chip">1h</div>
+    <div class="chip selected" style="font-size:16px;">…</div>
+  </div>
+
+  <div class="stepper">
+    <div class="stepper-btn">−</div>
+    <div class="stepper-value">
+      <div class="stepper-num">10</div>
+      <div class="stepper-label">minutes</div>
+    </div>
+    <div class="stepper-btn">+</div>
+  </div>
+  <div class="stepper-presets">
+    <div class="stepper-preset">5m</div>
+    <div class="stepper-preset" style="background:rgba(45,90,62,0.1);color:#2D5A3E;border-color:rgba(45,90,62,0.2);">10m</div>
+    <div class="stepper-preset">20m</div>
+    <div class="stepper-preset">45m</div>
+    <div class="stepper-preset">90m</div>
+    <div class="stepper-preset">2h</div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ═══ OPTION C: Slider ═══ -->
+<p class="label">Option C: Drag slider</p>
+<div class="option-desc">Horizontal slider from 5 min to 3 hours. Fast but imprecise. Good for rough estimates. Snaps to 5-minute increments.</div>
+
+<div class="phone">
+  <div class="chip-row">
+    <div class="chip muted-sel">—</div>
+    <div class="chip">15m</div>
+    <div class="chip">30m</div>
+    <div class="chip">1h</div>
+    <div class="chip selected" style="font-size:16px;">…</div>
+  </div>
+
+  <div class="slider-container">
+    <div class="slider-value">10 min</div>
+    <div class="slider-track">
+      <div class="slider-fill"></div>
+      <div class="slider-thumb"></div>
+    </div>
+    <div class="slider-labels">
+      <span>5m</span>
+      <span>30m</span>
+      <span>1h</span>
+      <span>2h</span>
+      <span>3h</span>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ═══ SIDE BY SIDE ═══ -->
+<p class="label">How it fits in the activity form</p>
+<div class="option-desc">The picker opens inline below the duration chips. No modal, no new screen. Tap <strong>…</strong> → picker slides in with spring animation. Tap Done or pick a preset → picker slides out, chip updates to show selected value (e.g., "10m").</div>
+
+<div class="phone" style="width: 340px;">
+  <div style="font-size:18px;font-weight:600;color:#1A1714;margin-bottom:12px;">Morning water</div>
+
+  <!-- Date/Time row -->
+  <div style="display:flex;gap:6px;margin-bottom:8px;">
+    <div class="chip" style="font-size:12px;">Today</div>
+    <div class="chip" style="font-size:12px;">7:57 AM</div>
+  </div>
+
+  <!-- Duration row — with 10m custom value shown -->
+  <div class="chip-row">
+    <div class="chip">—</div>
+    <div class="chip selected">10m</div>
+    <div class="chip">15m</div>
+    <div class="chip">30m</div>
+    <div class="chip">1h</div>
+    <div class="chip custom-btn">…</div>
+  </div>
+
+  <div style="font-size:10px;color:#8C857D;margin-bottom:12px;">10m selected via custom picker</div>
+
+  <!-- Repeat -->
+  <div class="chip-row">
+    <div class="chip" style="font-size:12px;">Daily ▾</div>
+  </div>
+
+  <!-- Mindset -->
+  <div style="font-size:11px;font-weight:600;color:#8C857D;letter-spacing:0.6px;text-transform:uppercase;margin-bottom:4px;">MINDSET</div>
+  <div style="font-size:13px;color:#4A4540;padding:8px 0;border-bottom:1px solid #E0D9CE;margin-bottom:12px;">Hydrate before anything. Start the day clean.</div>
+
+  <!-- Save -->
+  <div style="background:#2D5A3E;color:#fff;text-align:center;padding:14px;border-radius:12px;font-size:15px;font-weight:600;">Save</div>
+</div>
+
+<div style="text-align:center;padding:32px;color:#8C857D;font-size:11px;">
+  DayFlow — Duration Picker Design
+</div>
+
+</body>
+</html>

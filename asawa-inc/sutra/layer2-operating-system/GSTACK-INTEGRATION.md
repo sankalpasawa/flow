@@ -183,19 +183,19 @@ The A/B test measures whether the full pipeline produces better outcomes (fewer 
 
 Each Sutra client may need different skill configurations:
 
-### DayFlow (iOS app)
+### iOS Apps (e.g., DayFlow)
 - `/browse` — limited (Expo Go, not web)
 - `/qa` — device testing via screenshots
 - `/design-review` — via simulator screenshots
 - `/benchmark` — app startup time, not web vitals
 - `/setup-deploy` — Expo/TestFlight, not Vercel
 
-### Hehe (web app)
+### Web Apps (future clients)
 - `/browse` — full power (headless Chromium on web app)
 - `/qa` — full browser QA, click-through testing
 - `/design-review` — live site visual audit
 - `/benchmark` — full Core Web Vitals, bundle size
-- `/setup-deploy` — Vercel deploy
+- `/setup-deploy` — Vercel/Netlify deploy
 - `/canary` — full post-deploy monitoring
 
 Web apps get MORE gstack coverage because browser testing is native. iOS apps need adapter patterns for device-specific testing.

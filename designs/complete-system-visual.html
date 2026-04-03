@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Complete System — How Everything Connects</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-snap-type: y mandatory; }
+  body { font-family: 'Inter', -apple-system, sans-serif; color: #1A1714; -webkit-font-smoothing: antialiased; }
+
+  .slide { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 44px 24px; scroll-snap-align: start; position: relative; }
+  .slide-inner { max-width: 700px; width: 100%; }
+  .bg-cream { background: #F5F0E8; }
+  .bg-green { background: #2D5A3E; color: #fff; }
+  .bg-dark { background: #1A1714; color: #F5F0E8; }
+  .bg-warm { background: linear-gradient(135deg, #F5F0E8, #EDE5D8); }
+  .bg-accent { background: linear-gradient(160deg, #C4795B, #A05A3E); color: #fff; }
+  .bg-blue { background: linear-gradient(160deg, #3B82F6, #1D4ED8); color: #fff; }
+  .bg-purple { background: linear-gradient(160deg, #8B5CF6, #6D28D9); color: #fff; }
+  .deco { position: absolute; border-radius: 50%; opacity: 0.05; }
+
+  .mega { font-size: clamp(30px, 5vw, 50px); font-weight: 900; letter-spacing: -2px; line-height: 1.05; }
+  .big { font-size: clamp(22px, 3.5vw, 34px); font-weight: 800; letter-spacing: -1px; line-height: 1.15; }
+  .medium { font-size: clamp(16px, 2.2vw, 22px); font-weight: 700; }
+  .body-lg { font-size: clamp(12px, 1.6vw, 15px); font-weight: 400; line-height: 1.7; opacity: 0.75; }
+  .label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; opacity: 0.4; margin-bottom: 12px; }
+  .center { text-align: center; }
+  .mt-12 { margin-top: 12px; } .mt-20 { margin-top: 20px; } .mt-28 { margin-top: 28px; }
+  .slide-num { position: absolute; bottom: 18px; right: 24px; font-size: 9px; font-weight: 600; opacity: 0.12; }
+
+  /* Three abstraction layers */
+  .abs-layer {
+    border-radius: 16px; padding: 20px; margin-bottom: 10px; position: relative;
+  }
+  .abs-title { font-size: 16px; font-weight: 800; margin-bottom: 4px; }
+  .abs-q { font-size: 12px; font-weight: 600; opacity: 0.6; margin-bottom: 10px; }
+  .abs-items { display: flex; flex-wrap: wrap; gap: 6px; }
+  .abs-chip { font-size: 10px; font-weight: 600; padding: 4px 10px; border-radius: 8px; }
+
+  /* Phase diagram */
+  .phase { border-radius: 14px; padding: 16px; margin-bottom: 8px; }
+  .phase-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .phase-num { width: 28px; height: 28px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; flex-shrink: 0; }
+  .phase-title { font-size: 14px; font-weight: 700; }
+  .phase-who { font-size: 9px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; opacity: 0.5; }
+  .phase-outputs { margin-top: 8px; }
+  .phase-output { display: flex; align-items: center; gap: 6px; padding: 4px 0; font-size: 11px; }
+  .po-icon { font-size: 14px; }
+  .po-file { font-size: 9px; font-family: Menlo, monospace; opacity: 0.4; }
+  .phase-arrow { text-align: center; font-size: 16px; opacity: 0.3; padding: 2px 0; }
+
+  /* Agent cards */
+  .agent-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 16px; }
+  .agent-card { padding: 12px; border-radius: 10px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.1); }
+  .agent-emoji { font-size: 18px; }
+  .agent-name { font-size: 11px; font-weight: 700; margin-top: 3px; }
+  .agent-does { font-size: 9px; opacity: 0.5; margin-top: 2px; line-height: 1.4; }
+  .agent-tag { font-size: 8px; font-weight: 700; padding: 2px 6px; border-radius: 4px; display: inline-block; margin-top: 4px; }
+  .tag-parallel { background: rgba(16,185,129,0.15); color: #10B981; }
+  .tag-sequential { background: rgba(249,115,22,0.15); color: #F97316; }
+  .tag-human { background: rgba(196,121,91,0.15); color: #C4795B; }
+
+  /* Roadmap mini */
+  .roadmap { display: flex; gap: 8px; margin-top: 12px; }
+  .rm-col { flex: 1; padding: 10px; border-radius: 10px; }
+  .rm-label { font-size: 9px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px; }
+  .rm-item { font-size: 10px; padding: 4px 0; border-bottom: 1px solid rgba(0,0,0,0.05); }
+  .rm-item:last-child { border-bottom: none; }
+</style>
+</head>
+<body>
+
+<!-- SLIDE 1: Title -->
+<div class="slide bg-cream">
+  <div class="deco" style="width:350px;height:350px;background:#2D5A3E;top:-100px;right:-100px;"></div>
+  <div class="slide-inner center">
+    <p class="label">The complete picture</p>
+    <h1 class="mega">How a Feature<br>Gets Built</h1>
+    <p class="body-lg mt-12">From idea to shipped code.<br>Every document. Every agent. Every check.<br>Where everything lives.</p>
+  </div>
+  <div class="slide-num">01 / 10</div>
+</div>
+
+<!-- SLIDE 2: Three Abstraction Layers -->
+<div class="slide bg-dark">
+  <div class="slide-inner">
+    <p class="label" style="color:#8C857D;">The three layers</p>
+    <h2 class="big">Three Systems,<br>One Flow</h2>
+    <p class="body-lg">Every feature passes through three abstraction layers. Each answers different questions.</p>
+
+    <div class="mt-20">
+      <div class="abs-layer" style="background:rgba(196,121,91,0.12);border:1px solid rgba(196,121,91,0.2);">
+        <div class="abs-title" style="color:#C4795B;">1. Strategy Layer</div>
+        <div class="abs-q">WHAT and WHY — Should we build this? What's the impact?</div>
+        <div class="abs-items">
+          <div class="abs-chip" style="background:rgba(196,121,91,0.15);color:#C4795B;">PRD</div>
+          <div class="abs-chip" style="background:rgba(196,121,91,0.15);color:#C4795B;">RICE Score</div>
+          <div class="abs-chip" style="background:rgba(196,121,91,0.15);color:#C4795B;">Impact Estimate</div>
+          <div class="abs-chip" style="background:rgba(196,121,91,0.15);color:#C4795B;">Roadmap Priority</div>
+          <div class="abs-chip" style="background:rgba(196,121,91,0.15);color:#C4795B;">Edge Cases</div>
+          <div class="abs-chip" style="background:rgba(196,121,91,0.15);color:#C4795B;">Analytics Plan</div>
+        </div>
+      </div>
+
+      <div style="text-align:center;font-size:18px;opacity:0.3;padding:4px;">↓</div>
+
+      <div class="abs-layer" style="background:rgba(59,130,246,0.12);border:1px solid rgba(59,130,246,0.2);">
+        <div class="abs-title" style="color:#3B82F6;">2. Specification Layer</div>
+        <div class="abs-q">HOW — Design it, architect it, plan the build</div>
+        <div class="abs-items">
+          <div class="abs-chip" style="background:rgba(59,130,246,0.15);color:#3B82F6;">Design Spec + Mockup</div>
+          <div class="abs-chip" style="background:rgba(59,130,246,0.15);color:#3B82F6;">UI/UX Gestures</div>
+          <div class="abs-chip" style="background:rgba(59,130,246,0.15);color:#3B82F6;">Colors + Typography</div>
+          <div class="abs-chip" style="background:rgba(59,130,246,0.15);color:#3B82F6;">HLD (Architecture)</div>
+          <div class="abs-chip" style="background:rgba(59,130,246,0.15);color:#3B82F6;">LLD (File changes)</div>
+          <div class="abs-chip" style="background:rgba(59,130,246,0.15);color:#3B82F6;">Test Plan</div>
+          <div class="abs-chip" style="background:rgba(59,130,246,0.15);color:#3B82F6;">P1/P2/P3 Scope</div>
+        </div>
+      </div>
+
+      <div style="text-align:center;font-size:18px;opacity:0.3;padding:4px;">↓</div>
+
+      <div class="abs-layer" style="background:rgba(16,185,129,0.12);border:1px solid rgba(16,185,129,0.2);">
+        <div class="abs-title" style="color:#10B981;">3. Execution Layer</div>
+        <div class="abs-q">DO IT — Build, verify, ship, monitor</div>
+        <div class="abs-items">
+          <div class="abs-chip" style="background:rgba(16,185,129,0.15);color:#10B981;">Code Changes</div>
+          <div class="abs-chip" style="background:rgba(16,185,129,0.15);color:#10B981;">Layer-by-Layer Build</div>
+          <div class="abs-chip" style="background:rgba(16,185,129,0.15);color:#10B981;">Sensors Run</div>
+          <div class="abs-chip" style="background:rgba(16,185,129,0.15);color:#10B981;">QA Verification</div>
+          <div class="abs-chip" style="background:rgba(16,185,129,0.15);color:#10B981;">Design QA</div>
+          <div class="abs-chip" style="background:rgba(16,185,129,0.15);color:#10B981;">Ship + Monitor</div>
+          <div class="abs-chip" style="background:rgba(16,185,129,0.15);color:#10B981;">Update Knowledge System</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num" style="color:rgba(255,255,255,0.12)">02 / 10</div>
+</div>
+
+<!-- SLIDE 3: Strategy Layer Detail -->
+<div class="slide bg-warm">
+  <div class="slide-inner">
+    <p class="label">Layer 1: Strategy</p>
+    <h2 class="big">What gets produced</h2>
+    <p class="body-lg">The org agents work here. Multiple agents run in parallel. Founder approves.</p>
+
+    <div class="mt-12">
+      <div class="phase" style="background:rgba(196,121,91,0.06);border:1px solid rgba(196,121,91,0.12);">
+        <div class="phase-head">
+          <div class="phase-num" style="background:#C4795B;color:#fff;">1</div>
+          <div><div class="phase-title">Product Requirement Document (PRD)</div><div class="phase-who">CPO Agent → Parallel</div></div>
+        </div>
+        <div class="phase-outputs">
+          <div class="phase-output"><span class="po-icon">📄</span> Problem statement, user stories, success metrics</div>
+          <div class="phase-output"><span class="po-icon">📊</span> RICE score (Reach × Impact × Confidence / Effort)</div>
+          <div class="phase-output"><span class="po-icon">⚠️</span> Edge cases: empty state, 0 items, 100 items, error, offline</div>
+          <div class="po-file">→ org/features/{slug}/PRD.md</div>
+        </div>
+      </div>
+
+      <div class="phase" style="background:rgba(196,121,91,0.06);border:1px solid rgba(196,121,91,0.12);">
+        <div class="phase-head">
+          <div class="phase-num" style="background:#C4795B;color:#fff;">2</div>
+          <div><div class="phase-title">Cross-Functional Impact Assessment</div><div class="phase-who">ALL Agents → Parallel</div></div>
+        </div>
+        <div class="phase-outputs">
+          <div class="phase-output"><span class="po-icon">🔒</span> Security: input validation, privacy, compliance</div>
+          <div class="phase-output"><span class="po-icon">📊</span> Analytics: events to track, dashboards, A/B test plan</div>
+          <div class="phase-output"><span class="po-icon">🚀</span> Growth: retention impact estimate, onboarding changes</div>
+          <div class="phase-output"><span class="po-icon">✅</span> Quality: test cases needed, regression risks</div>
+          <div class="po-file">→ org/features/{slug}/IMPACT.md</div>
+        </div>
+      </div>
+
+      <div class="phase" style="background:rgba(196,121,91,0.06);border:1px solid rgba(196,121,91,0.12);">
+        <div class="phase-head">
+          <div class="phase-num" style="background:#C4795B;color:#fff;">3</div>
+          <div><div class="phase-title">Roadmap + Priority Scope</div><div class="phase-who">CPO + CEO (Founder)</div></div>
+        </div>
+        <div class="phase-outputs">
+          <div class="phase-output"><span class="po-icon">🏷️</span> P1: must ship (core functionality)</div>
+          <div class="phase-output"><span class="po-icon">🏷️</span> P2: should ship (polish, edge cases)</div>
+          <div class="phase-output"><span class="po-icon">🏷️</span> P3: nice to have (advanced, can defer)</div>
+          <div class="phase-output"><span class="po-icon">📋</span> Tasks that touch OTHER features (update list)</div>
+          <div class="po-file">→ org/features/{slug}/ROADMAP.md</div>
+        </div>
+      </div>
+
+      <div style="text-align:center;padding:8px;">
+        <span style="font-size:10px;font-weight:700;padding:4px 12px;border-radius:8px;background:rgba(196,121,91,0.15);color:#C4795B;">FOUNDER APPROVES → proceed to specs</span>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num">03 / 10</div>
+</div>
+
+<!-- SLIDE 4: Specification Layer Detail -->
+<div class="slide bg-cream">
+  <div class="slide-inner">
+    <p class="label">Layer 2: Specification</p>
+    <h2 class="big">Three specs in parallel</h2>
+    <p class="body-lg">Three agents run simultaneously. Each produces a spec document + artifacts.</p>
+
+    <div class="mt-12">
+      <div class="phase" style="background:rgba(236,72,153,0.06);border:1px solid rgba(236,72,153,0.12);">
+        <div class="phase-head">
+          <div class="phase-num" style="background:#EC4899;color:#fff;">A</div>
+          <div><div class="phase-title">Design Spec</div><div class="phase-who">CDO Agent</div></div>
+        </div>
+        <div class="phase-outputs">
+          <div class="phase-output"><span class="po-icon">🎨</span> Visual design: layout, spacing, colors, glass treatment</div>
+          <div class="phase-output"><span class="po-icon">👆</span> Interactions: tap, swipe, long-press, animations (spring values)</div>
+          <div class="phase-output"><span class="po-icon">📐</span> All states: default, loading, empty, error, compact, completed</div>
+          <div class="phase-output"><span class="po-icon">🖼️</span> HTML mockup in designs/ folder</div>
+          <div class="phase-output"><span class="po-icon">♿</span> Accessibility: touch targets, labels, contrast</div>
+          <div class="po-file">→ org/features/{slug}/DESIGN-SPEC.md + designs/{slug}.html</div>
+        </div>
+      </div>
+
+      <div class="phase" style="background:rgba(59,130,246,0.06);border:1px solid rgba(59,130,246,0.12);">
+        <div class="phase-head">
+          <div class="phase-num" style="background:#3B82F6;color:#fff;">B</div>
+          <div><div class="phase-title">Tech Spec (HLD + LLD)</div><div class="phase-who">CTO Agent</div></div>
+        </div>
+        <div class="phase-outputs">
+          <div class="phase-output"><span class="po-icon">🏗️</span> HLD: which shearing layers touched, architecture impact</div>
+          <div class="phase-output"><span class="po-icon">📁</span> LLD: exact files to create/modify, DB migration SQL</div>
+          <div class="phase-output"><span class="po-icon">🔗</span> Change Flow Map entries (from Knowledge System)</div>
+          <div class="phase-output"><span class="po-icon">⚠️</span> Risks: what could go wrong, virtual ID implications</div>
+          <div class="phase-output"><span class="po-icon">📦</span> Build order: which layer first, commits per layer</div>
+          <div class="po-file">→ org/features/{slug}/TECH-SPEC.md</div>
+        </div>
+      </div>
+
+      <div class="phase" style="background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.12);">
+        <div class="phase-head">
+          <div class="phase-num" style="background:#10B981;color:#fff;">C</div>
+          <div><div class="phase-title">Test Plan</div><div class="phase-who">CQO Agent</div></div>
+        </div>
+        <div class="phase-outputs">
+          <div class="phase-output"><span class="po-icon">🧪</span> Unit tests: pure function test cases with inputs/outputs</div>
+          <div class="phase-output"><span class="po-icon">🎨</span> Design QA: pixel checks, token compliance</div>
+          <div class="phase-output"><span class="po-icon">🔄</span> Integration: end-to-end user flow verification</div>
+          <div class="phase-output"><span class="po-icon">📊</span> New sensors needed for this feature</div>
+          <div class="po-file">→ org/features/{slug}/TEST-PLAN.md</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num">04 / 10</div>
+</div>
+
+<!-- SLIDE 5: Execution Layer Detail -->
+<div class="slide bg-green">
+  <div class="deco" style="width:400px;height:400px;background:#fff;bottom:-150px;right:-150px;"></div>
+  <div class="slide-inner">
+    <p class="label" style="color:rgba(255,255,255,0.4);">Layer 3: Execution</p>
+    <h2 class="big">Build, verify, ship</h2>
+    <p class="body-lg" style="opacity:0.7;">One agent builds. Other agents verify. Sequential within a layer, parallel across checks.</p>
+
+    <div class="mt-12">
+      <div class="phase" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);">
+        <div class="phase-head">
+          <div class="phase-num" style="background:#fff;color:#2D5A3E;">1</div>
+          <div><div class="phase-title">Build (bottom-up, one layer at a time)</div><div class="phase-who">Main Agent (you + me)</div></div>
+        </div>
+        <div class="phase-outputs">
+          <div class="phase-output"><span class="po-icon">📝</span> Read specs from Layer 2 before writing code</div>
+          <div class="phase-output"><span class="po-icon">🔽</span> Layer 1 first (data model) → commit</div>
+          <div class="phase-output"><span class="po-icon">🔽</span> Layer 2 (business logic) → commit</div>
+          <div class="phase-output"><span class="po-icon">🔽</span> Layer 4 (design tokens if new) → commit</div>
+          <div class="phase-output"><span class="po-icon">🔽</span> Layer 3+5 (features + components) → commit</div>
+        </div>
+      </div>
+
+      <div class="phase" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);">
+        <div class="phase-head">
+          <div class="phase-num" style="background:#fff;color:#2D5A3E;">2</div>
+          <div><div class="phase-title">Verify (parallel agents)</div><div class="phase-who">CQO + CDO + Sensors</div></div>
+        </div>
+        <div class="phase-outputs">
+          <div class="phase-output"><span class="po-icon">✅</span> CQO: run test cases from TEST-PLAN.md</div>
+          <div class="phase-output"><span class="po-icon">🎨</span> CDO: screenshot + pixel compare against DESIGN-SPEC</div>
+          <div class="phase-output"><span class="po-icon">🔍</span> Sensors: design tokens, virtual IDs, rendering rules, boundaries</div>
+          <div class="phase-output"><span class="po-icon">🔒</span> CISO: input validation, sanitization check</div>
+        </div>
+      </div>
+
+      <div class="phase" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);">
+        <div class="phase-head">
+          <div class="phase-num" style="background:#fff;color:#2D5A3E;">3</div>
+          <div><div class="phase-title">Ship + Update</div><div class="phase-who">Main Agent</div></div>
+        </div>
+        <div class="phase-outputs">
+          <div class="phase-output"><span class="po-icon">🚀</span> Commit, push, deploy edge functions if needed</div>
+          <div class="phase-output"><span class="po-icon">📊</span> CDaO: verify analytics events are firing</div>
+          <div class="phase-output"><span class="po-icon">🗺️</span> Update PRODUCT-KNOWLEDGE-SYSTEM.md with new entries</div>
+          <div class="phase-output"><span class="po-icon">📋</span> Update TODO.md, mark feature complete</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num" style="color:rgba(255,255,255,0.12)">05 / 10</div>
+</div>
+
+<!-- SLIDE 6: Where Every Document Lives -->
+<div class="slide bg-dark">
+  <div class="slide-inner">
+    <p class="label" style="color:#8C857D;">The file map</p>
+    <h2 class="big">Where everything<br>gets written</h2>
+
+    <div style="margin-top:16px;font-size:11px;line-height:2.2;font-family:Menlo,monospace;color:#A8A29E;">
+      <span style="color:#C4795B;font-weight:700;">STRATEGY (org agents produce)</span><br>
+      &nbsp;&nbsp;org/features/tags/<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;├── PRD.md <span style="opacity:0.4;">← problem, users, RICE, success metrics</span><br>
+      &nbsp;&nbsp;&nbsp;&nbsp;├── IMPACT.md <span style="opacity:0.4;">← security, analytics, growth, quality</span><br>
+      &nbsp;&nbsp;&nbsp;&nbsp;└── ROADMAP.md <span style="opacity:0.4;">← P1/P2/P3 scope, tasks for other features</span><br>
+      <br>
+      <span style="color:#3B82F6;font-weight:700;">SPECIFICATION (specialist agents produce)</span><br>
+      &nbsp;&nbsp;org/features/tags/<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;├── DESIGN-SPEC.md <span style="opacity:0.4;">← pixels, colors, states, gestures, accessibility</span><br>
+      &nbsp;&nbsp;&nbsp;&nbsp;├── TECH-SPEC.md <span style="opacity:0.4;">← HLD, LLD, files to change, migration, risks</span><br>
+      &nbsp;&nbsp;&nbsp;&nbsp;└── TEST-PLAN.md <span style="opacity:0.4;">← unit tests, design QA, integration, new sensors</span><br>
+      &nbsp;&nbsp;designs/tags-mockup.html <span style="opacity:0.4;">← visual mockup</span><br>
+      <br>
+      <span style="color:#10B981;font-weight:700;">EXECUTION (code changes)</span><br>
+      &nbsp;&nbsp;mobile/src/types/index.ts <span style="opacity:0.4;">← data model change</span><br>
+      &nbsp;&nbsp;mobile/src/store/ <span style="opacity:0.4;">← business logic</span><br>
+      &nbsp;&nbsp;mobile/src/features/ <span style="opacity:0.4;">← screen changes</span><br>
+      &nbsp;&nbsp;mobile/src/theme.ts <span style="opacity:0.4;">← design tokens (if new)</span><br>
+      <br>
+      <span style="color:#8B5CF6;font-weight:700;">SYSTEM UPDATES (after shipping)</span><br>
+      &nbsp;&nbsp;PRODUCT-KNOWLEDGE-SYSTEM.md <span style="opacity:0.4;">← new flow map entries, sensors</span><br>
+      &nbsp;&nbsp;DESIGN.md <span style="opacity:0.4;">← if design system changed</span><br>
+      &nbsp;&nbsp;TODO.md <span style="opacity:0.4;">← feature marked done, follow-ups added</span><br>
+      &nbsp;&nbsp;org/features/tags/QA-REPORT.md <span style="opacity:0.4;">← test results</span><br>
+    </div>
+  </div>
+  <div class="slide-num" style="color:rgba(255,255,255,0.12)">06 / 10</div>
+</div>
+
+<!-- SLIDE 7: Who Does What (Agents) -->
+<div class="slide bg-warm">
+  <div class="slide-inner">
+    <p class="label">Who does the work</p>
+    <h2 class="big">Agents + You</h2>
+    <p class="body-lg">Some work runs in parallel agents. Some is sequential. You make the taste and priority calls.</p>
+
+    <div class="agent-grid">
+      <div class="agent-card" style="background:rgba(255,255,255,0.7);border-color:rgba(255,255,255,0.8);">
+        <div class="agent-emoji">👑</div>
+        <div class="agent-name">You (Founder)</div>
+        <div class="agent-does">Approves PRD. Sets P1/P2/P3. Makes taste decisions on design. Final call on trade-offs.</div>
+        <div class="agent-tag tag-human">Human judgment</div>
+      </div>
+      <div class="agent-card" style="background:rgba(255,255,255,0.7);border-color:rgba(255,255,255,0.8);">
+        <div class="agent-emoji">🤖</div>
+        <div class="agent-name">Main Agent (me)</div>
+        <div class="agent-does">Orchestrates the flow. Writes code. Reads knowledge system. Launches specialist agents.</div>
+        <div class="agent-tag tag-sequential">Sequential — drives the process</div>
+      </div>
+      <div class="agent-card" style="background:rgba(255,255,255,0.7);border-color:rgba(255,255,255,0.8);">
+        <div class="agent-emoji">📦🎨⚡</div>
+        <div class="agent-name">Spec Agents</div>
+        <div class="agent-does">CPO, CDO, CTO run in parallel to produce PRD, design spec, tech spec simultaneously.</div>
+        <div class="agent-tag tag-parallel">Parallel — independent outputs</div>
+      </div>
+      <div class="agent-card" style="background:rgba(255,255,255,0.7);border-color:rgba(255,255,255,0.8);">
+        <div class="agent-emoji">✅🔒📊</div>
+        <div class="agent-name">Verification Agents</div>
+        <div class="agent-does">CQO, CISO, CDaO run in parallel after code is written to verify quality, security, analytics.</div>
+        <div class="agent-tag tag-parallel">Parallel — independent checks</div>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;background:rgba(255,255,255,0.7);border:1px solid rgba(255,255,255,0.8);border-radius:12px;padding:14px;">
+      <div style="font-size:12px;font-weight:700;margin-bottom:6px;">Operating Intensity</div>
+      <div style="font-size:11px;color:#4A4540;line-height:1.6;">
+        <strong>Small change</strong> (bug fix, copy change): Skip Strategy layer. Read knowledge system. Fix. Run sensors. Commit.<br>
+        <strong>Medium change</strong> (new screen, UI rework): Brief Strategy (CPO + CDO). Full Spec. Full Execution.<br>
+        <strong>Large change</strong> (new data model, new feature): Full Strategy with all agents. Full Spec. Layer-by-layer Execution. Full QA.
+      </div>
+    </div>
+  </div>
+  <div class="slide-num">07 / 10</div>
+</div>
+
+<!-- SLIDE 8: P1/P2/P3 Roadmap Example -->
+<div class="slide bg-cream">
+  <div class="slide-inner">
+    <p class="label">Example: Tags feature roadmap</p>
+    <h2 class="big">P1 / P2 / P3 scope</h2>
+    <p class="body-lg">Not everything ships at once. Priority determines what goes in each release.</p>
+
+    <div class="roadmap">
+      <div class="rm-col" style="background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.12);">
+        <div class="rm-label" style="color:#EF4444;">P1 — Must ship</div>
+        <div class="rm-item">Add tags[] to Activity type</div>
+        <div class="rm-item">Tag input in ActivityForm</div>
+        <div class="rm-item">Tags visible on pills</div>
+        <div class="rm-item">Migrate category → first tag</div>
+        <div class="rm-item">Search by tag</div>
+      </div>
+      <div class="rm-col" style="background:rgba(249,115,22,0.06);border:1px solid rgba(249,115,22,0.12);">
+        <div class="rm-label" style="color:#F97316;">P2 — Should ship</div>
+        <div class="rm-item">Tag autocomplete</div>
+        <div class="rm-item">Tag color picker</div>
+        <div class="rm-item">Filter canvas by tag</div>
+        <div class="rm-item">Tag usage in Insights</div>
+        <div class="rm-item">AI suggests tags</div>
+      </div>
+      <div class="rm-col" style="background:rgba(59,130,246,0.06);border:1px solid rgba(59,130,246,0.12);">
+        <div class="rm-label" style="color:#3B82F6;">P3 — Nice to have</div>
+        <div class="rm-item">Tag hierarchy (parent/child)</div>
+        <div class="rm-item">Smart tag groups</div>
+        <div class="rm-item">Tag-based watermarks</div>
+        <div class="rm-item">Deprecate category_id</div>
+        <div class="rm-item">Tag sharing/export</div>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;font-size:11px;color:#4A4540;line-height:1.6;">
+      <strong>Cross-feature tasks surfaced:</strong><br>
+      • Update APP_SCHEMA in commandLayer.ts (LLM needs to know about tags)<br>
+      • Update seed data with example tags<br>
+      • Update Play screen local HTML generator to show tag-based insights<br>
+      • Update DESIGN-QA-CHECKLIST.md with tag chip pixel specs<br>
+      <span style="color:#C4795B;font-weight:600;">These go into TODO.md as separate tasks, not part of the Tags feature.</span>
+    </div>
+  </div>
+  <div class="slide-num">08 / 10</div>
+</div>
+
+<!-- SLIDE 9: Analytics + Impact Estimation -->
+<div class="slide bg-purple">
+  <div class="deco" style="width:400px;height:400px;background:#fff;top:-150px;right:-150px;"></div>
+  <div class="slide-inner">
+    <p class="label" style="color:rgba(255,255,255,0.4);">When we have analytics</p>
+    <h2 class="big">Impact estimation<br>feeds back in</h2>
+    <p class="body-lg" style="opacity:0.8;">Once we have PostHog data, impact estimates become data-driven instead of guesses.</p>
+
+    <div style="margin-top:20px;">
+      <div style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);border-radius:12px;padding:14px;margin-bottom:10px;">
+        <div style="font-size:12px;font-weight:700;margin-bottom:6px;">Before analytics (now)</div>
+        <div style="font-size:11px;opacity:0.7;line-height:1.6;">
+          RICE score uses gut feeling.<br>
+          "I think tags will help retention" → Confidence: 4/10<br>
+          No way to verify after shipping.
+        </div>
+      </div>
+      <div style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);border-radius:12px;padding:14px;margin-bottom:10px;">
+        <div style="font-size:12px;font-weight:700;margin-bottom:6px;">After analytics (future)</div>
+        <div style="font-size:11px;opacity:0.7;line-height:1.6;">
+          CDaO agent reads PostHog data:<br>
+          "Users who use 3+ categories have 2x retention"<br>
+          → Tags (more flexible categorization) → Confidence: 8/10<br>
+          After shipping: "Tag users have 1.5x retention" → validated
+        </div>
+      </div>
+      <div style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);border-radius:12px;padding:14px;">
+        <div style="font-size:12px;font-weight:700;margin-bottom:6px;">Where this lives</div>
+        <div style="font-size:11px;opacity:0.7;line-height:1.6;">
+          <strong>Strategy Layer</strong> — IMPACT.md gets a "Data Evidence" section<br>
+          <strong>CDaO agent</strong> — reads analytics, produces impact estimates<br>
+          <strong>CPO agent</strong> — uses estimates to recalculate RICE scores<br>
+          <strong>Feedback loop</strong> — shipped feature → monitor → learn → inform next feature
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num" style="color:rgba(255,255,255,0.12)">09 / 10</div>
+</div>
+
+<!-- SLIDE 10: The Complete Picture -->
+<div class="slide bg-dark">
+  <div class="slide-inner center">
+    <p class="label" style="color:#8C857D;">Everything on one page</p>
+    <h2 class="big">The Complete Flow</h2>
+
+    <div style="margin-top:20px;text-align:left;font-size:12px;line-height:2.4;">
+      <span style="color:#C4795B;font-weight:700;">STRATEGY</span><br>
+      &nbsp;&nbsp;You: "I want tags" → <span style="opacity:0.5;">CPO, CDO, CTO, CISO, CDaO, CGO, CQO agents run parallel</span><br>
+      &nbsp;&nbsp;→ PRD.md + IMPACT.md + ROADMAP.md (P1/P2/P3)<br>
+      &nbsp;&nbsp;→ <span style="color:#C4795B;">You approve. Go/no-go.</span><br>
+      <br>
+      <span style="color:#3B82F6;font-weight:700;">SPECIFICATION</span><br>
+      &nbsp;&nbsp;Three agents in parallel:<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;CDO → DESIGN-SPEC.md + mockup HTML<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;CTO → TECH-SPEC.md (HLD + LLD + build order)<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;CQO → TEST-PLAN.md (unit + design QA + sensors)<br>
+      &nbsp;&nbsp;→ <span style="color:#3B82F6;">You review designs. Taste calls.</span><br>
+      <br>
+      <span style="color:#10B981;font-weight:700;">EXECUTION</span><br>
+      &nbsp;&nbsp;Me: read specs → read knowledge system → build layer by layer<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;Layer 1 (data) → commit → Layer 2 (logic) → commit → ...<br>
+      &nbsp;&nbsp;Verification agents (parallel): QA, design check, sensors, security<br>
+      &nbsp;&nbsp;→ Ship → CDaO monitors analytics<br>
+      &nbsp;&nbsp;→ Update knowledge system with new entries<br>
+      <br>
+      <span style="color:#8B5CF6;font-weight:700;">FEEDBACK</span><br>
+      &nbsp;&nbsp;Analytics → "Did tags improve retention?"<br>
+      &nbsp;&nbsp;→ Feeds back into RICE scores for next feature<br>
+      &nbsp;&nbsp;→ Incidents update failure flow map<br>
+      &nbsp;&nbsp;→ <span style="color:#8B5CF6;">System gets smarter with every cycle</span>
+    </div>
+  </div>
+  <div class="slide-num" style="color:rgba(255,255,255,0.12)">10 / 10</div>
+</div>
+
+</body>
+</html>

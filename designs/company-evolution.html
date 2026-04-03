@@ -17,8 +17,7 @@
     --glass-border: rgba(255,255,255,0.35);
     --shadow: rgba(0,0,0,0.06);
     --dayflow-color: #2D5A3E;
-    --hehe-color: #D4763A;
-    --kiro-color: #4A6FA5;
+    /* Future company colors will be added when onboarded */
     --sutra-color: #8B6B4A;
   }
 
@@ -192,13 +191,9 @@
 
   /* Company-specific tint bars */
   .building[data-company="dayflow"] .floor::before { background: var(--dayflow-color); }
-  .building[data-company="hehe"] .floor::before { background: var(--hehe-color); }
-  .building[data-company="kiro"] .floor::before { background: var(--kiro-color); }
 
   /* Active floor glow */
   .building[data-company="dayflow"] .floor.active { background: rgba(45, 90, 62, 0.08); }
-  .building[data-company="hehe"] .floor.active { background: rgba(212, 118, 58, 0.08); }
-  .building[data-company="kiro"] .floor.active { background: rgba(74, 111, 165, 0.08); }
 
   .ground {
     width: 100%;
@@ -320,8 +315,7 @@
 
   .feedback-node.sutra { background: rgba(139, 107, 74, 0.1); border-color: rgba(139, 107, 74, 0.2); }
   .feedback-node.dayflow { background: rgba(45, 90, 62, 0.1); border-color: rgba(45, 90, 62, 0.2); }
-  .feedback-node.hehe { background: rgba(212, 118, 58, 0.1); border-color: rgba(212, 118, 58, 0.2); }
-  .feedback-node.kiro { background: rgba(74, 111, 165, 0.1); border-color: rgba(74, 111, 165, 0.2); }
+  /* Future company feedback node styles added when onboarded */
 
   /* Stats bar */
   .stats-bar {
@@ -360,7 +354,7 @@
 
 <div class="header">
   <h1>Asawa Inc.</h1>
-  <p>Three companies. One operating system. Watch them being built.</p>
+  <p>One operating system. Watch companies being built.</p>
 </div>
 
 <div class="stats-bar">
@@ -393,21 +387,7 @@
     <div class="ground"></div>
   </div>
 
-  <!-- Hehe -->
-  <div class="building" data-company="hehe">
-    <div class="building-label" style="color: var(--hehe-color)">Hehe</div>
-    <div class="building-type">Content Platform · Web</div>
-    <div class="floors" id="floors-hehe"></div>
-    <div class="ground"></div>
-  </div>
-
-  <!-- Kiro -->
-  <div class="building" data-company="kiro">
-    <div class="building-label" style="color: var(--kiro-color)">Kiro</div>
-    <div class="building-type">Developer Tool · CLI</div>
-    <div class="floors" id="floors-kiro"></div>
-    <div class="ground"></div>
-  </div>
+  <!-- Future companies will appear here when onboarded through Sutra -->
 </div>
 
 <div class="feedback-section">
@@ -416,12 +396,8 @@
     <span class="feedback-node dayflow">DayFlow</span>
     <span class="feedback-arrow">→</span>
     <span class="feedback-node sutra">Sutra OS</span>
-    <span class="feedback-arrow">←</span>
-    <span class="feedback-node hehe">Hehe</span>
-    <span class="feedback-arrow">  </span>
+    <span class="feedback-arrow">→</span>
     <span class="feedback-node sutra">Sutra v1.1</span>
-    <span class="feedback-arrow">←</span>
-    <span class="feedback-node kiro">Kiro</span>
   </div>
 </div>
 
@@ -447,25 +423,7 @@ const companies = {
       { num: 'Operations', name: 'Company OS', detail: 'Sutra OS v1.0 deployed. A/B test configured. Daily Pulse. Agent incentives.', date: 'Apr 3', phase: 90 },
     ]
   },
-  hehe: {
-    floors: [
-      { num: 'Foundation', name: 'Idea + Market', detail: 'Make people laugh in 30 seconds. Market: Reddit too broad, joke apps too static. Gap: personalized AI humor.', date: 'Apr 3', phase: 25 },
-      { num: 'Structure', name: 'Architecture', detail: 'Next.js + Tailwind + Supabase + Gemini + Vercel. Content platform pattern.', date: 'Apr 3', phase: 40 },
-      { num: 'Systems', name: 'Design Approach', detail: 'Design-in-code with Tailwind. No Figma for web MVP. Fast iteration over polish.', date: 'Apr 3', phase: 55 },
-      { num: 'Product', name: 'Joke Feed + AI', detail: 'Seed library (500+ jokes). AI generation via Gemini. Categories. Upvote/downvote. Share.', date: 'Pending', phase: 70 },
-      { num: 'Intelligence', name: 'Personalization', detail: 'Vote history trains feed ranking. AI learns what makes YOU laugh. 20 votes to personalize.', date: 'Pending', phase: 85 },
-      { num: 'Quality', name: 'Content QA', detail: 'AI self-rates jokes (7+ threshold). Human spot-check. Category moderation. Hit rate >50%.', date: 'Pending', phase: 95 },
-    ]
-  },
-  kiro: {
-    floors: [
-      { num: 'Foundation', name: 'Idea + Market', detail: 'CLI standup generator from git history. Developers hate writing standups. AI reads commits, writes update.', date: 'Proposed', phase: 45 },
-      { num: 'Structure', name: 'Architecture', detail: 'Node.js CLI (npm -g). Git log parser. LLM summarizer. Optional web dashboard.', date: 'Proposed', phase: 60 },
-      { num: 'Systems', name: 'CLI Design', detail: 'Minimal output. No config needed. Works with any git repo. Respects .gitignore for sensitive repos.', date: 'Proposed', phase: 75 },
-      { num: 'Product', name: 'Core: kiro', detail: 'Run "kiro" → reads git log since last standup → generates "Yesterday / Today / Blocked" summary.', date: 'Proposed', phase: 85 },
-      { num: 'Distribution', name: 'npm + Slack', detail: 'npm install -g kiro. Slack integration posts standup to channel. Team dashboard.', date: 'Proposed', phase: 95 },
-    ]
-  }
+  // Future companies will be added here when onboarded through Sutra
 };
 
 // Render floors (reversed: foundation at bottom)

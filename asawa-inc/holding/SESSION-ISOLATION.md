@@ -2,7 +2,7 @@
 
 ## The Problem
 
-When one LLM session works on multiple companies, cognitive contamination happens. DayFlow patterns bleed into Hehe. Hehe's content-first thinking leaks into DayFlow's UI work. The LLM makes inconsistent decisions because it's holding two operating systems in the same context.
+When one LLM session works on multiple companies, cognitive contamination happens. Company A's patterns bleed into Company B. Different product types have different thinking. The LLM makes inconsistent decisions because it's holding two operating systems in the same context.
 
 ## The Five Levels
 
@@ -18,7 +18,7 @@ Every company has an OPERATING-SYSTEM file. When a session starts, it loads ONLY
 
 ### Level 2: Hooks (hard)
 
-PreToolUse hooks block cross-company file edits. If a session is working on Hehe, it physically cannot edit DayFlow files.
+PreToolUse hooks block cross-company file edits. If a session is working on Company B, it physically cannot edit Company A's files.
 
 **Implementation**:
 ```json
@@ -36,7 +36,7 @@ Each company session opens in that company's context. The session sees only the 
 **Protocol**:
 - Holding company session: opens in `flow/` root, reads `asawa-inc/holding/` and `asawa-inc/sutra/`
 - DayFlow session: opens in `flow/`, loads DayFlow OS, works in `mobile/` and `asawa-inc/dayflow/`
-- Hehe session: opens in `flow/`, loads Hehe OS, works in `hehe-web/` and `asawa-inc/hehe/`
+- {Other company} session: opens in `flow/`, loads that company's OS, works in its code dir and `asawa-inc/{company}/`
 
 **Enforcement**: Hard when combined with Level 2 hooks. The session can read Sutra (shared OS), but can only EDIT its own company's files.
 
@@ -52,8 +52,8 @@ Parent Agent (Asawa Holding)
 ├── spawns: DayFlow Agent (bounded to DayFlow context)
 │   └── can only edit: mobile/, asawa-inc/dayflow/
 │
-└── spawns: Hehe Agent (bounded to Hehe context)
-    └── can only edit: hehe-web/, asawa-inc/hehe/
+└── spawns: {Company} Agent (bounded to that company's context)
+    └── can only edit: {company-code}/, asawa-inc/{company}/
 ```
 
 **Enforcement**: Hard. Subagents receive only the files in their scope. They cannot access other companies' context because it was never loaded.
@@ -124,7 +124,7 @@ The holding company session (this one) can:
 - Dispatch subagents to specific companies (Level 4)
 
 The holding company session CANNOT:
-- Edit DayFlow code or Hehe code directly
+- Edit any individual company's code directly
 - Make product decisions for individual companies
 - Mix company contexts in the same reasoning chain
 

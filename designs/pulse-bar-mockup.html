@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DayFlow — Pulse Bar Deep Dive</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', -apple-system, sans-serif; background: #F5F0E8; color: #1A1714; }
+
+  .slide {
+    min-height: 100vh;
+    padding: 60px 24px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    scroll-snap-align: start;
+    max-width: 520px;
+    margin: 0 auto;
+  }
+
+  h1 { font-size: 28px; font-weight: 800; letter-spacing: -1px; margin-bottom: 8px; text-align: center; }
+  h2 { font-size: 20px; font-weight: 700; letter-spacing: -0.3px; margin-bottom: 12px; }
+  .sub { font-size: 14px; color: #8C857D; margin-bottom: 32px; text-align: center; line-height: 1.5; }
+  .label { font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: #8C857D; margin-bottom: 16px; }
+  .note {
+    background: rgba(45,90,62,0.06); border-left: 3px solid #2D5A3E;
+    padding: 12px 16px; font-size: 12px; color: #4A4540; line-height: 1.6;
+    border-radius: 0 8px 8px 0; margin-bottom: 24px; width: 100%;
+  }
+  .note strong { color: #2D5A3E; }
+  .divider { height: 1px; background: #E0D9CE; margin: 40px 0; width: 100%; }
+
+  /* Pulse bar component */
+  .pulse-bar {
+    display: flex; align-items: center; padding: 10px 14px; gap: 8px;
+    background: rgba(255,255,255,0.5); border: 1px solid rgba(255,255,255,0.65);
+    border-radius: 14px; width: 100%; overflow-x: auto;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+  }
+  .pulse-bar::-webkit-scrollbar { display: none; }
+
+  .p-item {
+    display: flex; align-items: center; gap: 4px;
+    padding: 6px 10px; border-radius: 12px;
+    font-size: 11px; font-weight: 500; color: #4A4540;
+    background: rgba(255,255,255,0.6); border: 1px solid rgba(255,255,255,0.7);
+    white-space: nowrap; flex-shrink: 0; cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+  }
+  .p-item:hover { transform: scale(0.97); }
+
+  .p-item.due {
+    background: rgba(196,121,91,0.12); border-color: rgba(196,121,91,0.2);
+    color: #C4795B; font-weight: 600;
+  }
+  .p-item.done {
+    opacity: 0.35;
+  }
+  .p-item.done .p-text { text-decoration: line-through; }
+  .p-item.done .p-check { display: inline; }
+
+  .p-emoji { font-size: 14px; }
+  .p-text { font-size: 11px; }
+  .p-check { display: none; font-size: 10px; color: #2D5A3E; font-weight: 700; margin-left: 2px; }
+  .p-dot {
+    width: 6px; height: 6px; border-radius: 3px; background: #C4795B;
+    animation: glow 2s ease-in-out infinite;
+  }
+  @keyframes glow {
+    0%, 100% { opacity: 0.3; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.4); }
+  }
+
+  .p-time {
+    font-size: 9px; color: #8C857D; font-weight: 600;
+    font-family: Menlo, monospace;
+  }
+
+  /* Progress dots */
+  .progress-dots {
+    display: flex; gap: 3px; margin-left: auto; flex-shrink: 0;
+  }
+  .prog-dot {
+    width: 6px; height: 6px; border-radius: 3px;
+  }
+  .prog-done { background: #2D5A3E; }
+  .prog-pending { background: #E0D9CE; }
+  .prog-due { background: #C4795B; }
+
+  /* State labels */
+  .state-label {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.5px;
+    padding: 3px 8px; border-radius: 6px; margin-bottom: 10px;
+    display: inline-block;
+  }
+  .sl-idle { background: #E3ECE6; color: #2D5A3E; }
+  .sl-due { background: rgba(196,121,91,0.12); color: #C4795B; }
+  .sl-done { background: rgba(45,90,62,0.08); color: #2D5A3E; }
+  .sl-tapped { background: rgba(59,130,246,0.1); color: #3B82F6; }
+
+  /* Interaction demo */
+  .interaction {
+    width: 100%; padding: 20px; background: rgba(255,255,255,0.4);
+    border: 1px solid rgba(255,255,255,0.6); border-radius: 16px;
+    margin-bottom: 16px;
+  }
+  .interaction h3 { font-size: 13px; font-weight: 700; margin-bottom: 8px; }
+  .interaction p { font-size: 12px; color: #4A4540; line-height: 1.5; }
+
+  .arrow-down {
+    width: 0; height: 0;
+    border-left: 8px solid transparent; border-right: 8px solid transparent;
+    border-top: 8px solid #C4795B;
+    margin: 8px auto;
+  }
+
+  /* Phone mini */
+  .phone-mini {
+    width: 320px; background: #F5F0E8; border-radius: 24px;
+    overflow: hidden; box-shadow: 0 12px 36px rgba(0,0,0,0.1);
+    border: 1px solid #E0D9CE; margin-bottom: 24px;
+  }
+  .pm-header { padding: 36px 16px 4px; font-size: 18px; font-weight: 700; }
+  .pm-dates {
+    display: flex; padding: 4px 4px 2px; gap: 0;
+  }
+  .pm-dc { width: 40px; height: 48px; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 12px; }
+  .pm-dc.sel { background: #2D5A3E; color: #fff; }
+  .pm-dc-d { font-size: 8px; font-weight: 600; color: #8C857D; }
+  .pm-dc-n { font-size: 15px; font-weight: 600; }
+  .pm-dc.sel .pm-dc-d, .pm-dc.sel .pm-dc-n { color: #fff; }
+  .pm-pull { width: 28px; height: 3px; border-radius: 1.5px; background: #E0D9CE; margin: 4px auto; }
+
+  /* Canvas pills in phone */
+  .pm-canvas { padding: 0 0 8px; }
+  .pm-hr { display: flex; align-items: center; height: 56px; }
+  .pm-hl { width: 40px; text-align: right; padding-right: 6px; font-size: 8px; font-weight: 600; color: #8C857D; opacity: 0.35; font-family: Menlo, monospace; }
+  .pm-hline { flex: 1; height: 1px; background: #E0D9CE; opacity: 0.4; }
+  .pm-pill {
+    margin: -48px 10px 6px 44px;
+    border-radius: 10px; border: 1px solid rgba(255,255,255,0.75);
+    padding: 6px 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+    font-size: 11px; font-weight: 600;
+  }
+  .pm-pill .pm-mind { font-size: 8px; font-style: italic; color: #4A4540; opacity: 0.5; margin-top: 1px; }
+  .pm-pill.done { opacity: 0.6; }
+  .pm-pill.done span:first-child { text-decoration: line-through; color: #8C857D; }
+
+  .pm-wm {
+    margin-left: auto; margin-right: 10px; width: fit-content;
+    background: rgba(181,99,74,0.12); border-radius: 4px;
+    padding: 2px 6px; font-size: 8px; font-weight: 600; color: #8B4A30;
+    margin-top: -8px; margin-bottom: 4px;
+  }
+
+  .pm-bbar {
+    display: flex; align-items: center; padding: 8px 12px;
+    background: rgba(255,255,255,0.75); border-top: 0.5px solid rgba(224,217,206,0.5);
+    font-size: 11px; color: #4A4540; gap: 8px;
+  }
+  .pm-cb { width: 12px; height: 12px; border-radius: 4px; border: 1.5px solid #E0D9CE; }
+</style>
+</head>
+<body>
+
+<!-- SLIDE 1: What is the pulse bar -->
+<div class="slide">
+  <h1>The Pulse Bar</h1>
+  <p class="sub">Micro-habits that repeat through your day.<br>They live above the canvas, not on it.</p>
+
+  <div class="note">
+    <strong>Morning water</strong> and <strong>Drink water every 2 hours</strong> are similar but different:<br><br>
+    <strong>Morning water</strong> = happens once, at ~7:57 AM. A daily ritual with a time anchor.<br>
+    <strong>Drink water (every 2h)</strong> = happens 6-8 times a day. An ambient rhythm.<br><br>
+    Both go in the pulse bar. One shows once, the other shows multiple times.
+  </div>
+
+  <!-- Morning water: once per day -->
+  <p class="label">Morning water — daily, one-time</p>
+  <div class="pulse-bar" style="margin-bottom: 24px;">
+    <div class="p-item due">
+      <div class="p-dot"></div>
+      <span class="p-emoji">💧</span>
+      <span class="p-text">Morning water</span>
+      <span class="p-time">7:57</span>
+    </div>
+    <div class="progress-dots">
+      <div class="prog-dot prog-due"></div>
+    </div>
+  </div>
+
+  <!-- Drink water: every 2 hours -->
+  <p class="label">Drink water — every 2 hours</p>
+  <div class="pulse-bar" style="margin-bottom: 24px;">
+    <div class="p-item done"><span class="p-emoji">💧</span><span class="p-text">8am</span><span class="p-check">✓</span></div>
+    <div class="p-item done"><span class="p-emoji">💧</span><span class="p-text">10am</span><span class="p-check">✓</span></div>
+    <div class="p-item due"><div class="p-dot"></div><span class="p-emoji">💧</span><span class="p-text">12pm</span></div>
+    <div class="p-item"><span class="p-emoji">💧</span><span class="p-text">2pm</span></div>
+    <div class="p-item"><span class="p-emoji">💧</span><span class="p-text">4pm</span></div>
+    <div class="p-item"><span class="p-emoji">💧</span><span class="p-text">6pm</span></div>
+    <div class="p-item"><span class="p-emoji">💧</span><span class="p-text">8pm</span></div>
+    <div class="progress-dots">
+      <div class="prog-dot prog-done"></div>
+      <div class="prog-dot prog-done"></div>
+      <div class="prog-dot prog-due"></div>
+      <div class="prog-dot prog-pending"></div>
+      <div class="prog-dot prog-pending"></div>
+      <div class="prog-dot prog-pending"></div>
+      <div class="prog-dot prog-pending"></div>
+    </div>
+  </div>
+
+  <!-- Combined: multiple micro-habits -->
+  <p class="label">Full pulse bar — multiple habits</p>
+  <div class="pulse-bar">
+    <div class="p-item done"><span class="p-emoji">💧</span><span class="p-text">Water</span><span class="p-check">✓</span></div>
+    <div class="p-item done"><span class="p-emoji">💧</span><span class="p-text">Morn. water</span><span class="p-check">✓</span></div>
+    <div class="p-item done"><span class="p-emoji">🧘</span><span class="p-text">Affirm</span><span class="p-check">✓</span></div>
+    <div class="p-item due"><div class="p-dot"></div><span class="p-emoji">💧</span><span class="p-text">Water</span></div>
+    <div class="p-item"><span class="p-emoji">🧍</span><span class="p-text">Stretch</span></div>
+    <div class="p-item"><span class="p-emoji">💧</span><span class="p-text">Water</span></div>
+    <div class="p-item"><span class="p-emoji">🧍</span><span class="p-text">Stretch</span></div>
+  </div>
+</div>
+
+<!-- SLIDE 2: Interaction -->
+<div class="slide">
+  <h2>How you interact with it</h2>
+  <p class="sub">Tap to mark done. That's it. No swipe, no form, no friction.</p>
+
+  <!-- State 1: Item is pending (future) -->
+  <div class="interaction">
+    <span class="state-label sl-idle">PENDING</span>
+    <h3>Not yet due</h3>
+    <div class="pulse-bar" style="margin: 12px 0;">
+      <div class="p-item"><span class="p-emoji">💧</span><span class="p-text">Water · 2pm</span></div>
+    </div>
+    <p>Gray, quiet. It's there but not asking for attention. You can tap it early if you want.</p>
+  </div>
+
+  <div class="arrow-down"></div>
+
+  <!-- State 2: Item is due (pulsing) -->
+  <div class="interaction">
+    <span class="state-label sl-due">DUE NOW</span>
+    <h3>Time to do it</h3>
+    <div class="pulse-bar" style="margin: 12px 0;">
+      <div class="p-item due"><div class="p-dot"></div><span class="p-emoji">💧</span><span class="p-text">Water · 12pm</span></div>
+    </div>
+    <p>Amber glow. Pulsing dot. It's gently asking for your attention. Not a notification, not a popup. Just a warm nudge sitting there.</p>
+  </div>
+
+  <div class="arrow-down"></div>
+
+  <!-- State 3: Tapped -->
+  <div class="interaction">
+    <span class="state-label sl-tapped">TAP</span>
+    <h3>You tap it</h3>
+    <div class="pulse-bar" style="margin: 12px 0;">
+      <div class="p-item" style="background: rgba(45,90,62,0.15); border-color: rgba(45,90,62,0.25); transform: scale(0.95);">
+        <span class="p-emoji">💧</span><span class="p-text" style="color:#2D5A3E; font-weight:600;">Done!</span>
+      </div>
+    </div>
+    <p>Brief green flash. Scale down 0.95. Haptic tap. No confirmation needed.</p>
+  </div>
+
+  <div class="arrow-down"></div>
+
+  <!-- State 4: Done -->
+  <div class="interaction">
+    <span class="state-label sl-done">DONE</span>
+    <h3>Marked complete</h3>
+    <div class="pulse-bar" style="margin: 12px 0;">
+      <div class="p-item done"><span class="p-emoji">💧</span><span class="p-text">Water · 12pm</span><span class="p-check">✓</span></div>
+    </div>
+    <p>Faded out. Strikethrough. Small checkmark. Stays visible so you see your streak. Scrolls left as new ones become due.</p>
+  </div>
+</div>
+
+<!-- SLIDE 3: Full day with phone -->
+<div class="slide">
+  <h2>A full day, all layers</h2>
+  <p class="sub">Pulse bar sits between the date strip and the canvas. Always visible. Never competes with pills.</p>
+
+  <div class="phone-mini">
+    <div class="pm-header">Today</div>
+    <div class="pm-dates">
+      <div class="pm-dc"><span class="pm-dc-d">Wed</span><span class="pm-dc-n">1</span></div>
+      <div class="pm-dc"><span class="pm-dc-d">Thu</span><span class="pm-dc-n">2</span></div>
+      <div class="pm-dc sel"><span class="pm-dc-d">Fri</span><span class="pm-dc-n">3</span></div>
+      <div class="pm-dc"><span class="pm-dc-d">Sat</span><span class="pm-dc-n">4</span></div>
+      <div class="pm-dc"><span class="pm-dc-d">Sun</span><span class="pm-dc-n">5</span></div>
+      <div class="pm-dc"><span class="pm-dc-d">Mon</span><span class="pm-dc-n">6</span></div>
+      <div class="pm-dc"><span class="pm-dc-d">Tue</span><span class="pm-dc-n">7</span></div>
+      <div class="pm-dc"><span class="pm-dc-d">Wed</span><span class="pm-dc-n">8</span></div>
+    </div>
+    <div class="pm-pull"></div>
+
+    <!-- PULSE BAR -->
+    <div style="display:flex;align-items:center;padding:6px 10px;gap:6px;background:rgba(255,255,255,0.45);border-top:1px solid rgba(255,255,255,0.6);border-bottom:1px solid rgba(255,255,255,0.6);overflow:hidden;">
+      <div style="display:flex;align-items:center;gap:3px;padding:4px 7px;border-radius:8px;font-size:9px;font-weight:500;color:#8C857D;background:rgba(255,255,255,0.5);border:1px solid rgba(255,255,255,0.65);opacity:0.35;text-decoration:line-through;white-space:nowrap;">💧 <span style="font-size:8px;">✓</span></div>
+      <div style="display:flex;align-items:center;gap:3px;padding:4px 7px;border-radius:8px;font-size:9px;font-weight:500;color:#8C857D;background:rgba(255,255,255,0.5);border:1px solid rgba(255,255,255,0.65);opacity:0.35;text-decoration:line-through;white-space:nowrap;">💧 morn <span style="font-size:8px;">✓</span></div>
+      <div style="display:flex;align-items:center;gap:3px;padding:4px 7px;border-radius:8px;font-size:9px;font-weight:600;color:#C4795B;background:rgba(196,121,91,0.1);border:1px solid rgba(196,121,91,0.2);white-space:nowrap;"><div style="width:4px;height:4px;border-radius:2px;background:#C4795B;"></div> 💧</div>
+      <div style="display:flex;align-items:center;gap:3px;padding:4px 7px;border-radius:8px;font-size:9px;font-weight:500;color:#4A4540;background:rgba(255,255,255,0.5);border:1px solid rgba(255,255,255,0.65);white-space:nowrap;">🧍</div>
+      <div style="display:flex;align-items:center;gap:3px;padding:4px 7px;border-radius:8px;font-size:9px;font-weight:500;color:#4A4540;background:rgba(255,255,255,0.5);border:1px solid rgba(255,255,255,0.65);white-space:nowrap;">💧</div>
+      <div style="display:flex;gap:2px;margin-left:auto;">
+        <div style="width:4px;height:4px;border-radius:2px;background:#2D5A3E;"></div>
+        <div style="width:4px;height:4px;border-radius:2px;background:#2D5A3E;"></div>
+        <div style="width:4px;height:4px;border-radius:2px;background:#C4795B;"></div>
+        <div style="width:4px;height:4px;border-radius:2px;background:#E0D9CE;"></div>
+        <div style="width:4px;height:4px;border-radius:2px;background:#E0D9CE;"></div>
+      </div>
+    </div>
+
+    <!-- Canvas -->
+    <div class="pm-canvas">
+      <div class="pm-hr"><div class="pm-hl">6 AM</div><div class="pm-hline"></div></div>
+      <div class="pm-pill done" style="background:rgba(236,72,153,0.12);"><span>✨ Meditation</span><div class="pm-mind">Be present. Follow the breath.</div></div>
+
+      <div class="pm-hr"><div class="pm-hl">7 AM</div><div class="pm-hline"></div></div>
+      <div class="pm-pill done" style="background:rgba(16,185,129,0.12); min-height:44px;"><span>💪 Gym — Upper body</span><div class="pm-mind">Focus on form over speed.</div></div>
+
+      <div class="pm-hr"><div class="pm-hl">8 AM</div><div class="pm-hline"></div></div>
+      <div class="pm-pill done" style="background:rgba(59,130,246,0.12);"><span>📚 Reading</span></div>
+
+      <div class="pm-hr"><div class="pm-hl">9 AM</div><div class="pm-hline"></div></div>
+      <div class="pm-wm">✨ Affirmations</div>
+      <div class="pm-pill done" style="background:rgba(249,115,22,0.12); margin-top:0;"><span>🏠 Call mom</span></div>
+
+      <div class="pm-hr"><div class="pm-hl" style="opacity:1;color:#C4795B;font-weight:700;">10 AM</div><div class="pm-hline" style="height:2px;background:#C4795B;opacity:0.8;"></div></div>
+      <div class="pm-pill" style="background:rgba(99,102,241,0.12); min-height:64px; box-shadow: 0 0 0 1px rgba(196,121,91,0.3), 0 2px 6px rgba(0,0,0,0.04);"><span>💼 Deep work</span><div class="pm-mind">Close everything. One task.</div></div>
+    </div>
+
+    <!-- Bottom bar -->
+    <div class="pm-bbar">
+      <div class="pm-cb"></div>
+      <span>Buy groceries</span>
+      <span style="margin-left:auto;background:#E3ECE6;padding:1px 6px;border-radius:4px;font-size:9px;font-weight:600;color:#2D5A3E;">+2</span>
+    </div>
+  </div>
+
+  <div class="note">
+    <strong>Pulse bar</strong> = tap to mark done. No swipe. No form. No screen change.<br>
+    <strong>Watermark</strong> = just visible context. Tap opens edit form.<br>
+    <strong>Pill</strong> = your time commitment. Swipe to complete. Tap to edit.<br>
+    <strong>Task</strong> = checkbox in bottom bar. Tap to complete.
+  </div>
+</div>
+
+<!-- SLIDE 4: Rules summary -->
+<div class="slide">
+  <h2>When does what go where?</h2>
+
+  <div style="width:100%;">
+    <table style="width:100%; font-size: 12px; border-collapse: collapse;">
+      <tr style="border-bottom: 2px solid #E0D9CE;">
+        <th style="text-align:left; padding:10px; font-weight:700;">Activity</th>
+        <th style="padding:10px; font-weight:700;">Layer</th>
+        <th style="text-align:left; padding:10px; font-weight:700;">Why</th>
+      </tr>
+      <tr style="border-bottom: 1px solid #E0D9CE;">
+        <td style="padding:10px;">💧 Morning water<br><span style="font-size:10px;color:#8C857D;">Daily, 7:57 AM</span></td>
+        <td style="padding:10px;text-align:center;"><span style="background:rgba(196,121,91,0.12);color:#C4795B;padding:3px 8px;border-radius:6px;font-size:10px;font-weight:700;">Pulse</span></td>
+        <td style="padding:10px;font-size:11px;color:#4A4540;">Takes 30 seconds. Daily ritual. Tap done.</td>
+      </tr>
+      <tr style="border-bottom: 1px solid #E0D9CE;">
+        <td style="padding:10px;">💧 Drink water<br><span style="font-size:10px;color:#8C857D;">Every 2 hours</span></td>
+        <td style="padding:10px;text-align:center;"><span style="background:rgba(196,121,91,0.12);color:#C4795B;padding:3px 8px;border-radius:6px;font-size:10px;font-weight:700;">Pulse</span></td>
+        <td style="padding:10px;font-size:11px;color:#4A4540;">Repeats 6-8x/day. Shows one chip per occurrence.</td>
+      </tr>
+      <tr style="border-bottom: 1px solid #E0D9CE;">
+        <td style="padding:10px;">🧘 Affirmations<br><span style="font-size:10px;color:#8C857D;">Daily, no time</span></td>
+        <td style="padding:10px;text-align:center;"><span style="background:rgba(196,121,91,0.12);color:#C4795B;padding:3px 8px;border-radius:6px;font-size:10px;font-weight:700;">Pulse</span></td>
+        <td style="padding:10px;font-size:11px;color:#4A4540;">Quick daily habit. 2 minutes. One chip.</td>
+      </tr>
+      <tr style="border-bottom: 1px solid #E0D9CE;">
+        <td style="padding:10px;">🧍 Stretch<br><span style="font-size:10px;color:#8C857D;">Every hour</span></td>
+        <td style="padding:10px;text-align:center;"><span style="background:rgba(196,121,91,0.12);color:#C4795B;padding:3px 8px;border-radius:6px;font-size:10px;font-weight:700;">Pulse</span></td>
+        <td style="padding:10px;font-size:11px;color:#4A4540;">1 minute. Hourly rhythm. Multiple chips.</td>
+      </tr>
+      <tr style="border-bottom: 1px solid #E0D9CE;">
+        <td style="padding:10px;">✨ Meditation<br><span style="font-size:10px;color:#8C857D;">Daily, 6 AM, 30 min</span></td>
+        <td style="padding:10px;text-align:center;"><span style="background:rgba(99,102,241,0.12);color:#6366F1;padding:3px 8px;border-radius:6px;font-size:10px;font-weight:700;">Pill</span></td>
+        <td style="padding:10px;font-size:11px;color:#4A4540;">30 min commitment. Real time block.</td>
+      </tr>
+      <tr style="border-bottom: 1px solid #E0D9CE;">
+        <td style="padding:10px;">💼 Deep work<br><span style="font-size:10px;color:#8C857D;">10 AM, 2 hours</span></td>
+        <td style="padding:10px;text-align:center;"><span style="background:rgba(99,102,241,0.12);color:#6366F1;padding:3px 8px;border-radius:6px;font-size:10px;font-weight:700;">Pill</span></td>
+        <td style="padding:10px;font-size:11px;color:#4A4540;">Major time commitment. Anchors your day.</td>
+      </tr>
+      <tr style="border-bottom: 1px solid #E0D9CE;">
+        <td style="padding:10px;">📝 Buy groceries<br><span style="font-size:10px;color:#8C857D;">No time</span></td>
+        <td style="padding:10px;text-align:center;"><span style="background:rgba(45,90,62,0.08);color:#2D5A3E;padding:3px 8px;border-radius:6px;font-size:10px;font-weight:700;">Task</span></td>
+        <td style="padding:10px;font-size:11px;color:#4A4540;">No time, no recurrence. Just do it today.</td>
+      </tr>
+    </table>
+  </div>
+
+  <div style="margin-top: 32px; width: 100%;">
+    <div class="note">
+      <strong>The simple rule:</strong><br><br>
+      Does it take <strong>15+ minutes</strong> of your focused time? → <strong>Pill</strong><br>
+      Is it a <strong>quick habit</strong> you just tap done? → <strong>Pulse</strong><br>
+      Is it a <strong>to-do</strong> with no time? → <strong>Task</strong><br>
+      Is it a <strong>daily ritual</strong> anchored to a time but not a block? → <strong>Watermark</strong> or <strong>Pulse</strong> (user's choice)
+    </div>
+  </div>
+
+  <div style="text-align:center; padding: 24px; color: #8C857D; font-size: 11px;">
+    DayFlow — Pulse Bar Design
+  </div>
+</div>
+
+</body>
+</html>
