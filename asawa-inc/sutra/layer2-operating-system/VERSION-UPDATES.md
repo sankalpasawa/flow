@@ -56,12 +56,61 @@ When Sutra adds a new protocol, it should be validated against existing clients:
 
 This is the two-way feedback loop. Sutra pushes updates. Companies push back if the update doesn't fit.
 
-## Founder Feedback Protocol
+## Feedback Routing — Role-Based Permissions
 
-When the founder says something like "every company should have a landing page":
+Feedback routing depends on WHO is giving feedback, determined by their role in the hierarchy.
 
-1. This session (holding/Sutra context) updates the relevant Sutra doc immediately
-2. Adds a validation task: "validate against DayFlow next time DayFlow session runs"
-3. If the feedback changes the onboarding process, update CLIENT-ONBOARDING.md
-4. If the feedback changes how companies operate, update the relevant module
-5. If the feedback is company-specific, route it to that company's folder only
+### The Hierarchy
+
+```
+CEO of Asawa Inc. (holding)
+├── Has: full authority over all companies and Sutra itself
+├── Can: change any Sutra doc, any company doc, any protocol
+│
+├── CEO of Sutra (operating system company)
+│   ├── Has: authority over Sutra's processes, modules, onboarding
+│   ├── Can: update Sutra docs, approve/reject client feedback
+│   ├── Cannot: make product decisions for client companies
+│   │
+│   └── CEO of {Client Company} (e.g., CEO of DayFlow, CEO of Hehe)
+│       ├── Has: authority over their company only
+│       ├── Can: give feedback TO Sutra (captured as PENDING)
+│       ├── Cannot: change Sutra docs directly
+│       └── Cannot: change other companies' docs
+```
+
+### Role Detection by Session Context
+
+| Session context | Role | Permissions |
+|----------------|------|-------------|
+| `asawa-inc/holding/` | CEO of Asawa | Full authority. Changes anything immediately. |
+| `asawa-inc/sutra/` | CEO of Sutra | Changes Sutra docs. Processes client feedback with explicit approval. |
+| `asawa-inc/{company}/` or `/sutra-onboard` | CEO of {Company} | Changes own company only. Feedback to Sutra = PENDING. |
+
+### When CEO of {Company} gives feedback about Sutra
+
+1. Write to `{company}/feedback-to-sutra/{date}-{topic}.md`
+2. Mark as **PENDING**
+3. Do NOT update any Sutra doc
+4. Do NOT change CLIENT-ONBOARDING.md, ENFORCEMENT.md, or any protocol
+5. Feedback sits until a Sutra session processes it
+
+### When CEO of Sutra processes feedback
+
+In a Sutra session:
+
+1. List all pending: `find asawa-inc/*/feedback-to-sutra/ -name "*.md" | xargs grep "PENDING"`
+2. For each PENDING item, present to CEO of Sutra:
+   - What the client CEO said
+   - What it would change in Sutra
+   - Recommendation: apply, reject, or defer
+3. CEO of Sutra explicitly approves or rejects each item
+4. Approved → update Sutra docs, mark INCORPORATED
+5. Rejected → mark REJECTED with reason
+6. Deferred → stays PENDING
+
+### When CEO of Asawa gives feedback
+
+Direct apply. No approval gate. CEO of Asawa owns everything.
+
+**ENFORCEMENT: HARD** — A client company session CANNOT modify Sutra source files. Only capture feedback. Sutra session processes it with explicit approval from CEO of Sutra.
