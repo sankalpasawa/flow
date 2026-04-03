@@ -19,6 +19,7 @@
 
 ## Big Ideas (Asawa Inc. Portfolio)
 
+- [ ] **Voice agent for Claude Code** — explore natural voice interaction. Options: ElevenLabs ($5/mo), Edge TTS (free but robotic), Claude iOS voice mode (separate session). Goal: conversational voice that matches energy and tonality. Current: macOS `say -v Tara` for limited high-level summaries.
 - [ ] **Floating Voice Listener (Desktop/Mac)** — Always-on voice assistant that floats on desktop, listens, and executes actions. Not just transcription — it DOES things: opens apps, runs commands, searches, creates activities, takes notes. Could integrate with DayFlow or be a standalone product. Explore: (1) macOS menubar app with always-on mic, (2) integration with Wispr Flow or similar voice-to-action tools, (3) LLM-powered intent parsing from voice, (4) privacy model (local processing vs cloud). Could be a separate company under Asawa Inc. **Priority: Explore soon — this is a platform-level idea.**
 
 ## Goals Feature Follow-up
