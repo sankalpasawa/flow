@@ -170,8 +170,6 @@ export const useActivitiesStore = create<ActivitiesState>((set, get) => ({
   },
 
   loadDay: async (userId, date) => {
-    console.log('[loadDay] CALLED at', new Date().toISOString(), 'for date:', format(date, 'yyyy-MM-dd'));
-    console.trace('[loadDay] call stack');
     set({ loading: true, error: null });
     try {
       const dateStr = format(date, 'yyyy-MM-dd');
@@ -206,7 +204,6 @@ export const useActivitiesStore = create<ActivitiesState>((set, get) => ({
           console.error(`[DayFlow] Failed to load log for activity ${a.id}:`, err);
         }
       }));
-      console.log('[loadDay] final activities:', acts.map(a => ({ id: a.id, title: a.title, duration: a.duration_minutes })));
       set({ activities: acts, untimedTasks: untimed, logs: logsMap, loading: false });
     } catch (err) {
       console.error('[DayFlow] Failed to load activities:', err);
@@ -254,17 +251,14 @@ export const useActivitiesStore = create<ActivitiesState>((set, get) => ({
 
   editActivity: async (id, updates) => {
     try {
-      console.log('[editActivity] ID:', id, 'Updates:', JSON.stringify(updates));
       await updateActivity(id, updates);
       const updated = await import('../lib/db/activities').then(m => m.getActivity(id));
-      console.log('[editActivity] Read back from DB:', updated?.id, 'duration:', updated?.duration_minutes);
       if (updated) {
         set((s) => {
           const newActivities = s.activities.map((a) =>
             (a.id === id || a.id.split('_')[0] === id)
               ? { ...a, ...updates, id: a.id } : a
           );
-          console.log('[editActivity] patched store. Matching activities:', newActivities.filter(a => a.id === id || a.id.split('_')[0] === id).map(a => ({ id: a.id, duration: a.duration_minutes })));
           return {
             // Match by exact ID or prefix (real ID matches virtual uuid_date)
             activities: newActivities,

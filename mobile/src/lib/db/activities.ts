@@ -305,10 +305,7 @@ export async function updateActivity(id: string, updates: UpdateActivityInput): 
 
   values.push(id);
   const sql = `UPDATE activities SET ${fields.join(', ')} WHERE id = ?`;
-  console.log('[updateActivity] SQL:', sql);
-  console.log('[updateActivity] id:', id, 'values:', JSON.stringify(values));
-  const result = await db.runAsync(sql, values as SQLiteBindValue[]);
-  console.log('[updateActivity] result:', JSON.stringify(result));
+  await db.runAsync(sql, values as SQLiteBindValue[]);
 }
 
 export async function deleteActivity(id: string): Promise<void> {
@@ -328,9 +325,7 @@ export async function getActivity(id: string): Promise<Activity | null> {
      WHERE a.id = ? AND a.deleted = 0`,
     [id]
   );
-  const result = row ? mapRow(row) : null;
-  console.log('[getActivity] id:', id, 'found:', !!result, 'duration:', result?.duration_minutes);
-  return result;
+  return row ? mapRow(row) : null;
 }
 
 export async function searchActivities(userId: string, query: string): Promise<Activity[]> {

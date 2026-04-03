@@ -15,6 +15,7 @@
 - [ ] **Categories → Tags**: Decide whether to switch from single category to multiple tags per activity. Currently categories with emoji+name+color.
 - [ ] **Duration picker custom button**: Pencil icon (✏️) replaces "2h" in duration chips. Opens inline number input for any custom duration in minutes.
 - [ ] **Play screen voice**: Real speech-to-text requires dev build (not Expo Go). Wire when switching from Expo Go.
+- [ ] **Structured logging strategy**: Add meaningful logs at error boundaries and critical paths (DB writes, API calls, auth). Remove verbose debug logs. Principle: log at boundaries, not inside functions. Log failures, not successes.
 
 ## Goals Feature Follow-up
 
