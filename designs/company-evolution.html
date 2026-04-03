@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Asawa Inc. — Company Evolution</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #F5F0E8;
+    --text: #1A1714;
+    --muted: #8C857D;
+    --primary: #2D5A3E;
+    --border: #E0D9CE;
+    --glass: rgba(255,255,255,0.65);
+    --glass-border: rgba(255,255,255,0.35);
+    --shadow: rgba(0,0,0,0.06);
+    --dayflow-color: #2D5A3E;
+    --hehe-color: #D4763A;
+    --kiro-color: #4A6FA5;
+    --sutra-color: #8B6B4A;
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  .header {
+    text-align: center;
+    padding: 48px 24px 24px;
+  }
+
+  .header h1 {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+  }
+
+  .header p {
+    font-size: 14px;
+    color: var(--muted);
+    margin-top: 8px;
+  }
+
+  .sutra-banner {
+    text-align: center;
+    margin: 0 auto 32px;
+    max-width: 600px;
+    padding: 16px 24px;
+    background: rgba(139, 107, 74, 0.08);
+    border: 1px solid rgba(139, 107, 74, 0.15);
+    border-radius: 16px;
+  }
+
+  .sutra-banner .label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--sutra-color);
+    margin-bottom: 4px;
+  }
+
+  .sutra-banner .version {
+    font-size: 15px;
+    font-weight: 500;
+  }
+
+  .sutra-banner .desc {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  .buildings-container {
+    display: flex;
+    justify-content: center;
+    gap: 32px;
+    padding: 0 24px 24px;
+    flex-wrap: wrap;
+  }
+
+  .building {
+    width: 280px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .building-label {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+
+  .building-type {
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 16px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .floors {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .floor {
+    width: 100%;
+    border-radius: 12px;
+    padding: 14px 16px;
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    box-shadow: 0 2px 8px var(--shadow);
+    opacity: 0;
+    transform: translateY(20px) scale(0.96);
+    transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .floor::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    border-radius: 4px 0 0 4px;
+    opacity: 0.7;
+  }
+
+  .floor.visible {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+
+  .floor.active {
+    border-color: rgba(255,255,255,0.5);
+    box-shadow: 0 4px 16px var(--shadow);
+  }
+
+  .floor .floor-num {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--muted);
+    margin-bottom: 2px;
+  }
+
+  .floor .floor-name {
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .floor .floor-detail {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 4px;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+  }
+
+  .floor.expanded .floor-detail {
+    max-height: 200px;
+  }
+
+  .floor .floor-date {
+    font-size: 10px;
+    color: var(--muted);
+    opacity: 0.6;
+    margin-top: 4px;
+    display: none;
+  }
+
+  .floor.expanded .floor-date {
+    display: block;
+  }
+
+  /* Company-specific tint bars */
+  .building[data-company="dayflow"] .floor::before { background: var(--dayflow-color); }
+  .building[data-company="hehe"] .floor::before { background: var(--hehe-color); }
+  .building[data-company="kiro"] .floor::before { background: var(--kiro-color); }
+
+  /* Active floor glow */
+  .building[data-company="dayflow"] .floor.active { background: rgba(45, 90, 62, 0.08); }
+  .building[data-company="hehe"] .floor.active { background: rgba(212, 118, 58, 0.08); }
+  .building[data-company="kiro"] .floor.active { background: rgba(74, 111, 165, 0.08); }
+
+  .ground {
+    width: 100%;
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    margin-top: 8px;
+  }
+
+  /* Timeline slider */
+  .timeline-container {
+    max-width: 700px;
+    margin: 32px auto 48px;
+    padding: 0 24px;
+    text-align: center;
+  }
+
+  .timeline-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+
+  .timeline-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .play-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--glass);
+    backdrop-filter: blur(8px);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    transition: all 0.2s;
+    flex-shrink: 0;
+  }
+
+  .play-btn:hover {
+    background: rgba(255,255,255,0.85);
+    box-shadow: 0 2px 8px var(--shadow);
+  }
+
+  .timeline-slider {
+    flex: 1;
+    -webkit-appearance: none;
+    appearance: none;
+    height: 6px;
+    border-radius: 3px;
+    background: var(--border);
+    outline: none;
+  }
+
+  .timeline-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--primary);
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  }
+
+  .timeline-phase {
+    font-size: 14px;
+    font-weight: 500;
+    margin-top: 8px;
+    min-height: 20px;
+  }
+
+  /* Feedback arrows */
+  .feedback-section {
+    max-width: 700px;
+    margin: 0 auto 48px;
+    padding: 0 24px;
+  }
+
+  .feedback-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    text-align: center;
+    margin-bottom: 16px;
+  }
+
+  .feedback-flow {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .feedback-node {
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(8px);
+  }
+
+  .feedback-arrow {
+    font-size: 14px;
+    color: var(--muted);
+  }
+
+  .feedback-node.sutra { background: rgba(139, 107, 74, 0.1); border-color: rgba(139, 107, 74, 0.2); }
+  .feedback-node.dayflow { background: rgba(45, 90, 62, 0.1); border-color: rgba(45, 90, 62, 0.2); }
+  .feedback-node.hehe { background: rgba(212, 118, 58, 0.1); border-color: rgba(212, 118, 58, 0.2); }
+  .feedback-node.kiro { background: rgba(74, 111, 165, 0.1); border-color: rgba(74, 111, 165, 0.2); }
+
+  /* Stats bar */
+  .stats-bar {
+    display: flex;
+    justify-content: center;
+    gap: 32px;
+    padding: 24px;
+    margin: 0 auto;
+    max-width: 700px;
+  }
+
+  .stat {
+    text-align: center;
+  }
+
+  .stat-value {
+    font-size: 28px;
+    font-weight: 700;
+  }
+
+  .stat-label {
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 2px;
+  }
+
+  @media (max-width: 900px) {
+    .buildings-container { flex-direction: column; align-items: center; }
+    .stats-bar { gap: 20px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Asawa Inc.</h1>
+  <p>Three companies. One operating system. Watch them being built.</p>
+</div>
+
+<div class="stats-bar">
+  <div class="stat">
+    <div class="stat-value" id="stat-companies">0</div>
+    <div class="stat-label">Companies</div>
+  </div>
+  <div class="stat">
+    <div class="stat-value" id="stat-floors">0</div>
+    <div class="stat-label">Layers Built</div>
+  </div>
+  <div class="stat">
+    <div class="stat-value" id="stat-sutra">v1.0</div>
+    <div class="stat-label">Sutra Version</div>
+  </div>
+</div>
+
+<div class="sutra-banner">
+  <div class="label">Sutra OS — The Blueprint</div>
+  <div class="version">Sense → Shape → Decide → Specify → Execute → Learn</div>
+  <div class="desc">Every building below follows this process. Sutra evolves from their feedback.</div>
+</div>
+
+<div class="buildings-container" id="buildings">
+  <!-- DayFlow -->
+  <div class="building" data-company="dayflow">
+    <div class="building-label" style="color: var(--dayflow-color)">DayFlow</div>
+    <div class="building-type">Productivity Tool · iOS</div>
+    <div class="floors" id="floors-dayflow"></div>
+    <div class="ground"></div>
+  </div>
+
+  <!-- Hehe -->
+  <div class="building" data-company="hehe">
+    <div class="building-label" style="color: var(--hehe-color)">Hehe</div>
+    <div class="building-type">Content Platform · Web</div>
+    <div class="floors" id="floors-hehe"></div>
+    <div class="ground"></div>
+  </div>
+
+  <!-- Kiro -->
+  <div class="building" data-company="kiro">
+    <div class="building-label" style="color: var(--kiro-color)">Kiro</div>
+    <div class="building-type">Developer Tool · CLI</div>
+    <div class="floors" id="floors-kiro"></div>
+    <div class="ground"></div>
+  </div>
+</div>
+
+<div class="feedback-section">
+  <div class="feedback-title">Feedback Loop</div>
+  <div class="feedback-flow">
+    <span class="feedback-node dayflow">DayFlow</span>
+    <span class="feedback-arrow">→</span>
+    <span class="feedback-node sutra">Sutra OS</span>
+    <span class="feedback-arrow">←</span>
+    <span class="feedback-node hehe">Hehe</span>
+    <span class="feedback-arrow">  </span>
+    <span class="feedback-node sutra">Sutra v1.1</span>
+    <span class="feedback-arrow">←</span>
+    <span class="feedback-node kiro">Kiro</span>
+  </div>
+</div>
+
+<div class="timeline-container">
+  <div class="timeline-label">Construction Timeline</div>
+  <div class="timeline-controls">
+    <button class="play-btn" id="playBtn" onclick="togglePlay()">▶</button>
+    <input type="range" class="timeline-slider" id="timeline" min="0" max="100" value="0" oninput="onSliderChange(this.value)">
+  </div>
+  <div class="timeline-phase" id="phaseLabel"></div>
+</div>
+
+<script>
+const companies = {
+  dayflow: {
+    floors: [
+      { num: 'Foundation', name: 'Idea + Principles', detail: 'Mission: cognitive architecture for daily life. 7 universal principles. Schema-driven AI.', date: 'Apr 1', phase: 0 },
+      { num: 'Structure', name: 'Architecture', detail: '5-layer model: UI → Data → World → User → AI. Expo + SQLite + Zustand + Supabase.', date: 'Apr 1', phase: 15 },
+      { num: 'Systems', name: 'Design System', detail: 'Glass morphism pills. Warm cream bg. Forest green primary. Instrument Sans. 4px grid.', date: 'Apr 2', phase: 30 },
+      { num: 'Product', name: 'Canvas + Activities', detail: 'Time blocks on hourly canvas. Swipe to complete. Virtual recurring instances. Duration picker.', date: 'Apr 2', phase: 50 },
+      { num: 'Intelligence', name: 'AI Layer', detail: 'Play screen (chat), Search (LLM), Command layer (schema-driven). Gemini edge function.', date: 'Apr 3', phase: 65 },
+      { num: 'Quality', name: 'QA + Sensors', detail: '5 automated sensors. 3-pass design QA. 60+ violations fixed. Zero-break target.', date: 'Apr 3', phase: 75 },
+      { num: 'Operations', name: 'Company OS', detail: 'Sutra OS v1.0 deployed. A/B test configured. Daily Pulse. Agent incentives.', date: 'Apr 3', phase: 90 },
+    ]
+  },
+  hehe: {
+    floors: [
+      { num: 'Foundation', name: 'Idea + Market', detail: 'Make people laugh in 30 seconds. Market: Reddit too broad, joke apps too static. Gap: personalized AI humor.', date: 'Apr 3', phase: 25 },
+      { num: 'Structure', name: 'Architecture', detail: 'Next.js + Tailwind + Supabase + Gemini + Vercel. Content platform pattern.', date: 'Apr 3', phase: 40 },
+      { num: 'Systems', name: 'Design Approach', detail: 'Design-in-code with Tailwind. No Figma for web MVP. Fast iteration over polish.', date: 'Apr 3', phase: 55 },
+      { num: 'Product', name: 'Joke Feed + AI', detail: 'Seed library (500+ jokes). AI generation via Gemini. Categories. Upvote/downvote. Share.', date: 'Pending', phase: 70 },
+      { num: 'Intelligence', name: 'Personalization', detail: 'Vote history trains feed ranking. AI learns what makes YOU laugh. 20 votes to personalize.', date: 'Pending', phase: 85 },
+      { num: 'Quality', name: 'Content QA', detail: 'AI self-rates jokes (7+ threshold). Human spot-check. Category moderation. Hit rate >50%.', date: 'Pending', phase: 95 },
+    ]
+  },
+  kiro: {
+    floors: [
+      { num: 'Foundation', name: 'Idea + Market', detail: 'CLI standup generator from git history. Developers hate writing standups. AI reads commits, writes update.', date: 'Proposed', phase: 45 },
+      { num: 'Structure', name: 'Architecture', detail: 'Node.js CLI (npm -g). Git log parser. LLM summarizer. Optional web dashboard.', date: 'Proposed', phase: 60 },
+      { num: 'Systems', name: 'CLI Design', detail: 'Minimal output. No config needed. Works with any git repo. Respects .gitignore for sensitive repos.', date: 'Proposed', phase: 75 },
+      { num: 'Product', name: 'Core: kiro', detail: 'Run "kiro" → reads git log since last standup → generates "Yesterday / Today / Blocked" summary.', date: 'Proposed', phase: 85 },
+      { num: 'Distribution', name: 'npm + Slack', detail: 'npm install -g kiro. Slack integration posts standup to channel. Team dashboard.', date: 'Proposed', phase: 95 },
+    ]
+  }
+};
+
+// Render floors (reversed: foundation at bottom)
+Object.keys(companies).forEach(key => {
+  const container = document.getElementById(`floors-${key}`);
+  const floors = [...companies[key].floors].reverse();
+  floors.forEach((floor, i) => {
+    const el = document.createElement('div');
+    el.className = 'floor';
+    el.dataset.phase = floor.phase;
+    el.innerHTML = `
+      <div class="floor-num">${floor.num}</div>
+      <div class="floor-name">${floor.name}</div>
+      <div class="floor-detail">${floor.detail}</div>
+      <div class="floor-date">${floor.date}</div>
+    `;
+    el.onclick = () => el.classList.toggle('expanded');
+    container.appendChild(el);
+  });
+});
+
+let playing = false;
+let animFrame = null;
+let currentValue = 0;
+
+function updateBuildings(value) {
+  let visibleCount = 0;
+  let companiesStarted = 0;
+  let latestPhase = '';
+
+  document.querySelectorAll('.floor').forEach(floor => {
+    const phase = parseInt(floor.dataset.phase);
+    if (value >= phase) {
+      floor.classList.add('visible');
+      if (value >= phase && value < phase + 10) {
+        floor.classList.add('active');
+      } else {
+        floor.classList.remove('active');
+      }
+      visibleCount++;
+    } else {
+      floor.classList.remove('visible', 'active');
+    }
+  });
+
+  // Count companies that have at least 1 floor visible
+  Object.keys(companies).forEach(key => {
+    const firstPhase = companies[key].floors[0].phase;
+    if (value >= firstPhase) companiesStarted++;
+  });
+
+  // Find current phase label
+  const allFloors = [];
+  Object.entries(companies).forEach(([key, co]) => {
+    co.floors.forEach(f => allFloors.push({ ...f, company: key }));
+  });
+  allFloors.sort((a, b) => a.phase - b.phase);
+  const current = allFloors.filter(f => f.phase <= value).pop();
+  if (current) {
+    const companyName = current.company.charAt(0).toUpperCase() + current.company.slice(1);
+    latestPhase = `${companyName}: ${current.name}`;
+  }
+
+  document.getElementById('stat-companies').textContent = companiesStarted;
+  document.getElementById('stat-floors').textContent = visibleCount;
+  document.getElementById('phaseLabel').textContent = value === 0 ? 'Drag the slider or press play' : latestPhase;
+}
+
+function onSliderChange(value) {
+  currentValue = parseInt(value);
+  updateBuildings(currentValue);
+}
+
+function togglePlay() {
+  if (playing) {
+    playing = false;
+    document.getElementById('playBtn').textContent = '▶';
+    cancelAnimationFrame(animFrame);
+    return;
+  }
+
+  playing = true;
+  document.getElementById('playBtn').textContent = '⏸';
+
+  if (currentValue >= 100) currentValue = 0;
+
+  function step() {
+    if (!playing) return;
+    currentValue += 0.4;
+    if (currentValue >= 100) {
+      currentValue = 100;
+      playing = false;
+      document.getElementById('playBtn').textContent = '▶';
+    }
+    document.getElementById('timeline').value = currentValue;
+    updateBuildings(currentValue);
+    if (playing) animFrame = requestAnimationFrame(step);
+  }
+  animFrame = requestAnimationFrame(step);
+}
+
+// Initialize
+updateBuildings(0);
+</script>
+
+</body>
+</html>
