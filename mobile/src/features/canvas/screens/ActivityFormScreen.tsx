@@ -95,13 +95,19 @@ export function ActivityFormScreen({ route, navigation }: Props) {
     addActivity, addTask, editActivity, removeActivity,
   } = useActivitiesStore();
 
+  // Find activity by ID. The activityId may be a real DB ID while the store
+  // contains virtual IDs (realId_YYYY-MM-DD) for recurring activities.
+  // Match by exact ID first, then by ID prefix (real ID matches virtual ID prefix).
+  const findById = (list: Activity[]) =>
+    list.find(a => a.id === activityId || a.id.split('_')[0] === activityId);
+
   const existingActivity = activityId
-    ? (activities.find(a => a.id === activityId)
-      || untimedTasks.find(a => a.id === activityId)
-      || storeBacklog.find(a => a.id === activityId)
-      || planActivities.find(a => a.id === activityId)
-      || planTasks.find(a => a.id === activityId)
-      || carryForward.find(a => a.id === activityId)
+    ? (findById(activities)
+      || findById(untimedTasks)
+      || findById(storeBacklog)
+      || findById(planActivities)
+      || findById(planTasks)
+      || findById(carryForward)
       || null)
     : null;
 
@@ -331,7 +337,9 @@ export function ActivityFormScreen({ route, navigation }: Props) {
       const activityType = isTask ? 'TASK' : 'TIME_BLOCK';
 
       if (existingActivity) {
-        await editActivity(existingActivity.id, {
+        // Use activityId (real DB ID from navigation), not existingActivity.id
+        // which may be a virtual ID (uuid_YYYY-MM-DD) for recurring activities
+        await editActivity(activityId!, {
           title: title.trim(),
           description: description.trim() || null,
           start_time: hasTime ? buildStartTime() : (existingActivity.start_time ?? undefined),
