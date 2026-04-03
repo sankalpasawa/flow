@@ -203,7 +203,7 @@ export function GoalFormScreen({ navigation }: Props) {
 
 const styles = StyleSheet.create({
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)' },
-  overlayDismiss: { height: 60 },
+  overlayDismiss: { flex: 1 },
   sheet: {
     flex: 1, backgroundColor: colors.bg,
     borderTopLeftRadius: radii.sheet, borderTopRightRadius: radii.sheet,
