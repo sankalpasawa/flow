@@ -116,27 +116,33 @@ Update STATUS.md → "Phase: 7/8 DEPLOY — complete"
 Gate: Client registry updated, website deployed, all committed.
 
 ### Phase 8: ACTIVATE (5 min)
-Initialize the project for building using GSD:
-```
-/gsd:new-project
-```
-This creates the .planning/ directory with PROJECT.md, REQUIREMENTS.md, ROADMAP.md, STATE.md.
-The roadmap phases should map to the TODO.md P0 features.
-Gate: GSD project initialized, first phase ready to plan.
+Select which skills this company will use based on its profile. Do NOT blindly run `/gsd:new-project`. Evaluate first.
 
-## AFTER ALL 8 PHASES
+**Skill selection criteria:**
 
-Tell the founder:
+| Company profile | Recommended skills | Skip |
+|----------------|-------------------|------|
+| Solo founder, < 5 features, short deadline | `/gsd:quick` per feature, `/qa`, `/ship` | Full GSD phases (overkill) |
+| Solo founder, 5-10 features, weeks of work | `/gsd:new-project` → phase planning | Nothing — full GSD is appropriate |
+| Team, complex product, months of work | Full GSD + `/autoplan` + `/codex` | Nothing — use everything |
+| Content product (jokes, articles, media) | `/qa`, `/ship`, `/design-shotgun` | Heavy planning (content is the work, not code) |
+| CLI tool / API | `/gsd:quick`, `/ship`, `/benchmark` | Design tools (no UI) |
+
+**Write the selected skills to the company's OS file** so every future session knows which skills to use.
+
+**Then tell the founder:**
 ```
-Your company is live. Your OS is deployed. GSD project is initialized.
+Your company is live. Here's what to do next:
 
-Next steps:
-  /gsd:plan-phase 1    — Plan your first feature
-  /gsd:execute-phase 1  — Build it
-  /qa                    — Test it
-  /ship                  — Ship it
+{list only the skills selected for THIS company, with one-line explanation each}
 
 Your operating system: asawa-inc/{company}/OPERATING-SYSTEM-V1.md
+Your TODO: asawa-inc/{company}/TODO.md
+```
+
+Do NOT overwhelm the founder with 89 skills. Show them only what's relevant to their company. They can discover more later from the SKILL-CATALOG.
+
+Gate: Skills selected, written to OS, founder knows their next command.
 Your project roadmap: .planning/ROADMAP.md
 Your progress: /gsd:progress
 ```
