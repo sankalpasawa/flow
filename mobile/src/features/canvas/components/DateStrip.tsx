@@ -62,18 +62,22 @@ export function DateStrip({ selectedDate, onSelectDate }: Props) {
     }
   }, [selectedIndex, calendarOpen]);
 
-  const onViewableItemsChanged = useCallback(
+  const selectedDateRef = useRef(selectedDate);
+  selectedDateRef.current = selectedDate;
+  const onSelectDateRef = useRef(onSelectDate);
+  onSelectDateRef.current = onSelectDate;
+
+  const onViewableItemsChanged = useRef(
     ({ viewableItems }: { viewableItems: Array<ViewToken> }) => {
       if (!isUserScrollingRef.current || viewableItems.length === 0) return;
       const middleIdx = Math.floor(viewableItems.length / 2);
       const centerItem = viewableItems[middleIdx];
-      if (centerItem?.item && !isSameDay(centerItem.item as Date, selectedDate)) {
+      if (centerItem?.item && !isSameDay(centerItem.item as Date, selectedDateRef.current)) {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        onSelectDate(centerItem.item as Date);
+        onSelectDateRef.current(centerItem.item as Date);
       }
     },
-    [selectedDate, onSelectDate],
-  );
+  ).current;
 
   const viewabilityConfig = useRef({
     itemVisiblePercentThreshold: 50,
