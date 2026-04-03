@@ -141,11 +141,46 @@ Log in METRICS.md after each session.
 
 ```
 IDEA → Is it P0? → Is it funny?
-  YES → Build it → Test in browser → Deploy to Vercel → Log metrics
-  NO  → Add to backlog
+  YES (SUTRA mode):
+    /office-hours → brainstorm
+    /autoplan → CEO + design + eng review
+    /design-shotgun → visual options
+    /design-html → production HTML
+    [BUILD]
+    /qa → test + fix + verify
+    /design-review → visual audit
+    /ship → PR + deploy
+    /canary → post-deploy health
+    /document-release → update docs
+
+  YES (DIRECT mode):
+    [BUILD]
+    /review → code review
+    /ship → deploy
+
+  NO → Add to backlog
 ```
 
-That's it. Ship fast, measure funny, iterate.
+Ship fast, measure funny, iterate.
+
+## gstack Skills Active
+
+| Skill | When | Why |
+|-------|------|-----|
+| `/office-hours` | New feature ideation | Validate before building |
+| `/autoplan` | SUTRA mode features | Full CEO + design + eng review |
+| `/design-shotgun` | Visual decisions | Explore multiple options |
+| `/design-html` | After design approval | Production HTML/CSS |
+| `/qa` | After every feature | Test + fix + verify loop |
+| `/design-review` | After deploy | Visual QA on live site |
+| `/review` | Before every merge | Code review |
+| `/ship` | Every deploy | PR + version bump |
+| `/canary` | After every deploy | 10-min health watch |
+| `/benchmark` | Weekly | Core Web Vitals tracking |
+| `/investigate` | On bug | Root cause analysis |
+| `/document-release` | After ship | Keep docs current |
+| `/retro` | Weekly | What shipped, trends |
+| `/cso` | Monthly | Security audit |
 
 ---
 
