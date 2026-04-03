@@ -264,3 +264,160 @@ DayFlow runs like a company with AI CXO agents. See `org/ORG.md` for full struct
 **When adding features**: Before implementing, check with CPO (is this the right priority?), CDO (what's the design spec?), CTO (does this fit the architecture?), CQO (what tests are needed?). After implementing, run CDO and CQO checks.
 
 **Daily work should span ALL departments**, not just product and engineering. Check the standup report for cross-department action items.
+
+<!-- GSD:project-start source:PROJECT.md -->
+## Project
+
+**PPR — Personal Wedding Command Center**
+
+A web app that gives a groom one place to manage his entire wedding — tasks, research, comparisons, and creative tools like greeting cards. Built as fast, clean HTML pages on Vercel, shareable via WhatsApp links. Currently a personal tool for one wedding (July 5-6, 2026); potentially a service for other couples later.
+
+**Core Value:** Every wedding task, research link, and creative project lives in one place with shareable URLs — nothing gets forgotten, nothing gets lost in tabs.
+
+### Constraints
+
+- **Timeline**: Must be usable within first build session. Wedding is in 93 days.
+- **Platform**: Web only. Next.js on Vercel. No native apps.
+- **Auth**: No auth for V1. Direct access. Shared pages are public.
+- **AI**: Claude via Vercel AI SDK for research summarization and card generation.
+- **Database**: Supabase (Postgres + Edge Functions).
+- **Sharing**: Every page must generate a valid WhatsApp preview card.
+<!-- GSD:project-end -->
+
+<!-- GSD:stack-start source:research/STACK.md -->
+## Technology Stack
+
+## Validated Stack
+## Core Framework
+| Technology | Version | Purpose | Why |
+|------------|---------|---------|-----|
+| Next.js | 16 (latest, released Oct 2025) | Full-stack web framework | App Router is stable and production-ready. Server Components reduce client JS. SSR is required for WhatsApp OG tag scraping — WhatsApp's crawler does not execute JavaScript, so tags must be in server-rendered HTML. Next.js 16 adds Cache Components (use cache directive), stable Turbopack, React 19.2 features. Vercel-first deployment means zero-config edge functions. |
+| React | 19.2 (bundled with Next.js 16) | UI rendering | Ships with Next.js 16. View Transitions and Activity component are immediately useful for card animations. |
+| TypeScript | 5.x | Type safety | Required by shadcn/ui and Supabase JS v2. Next.js 16 minimum is TypeScript 5.1. |
+# Select: App Router, TypeScript, Tailwind, ESLint
+## Styling
+| Technology | Version | Purpose | Why |
+|------------|---------|---------|-----|
+| Tailwind CSS | 4.x | Utility CSS | v4 is the current release. CSS-first configuration (no tailwind.config.js required). 3-10x faster full builds than v3. Auto-scans project. Compatible with Next.js 16. |
+| shadcn/ui | CLI v4 (March 2026) | Component primitives | Not a dependency — components are copied into the project, owned by you. Built on Radix UI. Kanban board, data table, form, dialog, dropdown — all exist. Tailwind v4 compatible. `npx shadcn@latest` installs current CLI. |
+## Database and Backend
+| Technology | Version | Purpose | Why |
+|------------|---------|---------|-----|
+| Supabase (@supabase/supabase-js) | 2.101.1 | Postgres database + auth + realtime | Correct choice. Row-level security, edge functions, and auth are all ready when the product needs them. V1 has no auth per PROJECT.md, but Supabase is wired for it. |
+| @supabase/ssr | latest | Next.js App Router cookie auth | Required for correct session management in Server Components. Creates separate client instances for Server vs Client contexts. Use `supabase.auth.getUser()` only in Server Components. |
+## AI Layer
+| Technology | Version | Purpose | Why |
+|------------|---------|---------|-----|
+| ai (Vercel AI SDK) | 6.0.143 | Streaming text, tool calls, agents | Current major version. streamText for research summaries. generateText for card copy. generateObject for structured comparison data. LLM-agnostic — swap providers without rewriting callers. |
+| @ai-sdk/anthropic | latest | Anthropic Claude provider | Direct Anthropic API for local dev. |
+| @ai-sdk/vercel | 2.0.39 | Vercel AI Gateway provider | Preferred for production. Access claude-sonnet-4-5 (or newer) via Vercel AI Gateway. Handles rate limits, logging, observability. |
+## OG Image Generation (WhatsApp Previews)
+| Technology | Version | Purpose | Why |
+|------------|---------|---------|-----|
+| next/og (ImageResponse) | built into Next.js | Dynamic OG images | Ships with Next.js — zero extra install. Generates PNG via Satori + Resvg at the Edge runtime. Cacheable on Vercel CDN. Create `app/og/route.tsx` per page type. |
+- Recommended: 1200 × 630px (1.91:1 aspect ratio)
+- Minimum: 300px wide (below 100px = no preview)
+- Format: PNG, JPG, or WebP
+- Max file size: 600KB
+- WhatsApp crawler does NOT execute JavaScript — og:image must be a direct image URL, not a JS-rendered tag
+## AI Image Generation (Greeting Cards)
+| Technology | Version | Purpose | Why |
+|------------|---------|---------|-----|
+| @fal-ai/client | latest | AI image generation for cards | Best for serverless Next.js: sub-second cold starts, predictable per-image pricing ($0.01-$0.08 per 1024×1024), Vercel-native integration. Supports Flux.1 (state-of-the-art quality) and Flux Schnell (fast/cheap). 985 endpoints available. |
+| @fal-ai/server-proxy | latest | Proxy layer for Next.js | Prevents API key exposure. Create `app/api/fal/proxy/route.ts` re-exporting `createRouteHandler`. Required for production security. |
+- `fal-ai/flux/schnell` — Fast, cheap, good for iteration. Use as default.
+- `fal-ai/flux-pro/v1.1` — Higher quality for final card renders.
+- Do NOT use Stable Diffusion variants — quality gap is significant vs Flux in 2025/2026.
+| Option | Why Not |
+|--------|---------|
+| OpenAI DALL-E 3 | Higher cost per image, slower, less flexible for wedding aesthetic fine-tuning |
+| Replicate | Per-second GPU billing makes cost unpredictable for a personal tool. No latency advantage over fal.ai |
+| Stability AI API | More complex setup, less community tooling for Next.js, quality similar to Flux |
+| Calling Claude for images | Claude cannot generate images directly — only text |
+## Card Download and Sharing
+| Technology | Version | Purpose | Why |
+|------------|---------|---------|-----|
+| html-to-image | latest (npm) | Convert React card component to downloadable PNG | Simpler API than html2canvas. Uses `toPng(ref.current)` → data URL → download anchor. Works in Next.js App Router as a client component. |
+## Task Management UI
+| Technology | Version | Purpose | Why |
+|------------|---------|---------|-----|
+| shadcn/ui (built-in) | CLI v4 | Task cards, checkboxes, badges, dialogs | Use shadcn's Checkbox, Badge, Card, Dialog, Select components. No extra dependency needed for the list view. |
+| @dnd-kit/core + @dnd-kit/sortable | ^6.x | Drag-and-drop reordering (Phase 2+) | The shadcn kanban board example uses dnd-kit. Lightweight (~10kb), keyboard accessible, touch-friendly. Only add this when drag-to-reorder is actively built — not Phase 1. |
+## Deployment
+| Technology | Purpose | Why |
+|------------|---------|-----|
+| Vercel | Hosting + CDN + Edge Functions + OG image caching | Zero-config for Next.js. OG images auto-cached on Vercel CDN. Edge runtime available for ImageResponse. Supabase environment variables via Vercel project settings. Free tier is sufficient for a personal tool. |
+## Alternatives Considered (Full Stack)
+| Category | Recommended | Alternative | Why Not |
+|----------|-------------|-------------|---------|
+| Framework | Next.js 16 App Router | Remix, Astro | Remix has good DX but smaller ecosystem. Astro is wrong for dynamic data (tasks, real-time). Next.js has best Vercel integration. |
+| Database | Supabase | PlanetScale, Neon, Firebase | PlanetScale deprecated free tier. Neon is excellent but adds auth work. Firebase is overkill for Postgres-native use case. |
+| AI text | Vercel AI SDK + Claude | Direct Anthropic SDK | Direct SDK couples to one provider. Vercel AI SDK is provider-agnostic and handles streaming, tool calls, structured output with one API. |
+| AI images | fal.ai | Replicate, OpenAI | Replicate cost unpredictable. OpenAI DALL-E 3 more expensive, less flexible. fal.ai best dev UX for Next.js. |
+| OG images | next/og (ImageResponse) | Puppeteer/headless Chrome | Puppeteer has cold-start latency of 2-10 seconds on serverless. next/og is sub-100ms. |
+| Styling | Tailwind v4 + shadcn | Chakra UI, MUI | Chakra/MUI ship opinionated design that fights customization. Tailwind+shadcn gives full ownership. |
+## Full Installation Command
+# 1. Scaffold
+# 2. shadcn
+# 3. Supabase
+# 4. Vercel AI SDK
+# 5. fal.ai (for card image generation)
+# 6. Card download
+# 7. Drag-and-drop (defer to Phase 2+)
+# npm install @dnd-kit/core @dnd-kit/sortable @dnd-kit/utilities
+## Missing Pieces (Not in Founder's Original Stack List)
+| Gap | Solution | Why Needed |
+|-----|----------|------------|
+| OG image generation | `next/og` (ImageResponse) — already in Next.js | Every shareable page needs a server-rendered og:image URL. WhatsApp won't generate a preview without it. |
+| AI image generation | fal.ai + Flux Schnell | The greeting card creator requires generative images. Claude (text model) cannot produce images. |
+| Card download | html-to-image | Users need to save cards as PNG to share on WhatsApp (Web Share API can share URLs but not inline generated images). |
+| WhatsApp sharing | Web Share API (native, no library) | Deep-link fallback via `wa.me/?text=` is the correct pattern. No library needed. |
+## Sources
+- [Next.js 16 release notes](https://nextjs.org/blog/next-16) — verified Oct 2025
+- [Next.js ImageResponse API](https://nextjs.org/docs/app/api-reference/functions/image-response) — official docs
+- [Vercel OG Image Generation](https://vercel.com/docs/og-image-generation) — official docs
+- [Supabase @supabase/supabase-js npm](https://www.npmjs.com/package/@supabase/supabase-js) — version 2.101.1 confirmed
+- [Supabase Next.js quickstart](https://supabase.com/docs/guides/getting-started/quickstarts/nextjs) — official docs
+- [AI SDK npm package](https://www.npmjs.com/package/ai) — version 6.0.143 confirmed
+- [AI SDK 6 announcement](https://vercel.com/blog/ai-sdk-6) — Vercel blog
+- [Vercel AI Gateway models](https://vercel.com/docs/ai-gateway/models-and-providers) — official docs
+- [fal.ai Next.js integration](https://docs.fal.ai/model-apis/integrations/nextjs) — official docs
+- [Vercel fal integration](https://vercel.com/docs/ai/fal) — Vercel docs
+- [AI image API comparison 2026](https://www.teamday.ai/blog/ai-image-video-api-providers-comparison-2026) — third-party benchmark
+- [WhatsApp link preview guide 2026](https://www.ogrilla.com/blog/whatsapp-link-preview-guide) — comprehensive spec reference
+- [shadcn/ui changelog](https://ui.shadcn.com/docs/changelog) — CLI v4 March 2026
+- [Tailwind CSS upgrade guide](https://tailwindcss.com/docs/upgrade-guide) — v4 CSS-first config
+- [dnd-kit/core npm](https://www.npmjs.com/package/@dnd-kit/core) — official package
+<!-- GSD:stack-end -->
+
+<!-- GSD:conventions-start source:CONVENTIONS.md -->
+## Conventions
+
+Conventions not yet established. Will populate as patterns emerge during development.
+<!-- GSD:conventions-end -->
+
+<!-- GSD:architecture-start source:ARCHITECTURE.md -->
+## Architecture
+
+Architecture not yet mapped. Follow existing patterns found in the codebase.
+<!-- GSD:architecture-end -->
+
+<!-- GSD:workflow-start source:GSD defaults -->
+## GSD Workflow Enforcement
+
+Before using Edit, Write, or other file-changing tools, start work through a GSD command so planning artifacts and execution context stay in sync.
+
+Use these entry points:
+- `/gsd:quick` for small fixes, doc updates, and ad-hoc tasks
+- `/gsd:debug` for investigation and bug fixing
+- `/gsd:execute-phase` for planned phase work
+
+Do not make direct repo edits outside a GSD workflow unless the user explicitly asks to bypass it.
+<!-- GSD:workflow-end -->
+
+<!-- GSD:profile-start -->
+## Developer Profile
+
+> Profile not yet configured. Run `/gsd:profile-user` to generate your developer profile.
+> This section is managed by `generate-claude-profile` -- do not edit manually.
+<!-- GSD:profile-end -->
