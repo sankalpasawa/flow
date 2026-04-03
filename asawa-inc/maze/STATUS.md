@@ -1,5 +1,5 @@
 # Maze — Onboarding Status
-Phase: 5/8 ARCHITECT — COMPLETE
+Phase: 7/8 DEPLOY — COMPLETE
 Started: 2026-04-04
 Founder responses: 11/11
 
@@ -17,4 +17,24 @@ Founder responses: 11/11
 - Phase 2 MARKET: Complete — Market Brief written to MARKET-BRIEF.md
 - Phase 3 SHAPE: Complete — Product Brief written to PRODUCT-BRIEF.md
 - Phase 4 DECIDE: **GO** — Founder said "Let's go."
-- Phase 5 ARCHITECT: Complete — Architecture Card written to ARCHITECTURE.md. Full data model, content pipeline, feed serving, WhatsApp sharing flow, deployment architecture.
+- Phase 5 ARCHITECT: Complete — Architecture Card written to ARCHITECTURE.md
+- Phase 6 CONFIGURE: Complete — Full OS package generated
+- Phase 7 DEPLOY: Complete — Client #3 registered in Sutra. All files committed.
+
+## Company Files
+```
+asawa-inc/maze/
+├── INTAKE.md               # Founder's vision and answers
+├── MARKET-BRIEF.md         # 6 competitors, market gap, APIs
+├── PRODUCT-BRIEF.md        # PR/FAQ, P0 features, risks, metrics
+├── ARCHITECTURE.md         # Tech stack, data model, pipelines
+├── OPERATING-SYSTEM-V1.md  # The full OS
+├── SUTRA-VERSION.md        # Pinned to Sutra v1.0
+├── SUTRA-CONFIG.md         # A/B test config
+├── METRICS.md              # Targets and ship log
+├── TODO.md                 # 25 P0 tasks in build order
+├── CLAUDE.md               # Dev instructions for AI sessions
+├── STATUS.md               # This file
+├── onboarding-signals.md   # Sutra's internal learning log
+└── feedback-to-sutra/      # Feedback channel to Sutra
+```
