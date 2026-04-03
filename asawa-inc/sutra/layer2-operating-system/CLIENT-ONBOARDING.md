@@ -57,6 +57,18 @@ Each phase has: an INPUT, a PROCESS, an OUTPUT, and a GATE (must pass to proceed
 
 10. **If this works, what does it become in 2 years?** This reveals whether the idea has legs or is a feature.
 
+**Founder involvement (how you want to work)**
+
+11. **How involved do you want to be?** Sutra adapts to your style.
+
+| Level | What It Means | Sutra's Behavior |
+|-------|--------------|-----------------|
+| **Hands-on** | "I want to decide everything" | Sutra presents options, founder decides. No autonomous actions. |
+| **Strategic** | "I decide direction, you handle execution" | Sutra makes execution decisions autonomously. Surfaces only strategic choices. |
+| **Delegated** | "Just build it. Show me when it's done." | Sutra runs autonomously. Founder reviews output, not process. |
+
+Default: **Strategic**. The founder always has override regardless of level.
+
 ### Output: Intake Card
 
 ```yaml
