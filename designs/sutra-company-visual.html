@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sutra — The Method Company</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-snap-type: y mandatory; overflow-y: scroll; }
+
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    color: #1A1714;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── Slide system ── */
+  .slide {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 60px 40px;
+    scroll-snap-align: start;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .slide-inner {
+    max-width: 780px;
+    width: 100%;
+    z-index: 1;
+  }
+
+  /* ── Backgrounds ── */
+  .bg-cream { background: #F5F0E8; }
+  .bg-green { background: #2D5A3E; color: #F5F0E8; }
+  .bg-dark { background: #1A1714; color: #F5F0E8; }
+  .bg-warm { background: linear-gradient(135deg, #F5F0E8 0%, #EDE5D8 100%); }
+  .bg-gradient { background: linear-gradient(160deg, #2D5A3E 0%, #1A3A28 100%); color: #F5F0E8; }
+  .bg-accent { background: linear-gradient(160deg, #C4795B 0%, #A05A3E 100%); color: #F5F0E8; }
+
+  /* ── Decorative circles ── */
+  .deco-circle {
+    position: absolute;
+    border-radius: 50%;
+    opacity: 0.06;
+  }
+
+  /* ── Typography ── */
+  .mega {
+    font-size: clamp(48px, 8vw, 80px);
+    font-weight: 900;
+    letter-spacing: -3px;
+    line-height: 1.0;
+  }
+  .big {
+    font-size: clamp(32px, 5vw, 52px);
+    font-weight: 800;
+    letter-spacing: -1.5px;
+    line-height: 1.15;
+  }
+  .medium {
+    font-size: clamp(22px, 3.5vw, 32px);
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    line-height: 1.3;
+  }
+  .body-lg {
+    font-size: clamp(16px, 2.2vw, 20px);
+    font-weight: 400;
+    line-height: 1.6;
+    opacity: 0.75;
+  }
+  .label {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    opacity: 0.5;
+  }
+
+  /* ── Glass cards ── */
+  .glass {
+    background: rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 16px;
+    padding: 28px 32px;
+  }
+  .glass-dark {
+    background: rgba(26, 23, 20, 0.06);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(26, 23, 20, 0.08);
+    border-radius: 16px;
+    padding: 28px 32px;
+  }
+
+  /* ── Nav dots ── */
+  .nav-dots {
+    position: fixed;
+    right: 24px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 100;
+  }
+  .nav-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #1A1714;
+    opacity: 0.2;
+    cursor: pointer;
+    transition: all 0.3s;
+    border: none;
+  }
+  .nav-dot:hover { opacity: 0.5; transform: scale(1.4); }
+  .nav-dot.light { background: #F5F0E8; }
+
+  /* ── Slide counter ── */
+  .slide-num {
+    position: absolute;
+    bottom: 28px;
+    right: 40px;
+    font-size: 13px;
+    font-weight: 600;
+    opacity: 0.3;
+    letter-spacing: 1px;
+  }
+
+  /* ── Utility ── */
+  .mt-12 { margin-top: 12px; }
+  .mt-20 { margin-top: 20px; }
+  .mt-32 { margin-top: 32px; }
+  .mt-40 { margin-top: 40px; }
+  .gap-16 { gap: 16px; }
+  .gap-12 { gap: 12px; }
+
+  /* ── Layer stack visual ── */
+  .layer-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    margin-top: 36px;
+  }
+  .layer-bar {
+    padding: 20px 28px;
+    border-radius: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+  }
+  .layer-bar:first-child { border-radius: 14px 14px 0 0; }
+  .layer-bar:last-child { border-radius: 0 0 14px 14px; }
+  .layer-num {
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    opacity: 0.6;
+    min-width: 80px;
+  }
+  .layer-name {
+    font-size: 18px;
+    font-weight: 700;
+    flex: 1;
+  }
+  .layer-examples {
+    font-size: 13px;
+    opacity: 0.6;
+    text-align: right;
+    max-width: 280px;
+  }
+
+  /* ── Inheritance diagram ── */
+  .inherit-diagram {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    margin-top: 36px;
+  }
+  .inherit-box {
+    width: 100%;
+    max-width: 480px;
+    padding: 24px 28px;
+    border-radius: 14px;
+    text-align: center;
+  }
+  .inherit-arrow {
+    width: 2px;
+    height: 32px;
+    background: rgba(245, 240, 232, 0.3);
+    position: relative;
+  }
+  .inherit-arrow::after {
+    content: '';
+    position: absolute;
+    bottom: -4px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-top: 8px solid rgba(245, 240, 232, 0.3);
+  }
+  .inherit-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    opacity: 0.4;
+    padding: 6px 0;
+  }
+
+  /* ── Timeline ── */
+  .timeline {
+    display: flex;
+    align-items: flex-start;
+    gap: 0;
+    margin-top: 40px;
+    position: relative;
+  }
+  .timeline-line {
+    position: absolute;
+    top: 20px;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: rgba(245, 240, 232, 0.15);
+    border-radius: 2px;
+  }
+  .timeline-node {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    z-index: 1;
+  }
+  .timeline-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #C4795B;
+    margin-bottom: 14px;
+    box-shadow: 0 0 0 4px rgba(196, 121, 91, 0.2);
+  }
+  .timeline-dot.pinned {
+    background: #F5F0E8;
+    box-shadow: 0 0 0 4px rgba(245, 240, 232, 0.2);
+  }
+  .timeline-tag {
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .timeline-desc {
+    font-size: 12px;
+    opacity: 0.5;
+    text-align: center;
+    max-width: 100px;
+  }
+
+  /* ── Feedback loop ── */
+  .loop-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 32px;
+    margin-top: 40px;
+    flex-wrap: wrap;
+  }
+  .loop-entity {
+    width: 220px;
+    padding: 28px 24px;
+    border-radius: 16px;
+    text-align: center;
+  }
+  .loop-entity h3 {
+    font-size: 20px;
+    font-weight: 800;
+    margin-bottom: 14px;
+  }
+  .loop-entity ul {
+    list-style: none;
+    font-size: 13px;
+    opacity: 0.7;
+    line-height: 1.8;
+  }
+  .loop-arrows {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+  }
+  .loop-arrow {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+  .loop-arrow-line {
+    font-size: 22px;
+    opacity: 0.5;
+    line-height: 1;
+  }
+  .loop-arrow-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    opacity: 0.4;
+  }
+
+  /* ── OS card ── */
+  .os-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-top: 32px;
+  }
+  .os-card {
+    padding: 20px 24px;
+    border-radius: 14px;
+  }
+  .os-card h4 {
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .os-card p, .os-card ul {
+    font-size: 13px;
+    opacity: 0.65;
+    line-height: 1.6;
+  }
+  .os-card ul { list-style: none; }
+  .os-card.full { grid-column: 1 / -1; }
+
+  /* ── Scale visual ── */
+  .scale-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-top: 36px;
+  }
+  .scale-card {
+    padding: 24px;
+    border-radius: 14px;
+    text-align: center;
+  }
+  .scale-card .version-badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+  }
+  .scale-card h4 {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+  .scale-card p {
+    font-size: 12px;
+    opacity: 0.5;
+  }
+
+  /* ── Process flow ── */
+  .process-flow {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 12px;
+  }
+  .process-step {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 6px 12px;
+    border-radius: 8px;
+    background: rgba(45, 90, 62, 0.12);
+    color: #2D5A3E;
+    white-space: nowrap;
+  }
+  .process-arrow {
+    font-size: 14px;
+    opacity: 0.3;
+  }
+
+  /* ── Network visual ── */
+  .network-effect {
+    margin-top: 32px;
+    text-align: center;
+  }
+  .network-line {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .network-node {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    text-align: center;
+    line-height: 1.2;
+  }
+  .network-hub {
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 800;
+    background: #C4795B;
+    color: #F5F0E8;
+    box-shadow: 0 0 0 8px rgba(196, 121, 91, 0.15), 0 0 0 20px rgba(196, 121, 91, 0.06);
+  }
+  .network-edge {
+    width: 40px;
+    height: 1px;
+    background: rgba(245, 240, 232, 0.2);
+  }
+</style>
+</head>
+<body>
+
+<!-- Nav dots -->
+<nav class="nav-dots" id="navDots"></nav>
+
+<!-- ═══════════ SLIDE 1 — Title ═══════════ -->
+<section class="slide bg-dark" id="s1">
+  <div class="deco-circle" style="width:500px;height:500px;background:#C4795B;top:-150px;right:-100px;"></div>
+  <div class="deco-circle" style="width:300px;height:300px;background:#2D5A3E;bottom:-80px;left:-60px;"></div>
+  <div class="slide-inner" style="text-align:center;">
+    <div class="label" style="margin-bottom:24px;">Introducing</div>
+    <h1 class="mega">Sutra (&#x0938;&#x0942;&#x0924;&#x094D;&#x0930;)</h1>
+    <p class="medium mt-20" style="opacity:0.6;font-weight:500;">The Method Company</p>
+    <p class="body-lg mt-32" style="max-width:500px;margin-left:auto;margin-right:auto;">
+      A living operating system for the agentic era
+    </p>
+  </div>
+  <span class="slide-num">1 / 8</span>
+</section>
+
+<!-- ═══════════ SLIDE 2 — What Sutra Is ═══════════ -->
+<section class="slide bg-warm" id="s2">
+  <div class="deco-circle" style="width:400px;height:400px;background:#2D5A3E;top:-100px;left:-120px;"></div>
+  <div class="slide-inner">
+    <div class="label">What It Is</div>
+    <h2 class="big mt-12">Not a document.<br>A living system.</h2>
+    <p class="body-lg mt-20" style="max-width:560px;">
+      Sutra is a versioned, evolving operating system that pushes updates and learns from feedback.
+      Think of it as a software dependency -- but for how companies operate.
+    </p>
+    <div style="display:flex;gap:16px;margin-top:40px;flex-wrap:wrap;">
+      <div class="glass-dark" style="flex:1;min-width:200px;">
+        <div class="label" style="margin-bottom:8px;">Traditional</div>
+        <p style="font-size:15px;font-weight:600;opacity:0.4;text-decoration:line-through;">Static handbook</p>
+        <p style="font-size:15px;font-weight:600;opacity:0.4;text-decoration:line-through;">Written once, ignored</p>
+        <p style="font-size:15px;font-weight:600;opacity:0.4;text-decoration:line-through;">No feedback loop</p>
+      </div>
+      <div class="glass-dark" style="flex:1;min-width:200px;border-color:rgba(45,90,62,0.2);">
+        <div class="label" style="margin-bottom:8px;color:#2D5A3E;opacity:1;">Sutra</div>
+        <p style="font-size:15px;font-weight:600;">Versioned releases</p>
+        <p style="font-size:15px;font-weight:600;">Pushes updates to clients</p>
+        <p style="font-size:15px;font-weight:600;">Learns from every company</p>
+      </div>
+    </div>
+  </div>
+  <span class="slide-num">2 / 8</span>
+</section>
+
+<!-- ═══════════ SLIDE 3 — The Four Layers ═══════════ -->
+<section class="slide bg-gradient" id="s3">
+  <div class="deco-circle" style="width:600px;height:600px;background:#F5F0E8;bottom:-200px;right:-200px;"></div>
+  <div class="slide-inner">
+    <div class="label" style="opacity:0.4;">Architecture</div>
+    <h2 class="big mt-12">The Four Layers</h2>
+    <div class="layer-stack">
+      <div class="layer-bar" style="background:rgba(245,240,232,0.08);">
+        <span class="layer-num">Layer 1</span>
+        <span class="layer-name">Abstraction</span>
+        <span class="layer-examples">Universal truths about human-AI work</span>
+      </div>
+      <div class="layer-bar" style="background:rgba(245,240,232,0.14);">
+        <span class="layer-num">Layer 2</span>
+        <span class="layer-name">Operating System</span>
+        <span class="layer-examples">How any company runs: processes, rituals, sensors</span>
+      </div>
+      <div class="layer-bar" style="background:rgba(245,240,232,0.20);">
+        <span class="layer-num">Layer 3</span>
+        <span class="layer-name">Modules</span>
+        <span class="layer-examples">B2C, B2B, Marketplace, SaaS, Agency</span>
+      </div>
+      <div class="layer-bar" style="background:rgba(245,240,232,0.28);">
+        <span class="layer-num">Layer 4</span>
+        <span class="layer-name">Department Skills</span>
+        <span class="layer-examples">Design, Eng, Marketing, Sales, Ops</span>
+      </div>
+    </div>
+    <p class="body-lg mt-32" style="font-size:14px;opacity:0.4;text-align:center;">
+      Each layer builds on the one above. More specific as you go down.
+    </p>
+  </div>
+  <span class="slide-num" style="color:#F5F0E8;">3 / 8</span>
+</section>
+
+<!-- ═══════════ SLIDE 4 — Inheritance Model ═══════════ -->
+<section class="slide bg-dark" id="s4">
+  <div class="deco-circle" style="width:400px;height:400px;background:#C4795B;top:-100px;left:-100px;"></div>
+  <div class="slide-inner">
+    <div class="label" style="opacity:0.4;">Inheritance</div>
+    <h2 class="big mt-12">Base Class &rarr; Child Class</h2>
+    <p class="body-lg mt-12" style="max-width:520px;">
+      DayFlow inherits from Sutra, then extends with its own domain knowledge.
+    </p>
+
+    <div class="inherit-diagram">
+      <!-- Sutra base -->
+      <div class="inherit-box" style="background:rgba(196,121,91,0.15);border:1px solid rgba(196,121,91,0.3);">
+        <div class="label" style="opacity:0.6;color:#C4795B;margin-bottom:8px;">Sutra provides</div>
+        <p style="font-size:15px;font-weight:600;">Layer 1: Abstraction</p>
+        <p style="font-size:15px;font-weight:600;">Layer 2: Operating System</p>
+        <p style="font-size:15px;font-weight:600;">Layer 3: B2C Module</p>
+        <p style="font-size:15px;font-weight:600;">Layer 4: Design + Eng Skills</p>
+      </div>
+
+      <div class="inherit-arrow"></div>
+      <div class="inherit-label">extends</div>
+      <div class="inherit-arrow"></div>
+
+      <!-- DayFlow child -->
+      <div class="inherit-box" style="background:rgba(45,90,62,0.2);border:1px solid rgba(45,90,62,0.3);">
+        <div class="label" style="opacity:0.6;color:#2D5A3E;margin-bottom:8px;">DayFlow adds</div>
+        <p style="font-size:15px;font-weight:600;">Domain knowledge (time management, habits)</p>
+        <p style="font-size:15px;font-weight:600;">Design system (glass pills, watermarks)</p>
+        <p style="font-size:15px;font-weight:600;">Product specifics (canvas, AI commands)</p>
+      </div>
+    </div>
+  </div>
+  <span class="slide-num">4 / 8</span>
+</section>
+
+<!-- ═══════════ SLIDE 5 — Release Cycle ═══════════ -->
+<section class="slide bg-gradient" id="s5">
+  <div class="deco-circle" style="width:350px;height:350px;background:#F5F0E8;top:-80px;right:-80px;"></div>
+  <div class="slide-inner">
+    <div class="label" style="opacity:0.4;">Release Cycle</div>
+    <h2 class="big mt-12">Versioned. Deliberate.</h2>
+    <p class="body-lg mt-12" style="max-width:520px;">
+      Sutra develops continuously and tags releases. Companies pin to a version and upgrade on their own schedule.
+    </p>
+
+    <div class="timeline">
+      <div class="timeline-line"></div>
+      <div class="timeline-node">
+        <div class="timeline-dot"></div>
+        <div class="timeline-tag">v1.0</div>
+        <div class="timeline-desc">Initial OS release</div>
+      </div>
+      <div class="timeline-node">
+        <div class="timeline-dot"></div>
+        <div class="timeline-tag">v1.1</div>
+        <div class="timeline-desc">B2C module added</div>
+      </div>
+      <div class="timeline-node">
+        <div class="timeline-dot pinned"></div>
+        <div class="timeline-tag" style="color:#F5F0E8;">v1.2</div>
+        <div class="timeline-desc" style="opacity:0.8;">DayFlow pins here</div>
+      </div>
+      <div class="timeline-node">
+        <div class="timeline-dot"></div>
+        <div class="timeline-tag">v2.0</div>
+        <div class="timeline-desc">Major revision</div>
+      </div>
+      <div class="timeline-node">
+        <div class="timeline-dot"></div>
+        <div class="timeline-tag" style="opacity:0.4;">v2.1</div>
+        <div class="timeline-desc">In progress...</div>
+      </div>
+    </div>
+
+    <div class="glass mt-40" style="text-align:center;">
+      <p style="font-size:14px;font-weight:600;opacity:0.7;">
+        DayFlow upgrades deliberately, not automatically.<br>
+        Like pinning a npm dependency.
+      </p>
+    </div>
+  </div>
+  <span class="slide-num" style="color:#F5F0E8;">5 / 8</span>
+</section>
+
+<!-- ═══════════ SLIDE 6 — Feedback Loop ═══════════ -->
+<section class="slide bg-cream" id="s6">
+  <div class="deco-circle" style="width:500px;height:500px;background:#2D5A3E;bottom:-150px;left:-150px;"></div>
+  <div class="slide-inner">
+    <div class="label">Feedback Loop</div>
+    <h2 class="big mt-12">Two-Way Learning</h2>
+    <p class="body-lg mt-12" style="max-width:520px;">
+      Sutra and its clients form a living feedback loop. Knowledge flows in both directions.
+    </p>
+
+    <div class="loop-container">
+      <div class="loop-entity glass-dark" style="border-color:rgba(196,121,91,0.2);">
+        <h3 style="color:#C4795B;">Sutra</h3>
+        <ul>
+          <li>Principles</li>
+          <li>Processes</li>
+          <li>Sensors</li>
+          <li>Guidelines</li>
+        </ul>
+      </div>
+
+      <div class="loop-arrows">
+        <div class="loop-arrow">
+          <span class="loop-arrow-label">Pushes</span>
+          <span class="loop-arrow-line">&rarr;</span>
+        </div>
+        <div class="loop-arrow">
+          <span class="loop-arrow-line">&larr;</span>
+          <span class="loop-arrow-label">Feeds back</span>
+        </div>
+      </div>
+
+      <div class="loop-entity glass-dark" style="border-color:rgba(45,90,62,0.2);">
+        <h3 style="color:#2D5A3E;">DayFlow</h3>
+        <ul>
+          <li>Incidents</li>
+          <li>Violations</li>
+          <li>Validations</li>
+          <li>Missing principles</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="glass-dark mt-32" style="text-align:center;border-color:rgba(26,23,20,0.06);">
+      <p style="font-size:14px;font-weight:600;opacity:0.6;">
+        Sutra learns from real-world usage &rarr; publishes a better version &rarr; cycle repeats
+      </p>
+    </div>
+  </div>
+  <span class="slide-num">6 / 8</span>
+</section>
+
+<!-- ═══════════ SLIDE 7 — Stage 1 OS ═══════════ -->
+<section class="slide bg-dark" id="s7">
+  <div class="deco-circle" style="width:450px;height:450px;background:#2D5A3E;top:-120px;right:-120px;"></div>
+  <div class="slide-inner">
+    <div class="label" style="opacity:0.4;">Today</div>
+    <h2 class="big mt-12">Stage 1 OS</h2>
+    <p class="body-lg mt-12">What DayFlow runs right now.</p>
+
+    <div class="os-grid">
+      <div class="os-card glass">
+        <h4>12 Rules on One Card</h4>
+        <p>The entire operating system fits on a single card. Simple enough to memorize, complete enough to run a company.</p>
+      </div>
+      <div class="os-card glass">
+        <h4>The One Process</h4>
+        <div class="process-flow">
+          <span class="process-step" style="background:rgba(245,240,232,0.1);color:#F5F0E8;">Idea</span>
+          <span class="process-arrow" style="color:#F5F0E8;">&rarr;</span>
+          <span class="process-step" style="background:rgba(245,240,232,0.1);color:#F5F0E8;">PR/FAQ</span>
+          <span class="process-arrow" style="color:#F5F0E8;">&rarr;</span>
+          <span class="process-step" style="background:rgba(245,240,232,0.1);color:#F5F0E8;">P1</span>
+          <span class="process-arrow" style="color:#F5F0E8;">&rarr;</span>
+          <span class="process-step" style="background:rgba(245,240,232,0.1);color:#F5F0E8;">Mockup</span>
+          <span class="process-arrow" style="color:#F5F0E8;">&rarr;</span>
+          <span class="process-step" style="background:rgba(245,240,232,0.1);color:#F5F0E8;">Build</span>
+          <span class="process-arrow" style="color:#F5F0E8;">&rarr;</span>
+          <span class="process-step" style="background:rgba(245,240,232,0.1);color:#F5F0E8;">Test</span>
+          <span class="process-arrow" style="color:#F5F0E8;">&rarr;</span>
+          <span class="process-step" style="background:rgba(196,121,91,0.3);color:#F5F0E8;">Ship</span>
+        </div>
+      </div>
+      <div class="os-card glass full">
+        <h4>Functions</h4>
+        <div style="display:flex;gap:24px;flex-wrap:wrap;margin-top:8px;">
+          <div>
+            <div class="label" style="margin-bottom:6px;color:#C4795B;opacity:1;font-size:10px;">Active</div>
+            <ul style="font-size:13px;opacity:0.7;line-height:1.8;list-style:none;">
+              <li>Product</li>
+              <li>Engineering</li>
+              <li>Design</li>
+            </ul>
+          </div>
+          <div>
+            <div class="label" style="margin-bottom:6px;opacity:0.3;font-size:10px;">Dormant</div>
+            <ul style="font-size:13px;opacity:0.35;line-height:1.8;list-style:none;">
+              <li>Marketing</li>
+              <li>Sales</li>
+              <li>Ops</li>
+              <li>Finance</li>
+              <li>Legal</li>
+              <li>HR</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <span class="slide-num">7 / 8</span>
+</section>
+
+<!-- ═══════════ SLIDE 8 — Vision at Scale ═══════════ -->
+<section class="slide bg-accent" id="s8">
+  <div class="deco-circle" style="width:500px;height:500px;background:#F5F0E8;top:-180px;left:-180px;"></div>
+  <div class="slide-inner" style="text-align:center;">
+    <div class="label" style="opacity:0.5;">The Vision</div>
+    <h2 class="big mt-12">Network Effect</h2>
+    <p class="body-lg mt-12" style="max-width:520px;margin:12px auto 0;">
+      Multiple companies, each pinned to a Sutra version. Every company's learnings improve the OS for everyone.
+    </p>
+
+    <!-- Hub and spoke visual -->
+    <div style="margin-top:48px;display:flex;flex-direction:column;align-items:center;gap:20px;">
+      <!-- Top row -->
+      <div style="display:flex;align-items:center;justify-content:center;gap:16px;">
+        <div class="network-node" style="background:rgba(245,240,232,0.15);color:#F5F0E8;">
+          <div><span style="font-size:9px;opacity:0.5;">v1.2</span><br>DayFlow</div>
+        </div>
+        <div class="network-edge"></div>
+        <div class="network-hub">Sutra</div>
+        <div class="network-edge"></div>
+        <div class="network-node" style="background:rgba(245,240,232,0.15);color:#F5F0E8;">
+          <div><span style="font-size:9px;opacity:0.5;">v2.0</span><br>Co. B</div>
+        </div>
+      </div>
+      <!-- Bottom row -->
+      <div style="display:flex;align-items:center;justify-content:center;gap:80px;">
+        <div class="network-node" style="background:rgba(245,240,232,0.15);color:#F5F0E8;">
+          <div><span style="font-size:9px;opacity:0.5;">v1.1</span><br>Co. C</div>
+        </div>
+        <div class="network-node" style="background:rgba(245,240,232,0.15);color:#F5F0E8;">
+          <div><span style="font-size:9px;opacity:0.5;">v2.0</span><br>Co. D</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="glass mt-40" style="max-width:480px;margin-left:auto;margin-right:auto;">
+      <p style="font-size:14px;font-weight:600;opacity:0.8;line-height:1.7;">
+        DayFlow's bugs help Company B.<br>
+        Company C's discovery improves DayFlow.<br>
+        More clients &rarr; better OS for everyone.
+      </p>
+    </div>
+  </div>
+  <span class="slide-num" style="color:#F5F0E8;">8 / 8</span>
+</section>
+
+<script>
+  // Generate nav dots
+  const slides = document.querySelectorAll('.slide');
+  const nav = document.getElementById('navDots');
+  slides.forEach((s, i) => {
+    const dot = document.createElement('button');
+    dot.className = 'nav-dot';
+    dot.onclick = () => s.scrollIntoView({ behavior: 'smooth' });
+    nav.appendChild(dot);
+  });
+
+  // Update dot styles on scroll
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        const idx = [...slides].indexOf(e.target);
+        const dots = nav.querySelectorAll('.nav-dot');
+        const isDark = e.target.classList.contains('bg-cream') || e.target.classList.contains('bg-warm');
+        dots.forEach((d, i) => {
+          d.style.opacity = i === idx ? '1' : '0.2';
+          d.style.transform = i === idx ? 'scale(1.5)' : 'scale(1)';
+          d.className = isDark ? 'nav-dot' : 'nav-dot light';
+        });
+      }
+    });
+  }, { threshold: 0.5 });
+  slides.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>
