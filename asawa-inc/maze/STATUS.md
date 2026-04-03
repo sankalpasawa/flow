@@ -1,5 +1,5 @@
 # Maze — Onboarding Status
-Phase: 2/8 MARKET — COMPLETE
+Phase: 3/8 SHAPE — COMPLETE
 Started: 2026-04-04
 Founder responses: 11/11
 
@@ -12,4 +12,5 @@ Founder responses: 11/11
 
 ## Phase Log
 - Phase 1 INTAKE: Complete — Intake Card written to INTAKE.md
-- Phase 2 MARKET: Complete — Market Brief written to MARKET-BRIEF.md. 6 competitors analyzed. Key gap: no clean humor feed with WhatsApp-native sharing for India.
+- Phase 2 MARKET: Complete — Market Brief written to MARKET-BRIEF.md
+- Phase 3 SHAPE: Complete — Product Brief written to PRODUCT-BRIEF.md. 8 P0 features (6 user-facing). PR/FAQ compelling. All risks have mitigations.
