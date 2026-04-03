@@ -230,11 +230,13 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
   },
   signOutButton: {
-    backgroundColor: '#450A0A',
+    backgroundColor: 'rgba(181,99,74,0.12)',
     borderRadius: radii.sm,
+    borderWidth: 1,
+    borderColor: 'rgba(181,99,74,0.25)',
     paddingVertical: 14,
     alignItems: 'center',
     minHeight: 44,
   },
-  signOutText: { color: '#FCA5A5', fontSize: 16, fontWeight: '600' },
+  signOutText: { color: '#B5634A', fontSize: 16, fontWeight: '600' },
 });
