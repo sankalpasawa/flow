@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Text, View, ActivityIndicator } from 'react-native';
+import { Text, View, ActivityIndicator, Platform } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useAuthStore } from '../store/authStore';
 import { seedSystemCategories } from '../lib/db/categories';
@@ -57,6 +57,7 @@ function TabNavigator() {
           height: 82,
           paddingBottom: 24,
           paddingTop: 6,
+          ...(Platform.OS === 'web' ? { backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)' } as any : {}),
         },
         tabBarActiveTintColor: '#2D5A3E',
         tabBarInactiveTintColor: '#8C857D',
