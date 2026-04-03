@@ -17,6 +17,10 @@
 - [ ] **Play screen voice**: Real speech-to-text requires dev build (not Expo Go). Wire when switching from Expo Go.
 - [ ] **Structured logging strategy**: Add meaningful logs at error boundaries and critical paths (DB writes, API calls, auth). Remove verbose debug logs. Principle: log at boundaries, not inside functions. Log failures, not successes.
 
+## Big Ideas (Asawa Inc. Portfolio)
+
+- [ ] **Floating Voice Listener (Desktop/Mac)** — Always-on voice assistant that floats on desktop, listens, and executes actions. Not just transcription — it DOES things: opens apps, runs commands, searches, creates activities, takes notes. Could integrate with DayFlow or be a standalone product. Explore: (1) macOS menubar app with always-on mic, (2) integration with Wispr Flow or similar voice-to-action tools, (3) LLM-powered intent parsing from voice, (4) privacy model (local processing vs cloud). Could be a separate company under Asawa Inc. **Priority: Explore soon — this is a platform-level idea.**
+
 ## Goals Feature Follow-up
 
 - [ ] **Seed goals data**: Add sample goals to seed.ts and seedDemo.ts so new installs show example goals
