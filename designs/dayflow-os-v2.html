@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DayFlow Operating System v2</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-snap-type: y mandatory; overflow-y: scroll; }
+
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    color: #1A1714;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── Slide system ── */
+  .slide {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 60px 40px;
+    scroll-snap-align: start;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .slide-inner {
+    max-width: 840px;
+    width: 100%;
+    z-index: 1;
+  }
+
+  /* ── Backgrounds ── */
+  .bg-cream { background: #F5F0E8; }
+  .bg-green { background: #2D5A3E; color: #F5F0E8; }
+  .bg-dark { background: #1A1714; color: #F5F0E8; }
+  .bg-warm { background: linear-gradient(135deg, #F5F0E8 0%, #EDE5D8 100%); }
+  .bg-gradient { background: linear-gradient(160deg, #2D5A3E 0%, #1A3A28 100%); color: #F5F0E8; }
+  .bg-accent { background: linear-gradient(160deg, #C4795B 0%, #A05A3E 100%); color: #F5F0E8; }
+  .bg-deep { background: linear-gradient(160deg, #1A1714 0%, #2A2520 100%); color: #F5F0E8; }
+
+  /* ── Decorative circles ── */
+  .deco-circle {
+    position: absolute;
+    border-radius: 50%;
+    opacity: 0.06;
+  }
+
+  /* ── Typography ── */
+  .mega {
+    font-size: clamp(44px, 7vw, 72px);
+    font-weight: 900;
+    letter-spacing: -3px;
+    line-height: 1.0;
+  }
+  .big {
+    font-size: clamp(28px, 4.5vw, 48px);
+    font-weight: 800;
+    letter-spacing: -1.5px;
+    line-height: 1.15;
+  }
+  .medium {
+    font-size: clamp(20px, 3vw, 30px);
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    line-height: 1.3;
+  }
+  .body-lg {
+    font-size: clamp(15px, 2vw, 19px);
+    font-weight: 400;
+    line-height: 1.65;
+    opacity: 0.75;
+  }
+  .label {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    opacity: 0.5;
+  }
+
+  /* ── Glass card ── */
+  .glass {
+    background: rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 16px;
+    padding: 28px 32px;
+  }
+  .glass-dark {
+    background: rgba(0, 0, 0, 0.08);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    border-radius: 16px;
+    padding: 28px 32px;
+  }
+
+  /* ── Tables ── */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+  }
+  th {
+    text-align: left;
+    font-weight: 700;
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 10px 14px;
+    opacity: 0.5;
+    border-bottom: 2px solid currentColor;
+  }
+  td {
+    padding: 11px 14px;
+    border-bottom: 1px solid rgba(128, 128, 128, 0.15);
+    vertical-align: top;
+    line-height: 1.5;
+  }
+  tr:last-child td { border-bottom: none; }
+
+  .bg-green th { border-bottom-color: rgba(245, 240, 232, 0.3); }
+  .bg-dark th { border-bottom-color: rgba(245, 240, 232, 0.3); }
+  .bg-gradient th { border-bottom-color: rgba(245, 240, 232, 0.3); }
+
+  /* ── Pipeline ── */
+  .pipeline {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin: 24px 0;
+  }
+  .pipe-step {
+    flex: 1;
+    min-width: 100px;
+    padding: 18px 14px;
+    border-radius: 14px;
+    text-align: center;
+    position: relative;
+  }
+  .pipe-step .step-num {
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    opacity: 0.4;
+    margin-bottom: 6px;
+  }
+  .pipe-step .step-name {
+    font-size: 16px;
+    font-weight: 800;
+    letter-spacing: -0.3px;
+    margin-bottom: 4px;
+  }
+  .pipe-step .step-who {
+    font-size: 11px;
+    font-weight: 500;
+    opacity: 0.6;
+  }
+
+  .pipe-green {
+    background: rgba(45, 90, 62, 0.1);
+    border: 1px solid rgba(45, 90, 62, 0.15);
+  }
+  .pipe-accent {
+    background: rgba(196, 121, 91, 0.1);
+    border: 1px solid rgba(196, 121, 91, 0.15);
+  }
+
+  /* ── Node tree ── */
+  .node-tree {
+    margin: 20px 0;
+  }
+  .node {
+    border-radius: 14px;
+    padding: 18px 22px;
+    margin-bottom: 10px;
+  }
+  .node-mission {
+    background: rgba(45, 90, 62, 0.12);
+    border-left: 4px solid #2D5A3E;
+  }
+  .node-commit {
+    background: rgba(196, 121, 91, 0.1);
+    border-left: 4px solid #C4795B;
+    margin-left: 28px;
+  }
+  .node-task {
+    background: rgba(0, 0, 0, 0.04);
+    border-left: 4px solid #999;
+    margin-left: 56px;
+  }
+  .node-id {
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    opacity: 0.45;
+  }
+  .node-text {
+    font-size: 15px;
+    font-weight: 600;
+    margin-top: 2px;
+  }
+  .node-meta {
+    font-size: 12px;
+    opacity: 0.5;
+    margin-top: 4px;
+  }
+
+  /* ── Checklist cards ── */
+  .checklist-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-top: 20px;
+  }
+  @media (max-width: 640px) {
+    .checklist-grid { grid-template-columns: 1fr; }
+  }
+  .check-card {
+    border-radius: 14px;
+    padding: 22px;
+  }
+  .check-card h4 {
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    margin-bottom: 12px;
+  }
+  .check-card ol {
+    padding-left: 18px;
+    font-size: 13px;
+    line-height: 1.8;
+    opacity: 0.8;
+  }
+
+  .cc-code { background: rgba(45, 90, 62, 0.08); border: 1px solid rgba(45, 90, 62, 0.12); }
+  .cc-design { background: rgba(196, 121, 91, 0.08); border: 1px solid rgba(196, 121, 91, 0.12); }
+  .cc-product { background: rgba(100, 80, 60, 0.08); border: 1px solid rgba(100, 80, 60, 0.1); }
+  .cc-session { background: rgba(0, 0, 0, 0.04); border: 1px solid rgba(0, 0, 0, 0.06); }
+
+  /* ── Metric cards ── */
+  .metric-row {
+    display: flex;
+    gap: 14px;
+    margin-top: 20px;
+    flex-wrap: wrap;
+  }
+  .metric-card {
+    flex: 1;
+    min-width: 160px;
+    border-radius: 14px;
+    padding: 24px;
+    text-align: center;
+  }
+  .metric-card .metric-value {
+    font-size: 36px;
+    font-weight: 900;
+    letter-spacing: -1px;
+  }
+  .metric-card .metric-label {
+    font-size: 12px;
+    font-weight: 600;
+    opacity: 0.5;
+    margin-top: 4px;
+  }
+  .metric-card .metric-note {
+    font-size: 11px;
+    opacity: 0.4;
+    margin-top: 8px;
+  }
+
+  /* ── AB Test ── */
+  .ab-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-top: 20px;
+  }
+  @media (max-width: 640px) {
+    .ab-grid { grid-template-columns: 1fr; }
+  }
+  .ab-card {
+    border-radius: 14px;
+    padding: 24px;
+  }
+  .ab-card h4 {
+    font-size: 14px;
+    font-weight: 800;
+    margin-bottom: 10px;
+  }
+  .ab-card ul {
+    font-size: 13px;
+    line-height: 1.8;
+    padding-left: 16px;
+    opacity: 0.8;
+  }
+  .ab-with { background: rgba(45, 90, 62, 0.1); border: 1px solid rgba(45, 90, 62, 0.15); }
+  .ab-without { background: rgba(196, 121, 91, 0.1); border: 1px solid rgba(196, 121, 91, 0.15); }
+
+  /* ── Misc ── */
+  .spacer { height: 20px; }
+  .spacer-sm { height: 12px; }
+  .tag {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    border-radius: 100px;
+    background: rgba(255, 255, 255, 0.15);
+    margin-bottom: 16px;
+  }
+  .tag-dark {
+    background: rgba(0, 0, 0, 0.06);
+  }
+  .highlight {
+    color: #C4795B;
+  }
+  .highlight-green {
+    color: #2D5A3E;
+  }
+  .dim { opacity: 0.55; }
+  .mono {
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 13px;
+  }
+  .text-center { text-align: center; }
+
+  /* ── Slide number ── */
+  .slide-num {
+    position: absolute;
+    bottom: 24px;
+    right: 32px;
+    font-size: 12px;
+    font-weight: 700;
+    opacity: 0.2;
+    letter-spacing: 1px;
+  }
+
+  /* ── Stage 2 list ── */
+  .s2-list {
+    list-style: none;
+    padding: 0;
+    margin-top: 20px;
+  }
+  .s2-list li {
+    padding: 14px 20px;
+    border-radius: 12px;
+    margin-bottom: 8px;
+    font-size: 15px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .s2-list li .s2-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    flex-shrink: 0;
+  }
+
+  /* ── Nav dots ── */
+  .nav-dots {
+    position: fixed;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    z-index: 100;
+  }
+  .nav-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: rgba(128, 128, 128, 0.25);
+    transition: all 0.3s;
+    cursor: pointer;
+    border: none;
+  }
+  .nav-dot.active {
+    background: #2D5A3E;
+    transform: scale(1.4);
+  }
+</style>
+</head>
+<body>
+
+<!-- Nav dots -->
+<div class="nav-dots" id="navDots"></div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SLIDE 1 — Title -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<section class="slide bg-gradient" id="s1">
+  <div class="deco-circle" style="width: 600px; height: 600px; top: -200px; right: -200px; background: #F5F0E8;"></div>
+  <div class="deco-circle" style="width: 300px; height: 300px; bottom: -100px; left: -80px; background: #C4795B; opacity: 0.08;"></div>
+  <div class="slide-inner text-center">
+    <div class="label" style="margin-bottom: 24px; opacity: 0.4;">DayFlow / Sutra v1.0</div>
+    <h1 class="mega" style="margin-bottom: 24px;">Operating<br>System v2</h1>
+    <p class="body-lg" style="max-width: 520px; margin: 0 auto; opacity: 0.55;">
+      LLM-Driven. Company-First.<br>
+      Same information flow. Same quality gates.<br>
+      The actors are different. The company is real.
+    </p>
+    <div style="margin-top: 40px;">
+      <span class="tag">Stage 1 / Pre-Launch</span>
+    </div>
+  </div>
+  <div class="slide-num">01 / 12</div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SLIDE 2 — The Team -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<section class="slide bg-cream" id="s2">
+  <div class="deco-circle" style="width: 400px; height: 400px; top: -100px; left: -150px; background: #2D5A3E;"></div>
+  <div class="slide-inner">
+    <div class="label">The Team</div>
+    <div class="spacer-sm"></div>
+    <h2 class="big">This <span class="highlight-green">IS</span> the team.</h2>
+    <p class="body-lg" style="margin-top: 8px;">10 roles. Same as any B2C company. Not adapted for LLMs — driven by them.</p>
+    <div class="spacer"></div>
+    <div class="glass-dark" style="overflow-x: auto;">
+      <table>
+        <thead>
+          <tr><th>Role</th><th>Responsibility</th><th>Actor</th></tr>
+        </thead>
+        <tbody>
+          <tr><td style="font-weight:700;">CEO / Founder</td><td>Vision, taste, final decisions, user conversations</td><td>Sankalp</td></tr>
+          <tr><td style="font-weight:700;">Product Manager</td><td>Prioritize features, write specs, track metrics</td><td>Claude (CPO) + Sankalp approves</td></tr>
+          <tr><td style="font-weight:700;">Designer</td><td>Mockups, design system, pixel QA</td><td>Claude (CDO) + Sankalp taste calls</td></tr>
+          <tr><td style="font-weight:700;">Lead Engineer</td><td>Architecture, code quality, tech debt</td><td>Claude (main agent)</td></tr>
+          <tr><td style="font-weight:700;">QA Engineer</td><td>Test on device, regression, design compliance</td><td>Claude (CQO) + sensors</td></tr>
+          <tr><td style="font-weight:700;">Data Analyst</td><td>Analytics, user behavior, experiments</td><td><span class="dim">Stage 2</span></td></tr>
+          <tr><td style="font-weight:700;">Security Engineer</td><td>Auth, privacy, compliance</td><td>Claude (CISO) on demand</td></tr>
+          <tr><td style="font-weight:700;">Growth Lead</td><td>Onboarding, retention, distribution</td><td><span class="dim">Stage 2</span></td></tr>
+          <tr><td style="font-weight:700;">Content Writer</td><td>Copy, docs, app store listing</td><td>Claude + Sankalp voice/tone</td></tr>
+          <tr><td style="font-weight:700;">Ops / DevOps</td><td>Deploy, monitor, incident response</td><td>Claude + Supabase</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="slide-num">02 / 12</div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SLIDE 3 — Daily Rhythm -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<section class="slide bg-dark" id="s3">
+  <div class="deco-circle" style="width: 500px; height: 500px; bottom: -200px; right: -150px; background: #C4795B; opacity: 0.07;"></div>
+  <div class="slide-inner">
+    <div class="label">Daily Rhythm</div>
+    <div class="spacer-sm"></div>
+    <h2 class="big">Start of session.</h2>
+    <div class="spacer"></div>
+    <div class="glass" style="margin-bottom: 16px;">
+      <h4 style="font-size: 13px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; opacity: 0.5; margin-bottom: 14px;">Stand-up Checklist</h4>
+      <ol style="padding-left: 20px; font-size: 15px; line-height: 2.2;">
+        <li>Read CLAUDE.md <span class="dim">(auto-loaded)</span></li>
+        <li>Read TODO.md — what's the top priority?</li>
+        <li>Health check: bugs reported? design drift? app running?</li>
+        <li>State the day's focus</li>
+      </ol>
+    </div>
+    <div class="glass">
+      <h4 style="font-size: 13px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; opacity: 0.5; margin-bottom: 14px;">Today's Focus Format</h4>
+      <div class="mono" style="line-height: 2; opacity: 0.7;">
+        <span style="color: #C4795B; font-weight: 700;">Mission:</span> Ship morning briefing feature<br>
+        <span style="color: #C4795B; font-weight: 700;">Commitments:</span><br>
+        &nbsp;&nbsp;1. Design mockup for briefing card<br>
+        &nbsp;&nbsp;2. Build the component<br>
+        &nbsp;&nbsp;3. Fix DateStrip scroll bug <span class="dim">(carry-over)</span>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num">03 / 12</div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SLIDE 4 — Feature Flow -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<section class="slide bg-warm" id="s4">
+  <div class="deco-circle" style="width: 350px; height: 350px; top: -80px; right: -100px; background: #2D5A3E;"></div>
+  <div class="slide-inner">
+    <div class="label">Feature Flow</div>
+    <div class="spacer-sm"></div>
+    <h2 class="big">Shape to ship.</h2>
+    <p class="body-lg" style="margin-top: 8px;">Seven steps. Every feature. No shortcuts.</p>
+    <div class="pipeline">
+      <div class="pipe-step pipe-green">
+        <div class="step-num">01</div>
+        <div class="step-name">Shape</div>
+        <div class="step-who">PM + Sankalp</div>
+      </div>
+      <div class="pipe-step pipe-accent">
+        <div class="step-num">02</div>
+        <div class="step-name">Design</div>
+        <div class="step-who">Claude CDO + Sankalp</div>
+      </div>
+      <div class="pipe-step pipe-green">
+        <div class="step-num">03</div>
+        <div class="step-name">Specify</div>
+        <div class="step-who">Claude Engineer</div>
+      </div>
+      <div class="pipe-step pipe-green">
+        <div class="step-num">04</div>
+        <div class="step-name">Build</div>
+        <div class="step-who">Claude Engineer</div>
+      </div>
+      <div class="pipe-step pipe-accent">
+        <div class="step-num">05</div>
+        <div class="step-name">Verify</div>
+        <div class="step-who">QA + Sensors</div>
+      </div>
+      <div class="pipe-step pipe-green">
+        <div class="step-num">06</div>
+        <div class="step-name">Ship</div>
+        <div class="step-who">Commit + Push</div>
+      </div>
+      <div class="pipe-step pipe-accent">
+        <div class="step-num">07</div>
+        <div class="step-name">Learn</div>
+        <div class="step-who">Feedback loop</div>
+      </div>
+    </div>
+    <div class="glass-dark" style="margin-top: 8px;">
+      <table>
+        <thead>
+          <tr><th>Step</th><th>Key Rule</th></tr>
+        </thead>
+        <tbody>
+          <tr><td style="font-weight:700;">Shape</td><td>One-paragraph brief. P1 scope only. Edge cases listed.</td></tr>
+          <tr><td style="font-weight:700;">Design</td><td>HTML mockup first. Sankalp approves before any code.</td></tr>
+          <tr><td style="font-weight:700;">Specify</td><td>Read knowledge system. Map every file that changes.</td></tr>
+          <tr><td style="font-weight:700;">Build</td><td>One file at a time. Type-check after each. Commit after each.</td></tr>
+          <tr><td style="font-weight:700;">Verify</td><td>Run 5 sensors. Test on phone. Match the mockup.</td></tr>
+          <tr><td style="font-weight:700;">Ship</td><td>Commit + push. Update TODO.md.</td></tr>
+          <tr><td style="font-weight:700;">Learn</td><td>Surprises feed back to Sutra. Update knowledge system.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="slide-num">04 / 12</div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SLIDE 5 — Bug Flow -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<section class="slide bg-gradient" id="s5">
+  <div class="deco-circle" style="width: 400px; height: 400px; bottom: -150px; left: -100px; background: #F5F0E8;"></div>
+  <div class="slide-inner">
+    <div class="label" style="opacity: 0.35;">Bug Flow</div>
+    <div class="spacer-sm"></div>
+    <h2 class="big">Understand before fixing.</h2>
+    <div class="spacer"></div>
+    <div class="pipeline">
+      <div class="pipe-step" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15);">
+        <div class="step-num">01</div>
+        <div class="step-name">Reproduce</div>
+        <div class="step-who">See the bug</div>
+      </div>
+      <div class="pipe-step" style="background: rgba(196,121,91,0.2); border: 1px solid rgba(196,121,91,0.25);">
+        <div class="step-num">02</div>
+        <div class="step-name">Diagnose</div>
+        <div class="step-who">Find the exact line</div>
+      </div>
+      <div class="pipe-step" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15);">
+        <div class="step-num">03</div>
+        <div class="step-name">Fix</div>
+        <div class="step-who">Simpler than the bug</div>
+      </div>
+      <div class="pipe-step" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15);">
+        <div class="step-num">04</div>
+        <div class="step-name">Verify</div>
+        <div class="step-who">Sensors + adjacent</div>
+      </div>
+      <div class="pipe-step" style="background: rgba(196,121,91,0.2); border: 1px solid rgba(196,121,91,0.25);">
+        <div class="step-num">05</div>
+        <div class="step-name">Learn</div>
+        <div class="step-who">Update knowledge</div>
+      </div>
+    </div>
+    <div class="glass" style="margin-top: 16px;">
+      <h4 style="font-size: 13px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; opacity: 0.4; margin-bottom: 14px;">Iron Rules</h4>
+      <ul style="padding-left: 18px; font-size: 14px; line-height: 2; opacity: 0.8;">
+        <li>Do NOT guess. Do NOT write a fix until you understand the cause.</li>
+        <li>Trace the data flow end to end before touching code.</li>
+        <li>The fix should be <strong>simpler</strong> than the bug, not more complex.</li>
+        <li>If the fix touches more than 2 files, stop and rethink.</li>
+        <li>Add a sensor if this class of bug should be caught automatically.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="slide-num">05 / 12</div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SLIDE 6 — Decision Framework -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<section class="slide bg-cream" id="s6">
+  <div class="deco-circle" style="width: 300px; height: 300px; top: -100px; right: -80px; background: #C4795B; opacity: 0.05;"></div>
+  <div class="slide-inner">
+    <div class="label">Decision Framework</div>
+    <div class="spacer-sm"></div>
+    <h2 class="big">Who decides what.</h2>
+    <p class="body-lg" style="margin-top: 8px;">Taste = founder. Technical = agent. Priority = founder. Always.</p>
+    <div class="spacer"></div>
+    <div class="glass-dark" style="overflow-x: auto;">
+      <table>
+        <thead>
+          <tr><th>Decision</th><th>Who</th><th>Process</th></tr>
+        </thead>
+        <tbody>
+          <tr><td style="font-weight:700;">What to build next</td><td><span class="highlight">Sankalp</span></td><td>Review TODO.md, gut + strategy</td></tr>
+          <tr><td style="font-weight:700;">How it should look</td><td><span class="highlight">Sankalp</span></td><td>Claude creates mockup, Sankalp approves</td></tr>
+          <tr><td style="font-weight:700;">How it should work (UX)</td><td><span class="highlight">Sankalp</span></td><td>Claude proposes flow, Sankalp validates</td></tr>
+          <tr><td style="font-weight:700;">How to implement</td><td><span class="highlight-green">Claude</span></td><td>Read knowledge system, follow architecture</td></tr>
+          <tr><td style="font-weight:700;">Which file to change</td><td><span class="highlight-green">Claude</span></td><td>Change flow map in knowledge system</td></tr>
+          <tr><td style="font-weight:700;">Whether to refactor</td><td><span class="highlight">Sankalp</span></td><td>Claude flags debt, Sankalp decides when</td></tr>
+          <tr><td style="font-weight:700;">P1 vs P2 vs defer</td><td><span class="highlight">Sankalp</span></td><td>Claude provides options with trade-offs</td></tr>
+          <tr><td style="font-weight:700;">Taste calls</td><td><span class="highlight">Sankalp</span></td><td>Fonts, spacing, color, tone. Non-negotiable.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="slide-num">06 / 12</div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SLIDE 7 — Node Structure -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<section class="slide bg-deep" id="s7">
+  <div class="deco-circle" style="width: 450px; height: 450px; top: -150px; left: -150px; background: #2D5A3E; opacity: 0.1;"></div>
+  <div class="slide-inner">
+    <div class="label" style="opacity: 0.35;">Node Structure</div>
+    <div class="spacer-sm"></div>
+    <h2 class="big">Mission <span style="opacity: 0.3;">&rarr;</span> Commitment <span style="opacity: 0.3;">&rarr;</span> Task</h2>
+    <p class="body-lg" style="margin-top: 8px;">Every task traces back to a mission. Always.</p>
+    <div class="spacer"></div>
+    <div class="node-tree">
+      <div class="node node-mission" style="background: rgba(45, 90, 62, 0.2); border-left-color: #5DAA7B;">
+        <div class="node-id">M-001</div>
+        <div class="node-text" style="color: #F5F0E8;">Ship DayFlow to TestFlight (Stage 1 &rarr; Stage 2)</div>
+        <div class="node-meta" style="color: #F5F0E8;">
+          5 screens functional &check; &nbsp; Morning water bug fixed &check; &nbsp; Privacy policy &cross; &nbsp; PostHog &cross; &nbsp; 25 beta users &cross;
+        </div>
+      </div>
+
+      <div class="node node-commit" style="background: rgba(196, 121, 91, 0.15); border-left-color: #C4795B;">
+        <div class="node-id">C-001</div>
+        <div class="node-text" style="color: #F5F0E8;">Fix remaining UX bugs</div>
+      </div>
+      <div class="node node-task" style="background: rgba(255, 255, 255, 0.06); border-left-color: rgba(255,255,255,0.25);">
+        <div class="node-id">T-001</div>
+        <div class="node-text" style="color: #F5F0E8;">Fix fontSize runtime error</div>
+      </div>
+
+      <div class="node node-commit" style="background: rgba(196, 121, 91, 0.15); border-left-color: #C4795B;">
+        <div class="node-id">C-002</div>
+        <div class="node-text" style="color: #F5F0E8;">Add onboarding flow</div>
+      </div>
+      <div class="node node-task" style="background: rgba(255, 255, 255, 0.06); border-left-color: rgba(255,255,255,0.25);">
+        <div class="node-id">T-002</div>
+        <div class="node-text" style="color: #F5F0E8;">Design onboarding screens mockup</div>
+      </div>
+
+      <div class="node node-commit" style="background: rgba(196, 121, 91, 0.15); border-left-color: #C4795B;">
+        <div class="node-id">C-003</div>
+        <div class="node-text" style="color: #F5F0E8;">Integrate PostHog</div>
+      </div>
+      <div class="node node-task" style="background: rgba(255, 255, 255, 0.06); border-left-color: rgba(255,255,255,0.25);">
+        <div class="node-id">T-003</div>
+        <div class="node-text" style="color: #F5F0E8;">Install PostHog SDK</div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num">07 / 12</div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SLIDE 8 — Cross-Cutting Concerns -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<section class="slide bg-warm" id="s8">
+  <div class="deco-circle" style="width: 350px; height: 350px; bottom: -100px; right: -100px; background: #2D5A3E;"></div>
+  <div class="slide-inner">
+    <div class="label">Cross-Cutting Concerns</div>
+    <div class="spacer-sm"></div>
+    <h2 class="big">Before every<span class="highlight">...</span></h2>
+    <p class="body-lg" style="margin-top: 8px;">Four checklists. Apply to every feature, every time.</p>
+    <div class="checklist-grid">
+      <div class="check-card cc-code">
+        <h4 style="color: #2D5A3E;">Before Every Code Change</h4>
+        <ol>
+          <li>Read the change flow map for affected files</li>
+          <li>Check if crossing a shearing layer boundary</li>
+          <li>One file at a time</li>
+          <li>Type-check after each change</li>
+        </ol>
+      </div>
+      <div class="check-card cc-design">
+        <h4 style="color: #A05A3E;">Before Every Design Change</h4>
+        <ol>
+          <li>Read DESIGN.md for the component spec</li>
+          <li>Create mockup before code</li>
+          <li>Use theme tokens (no hardcoded values)</li>
+          <li>Get Sankalp's approval on taste calls</li>
+        </ol>
+      </div>
+      <div class="check-card cc-product">
+        <h4 style="color: #5A4030;">Before Every Product Decision</h4>
+        <ol>
+          <li>Does this serve the current Mission?</li>
+          <li>Is this P1 (must do) or P2 (can wait)?</li>
+          <li>What's the simplest version that tests the hypothesis?</li>
+          <li>Say no to everything that isn't P1</li>
+        </ol>
+      </div>
+      <div class="check-card cc-session">
+        <h4>After Every Session</h4>
+        <ol>
+          <li>Commit and push all changes</li>
+          <li>Update TODO.md</li>
+          <li>Note any learnings for Sutra feedback</li>
+          <li>Update PRODUCT-KNOWLEDGE-SYSTEM.md</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num">08 / 12</div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SLIDE 9 — Metrics -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<section class="slide bg-green" id="s9">
+  <div class="deco-circle" style="width: 400px; height: 400px; top: -120px; right: -120px; background: #F5F0E8; opacity: 0.05;"></div>
+  <div class="slide-inner">
+    <div class="label" style="opacity: 0.35;">Metrics</div>
+    <div class="spacer-sm"></div>
+    <h2 class="big">What we measure.</h2>
+    <p class="body-lg" style="margin-top: 8px;">Three numbers that tell us if the OS is working.</p>
+    <div class="metric-row">
+      <div class="metric-card glass">
+        <div class="metric-value" style="color: #C4795B;">Ship<br>Time</div>
+        <div class="metric-label">Shape to deployed</div>
+        <div class="metric-note">Target: &lt; 1 session per feature</div>
+      </div>
+      <div class="metric-card glass">
+        <div class="metric-value" style="color: #F5F0E8;">Break<br>Rate</div>
+        <div class="metric-label">Regressions per feature</div>
+        <div class="metric-note">Target: 0 regressions</div>
+      </div>
+      <div class="metric-card glass">
+        <div class="metric-value" style="color: #C4795B;">Decision<br>Speed</div>
+        <div class="metric-label">Blockers waiting on humans</div>
+        <div class="metric-note">Target: &lt; 2 per session</div>
+      </div>
+    </div>
+    <div class="spacer"></div>
+    <div class="glass">
+      <h4 style="font-size: 13px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; opacity: 0.4; margin-bottom: 14px;">Day 1 Baseline</h4>
+      <table>
+        <thead>
+          <tr><th>Metric</th><th>Value</th><th>Notes</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Ship time</td><td style="font-weight:700;">~1 session</td><td class="dim">Small features (bug fixes, UI tweaks)</td></tr>
+          <tr><td>Break rate</td><td style="font-weight:700;">High</td><td class="dim">Virtual ID bugs, seed regressions, design drift</td></tr>
+          <tr><td>Decision speed</td><td style="font-weight:700;">Fast</td><td class="dim">Sankalp available in-session</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="slide-num">09 / 12</div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SLIDE 10 — A/B Test -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<section class="slide bg-cream" id="s10">
+  <div class="deco-circle" style="width: 300px; height: 300px; bottom: -80px; left: -80px; background: #C4795B; opacity: 0.05;"></div>
+  <div class="slide-inner">
+    <div class="label">The Experiment</div>
+    <div class="spacer-sm"></div>
+    <h2 class="big">Sutra OS vs<br><span class="highlight">just vibing.</span></h2>
+    <p class="body-lg" style="margin-top: 8px;">The operating system must earn its place.</p>
+    <div class="spacer"></div>
+    <div class="ab-grid">
+      <div class="ab-card ab-with">
+        <h4 style="color: #2D5A3E;">With Full OS</h4>
+        <ul>
+          <li>2 features built with the complete Sutra OS process</li>
+          <li>Shape &rarr; Design &rarr; Specify &rarr; Build &rarr; Verify &rarr; Ship &rarr; Learn</li>
+          <li>All checklists enforced</li>
+          <li>All sensors running</li>
+        </ul>
+      </div>
+      <div class="ab-card ab-without">
+        <h4 style="color: #A05A3E;">Without OS (Vibing)</h4>
+        <ul>
+          <li>2 features built with no process</li>
+          <li>Just start coding, ship when it works</li>
+          <li>No checklists, no sensors</li>
+          <li>Pure speed, see what happens</li>
+        </ul>
+      </div>
+    </div>
+    <div class="glass-dark" style="margin-top: 16px; text-align: center;">
+      <div style="font-size: 13px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; opacity: 0.4; margin-bottom: 10px;">+ 1 Tiebreaker Feature</div>
+      <div style="font-size: 15px; opacity: 0.7;">Built with whichever method won on the first 4. 5 total features.</div>
+    </div>
+    <div class="spacer"></div>
+    <div class="glass-dark">
+      <h4 style="font-size: 13px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; opacity: 0.4; margin-bottom: 14px;">What We Measure</h4>
+      <table>
+        <thead>
+          <tr><th>Metric</th><th>Hypothesis (OS)</th><th>Hypothesis (Vibing)</th></tr>
+        </thead>
+        <tbody>
+          <tr><td style="font-weight:700;">Ship time</td><td><span class="dim">Slower per-feature</span></td><td style="font-weight:600;">Faster per-feature</td></tr>
+          <tr><td style="font-weight:700;">Break rate</td><td style="font-weight:600;">Fewer regressions</td><td><span class="dim">More regressions</span></td></tr>
+          <tr><td style="font-weight:700;">Quality (Design QA)</td><td style="font-weight:600;">Higher score</td><td><span class="dim">Lower score</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="slide-num">10 / 12</div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SLIDE 11 — Stage 2 -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<section class="slide bg-gradient" id="s11">
+  <div class="deco-circle" style="width: 500px; height: 500px; top: -200px; left: -200px; background: #F5F0E8;"></div>
+  <div class="slide-inner">
+    <div class="label" style="opacity: 0.35;">What Stage 2 Adds</div>
+    <div class="spacer-sm"></div>
+    <h2 class="big">When we hit<br><span style="color: #C4795B;">25 users.</span></h2>
+    <p class="body-lg" style="margin-top: 8px;">New roles activate. New processes come online.</p>
+    <div class="spacer"></div>
+    <ul class="s2-list">
+      <li class="glass">
+        <span class="s2-icon" style="background: rgba(196,121,91,0.2); color: #C4795B; font-weight: 900;">DA</span>
+        <div>
+          <strong>Data Analyst activates</strong>
+          <div style="font-size: 13px; opacity: 0.55;">PostHog reviews. User behavior analysis. Experiment results.</div>
+        </div>
+      </li>
+      <li class="glass">
+        <span class="s2-icon" style="background: rgba(196,121,91,0.2); color: #C4795B; font-weight: 900;">GL</span>
+        <div>
+          <strong>Growth Lead activates</strong>
+          <div style="font-size: 13px; opacity: 0.55;">Onboarding optimization. Retention loops. Distribution strategy.</div>
+        </div>
+      </li>
+      <li class="glass">
+        <span class="s2-icon" style="background: rgba(255,255,255,0.15); font-weight: 900;">WM</span>
+        <div>
+          <strong>Weekly metrics review</strong>
+          <div style="font-size: 13px; opacity: 0.55;">Structured review of ship time, break rate, retention, NPS.</div>
+        </div>
+      </li>
+      <li class="glass">
+        <span class="s2-icon" style="background: rgba(255,255,255,0.15); font-weight: 900;">UI</span>
+        <div>
+          <strong>User interview cadence</strong>
+          <div style="font-size: 13px; opacity: 0.55;">Regular conversations with beta users. Feedback loop formalized.</div>
+        </div>
+      </li>
+      <li class="glass">
+        <span class="s2-icon" style="background: rgba(255,255,255,0.15); font-weight: 900;">AB</span>
+        <div>
+          <strong>A/B testing process</strong>
+          <div style="font-size: 13px; opacity: 0.55;">Structured experiment framework for feature variants.</div>
+        </div>
+      </li>
+    </ul>
+  </div>
+  <div class="slide-num">11 / 12</div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SLIDE 12 — Philosophy -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<section class="slide bg-dark" id="s12">
+  <div class="deco-circle" style="width: 600px; height: 600px; bottom: -250px; right: -200px; background: #2D5A3E; opacity: 0.08;"></div>
+  <div class="deco-circle" style="width: 200px; height: 200px; top: 80px; left: -60px; background: #C4795B; opacity: 0.06;"></div>
+  <div class="slide-inner text-center">
+    <div class="label" style="opacity: 0.3; margin-bottom: 24px;">The Philosophy</div>
+    <h2 class="mega" style="line-height: 1.1; margin-bottom: 32px;">
+      The LLM <span style="color: #C4795B;">IS</span><br>the team.
+    </h2>
+    <div style="max-width: 560px; margin: 0 auto;">
+      <p style="font-size: clamp(17px, 2.5vw, 22px); line-height: 1.7; opacity: 0.6; font-weight: 400;">
+        Same information flow.<br>
+        Same quality gates.<br>
+        Same decisions.
+      </p>
+      <div class="spacer"></div>
+      <p style="font-size: clamp(17px, 2.5vw, 22px); line-height: 1.7; opacity: 0.45; font-weight: 400;">
+        The actors are different.<br>
+        The company is real.
+      </p>
+    </div>
+    <div style="margin-top: 48px;">
+      <span class="tag" style="font-size: 13px; padding: 8px 20px;">DayFlow OS v2 / Sutra v1.0</span>
+    </div>
+  </div>
+  <div class="slide-num">12 / 12</div>
+</section>
+
+<script>
+  // Build nav dots
+  const totalSlides = 12;
+  const dotsContainer = document.getElementById('navDots');
+  for (let i = 1; i <= totalSlides; i++) {
+    const dot = document.createElement('button');
+    dot.className = 'nav-dot';
+    dot.dataset.slide = i;
+    dot.onclick = () => document.getElementById('s' + i).scrollIntoView({ behavior: 'smooth' });
+    dotsContainer.appendChild(dot);
+  }
+
+  // Highlight active dot on scroll
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const id = entry.target.id;
+        const num = parseInt(id.replace('s', ''));
+        document.querySelectorAll('.nav-dot').forEach((d, idx) => {
+          d.classList.toggle('active', idx + 1 === num);
+        });
+      }
+    });
+  }, { threshold: 0.5 });
+
+  for (let i = 1; i <= totalSlides; i++) {
+    observer.observe(document.getElementById('s' + i));
+  }
+</script>
+</body>
+</html>
