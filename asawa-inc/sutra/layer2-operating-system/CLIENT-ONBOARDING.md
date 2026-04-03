@@ -468,6 +468,18 @@ Stage → determines process intensity
 5. Run `/setup-deploy` to configure deployment automation
 6. Commit everything: `git add asawa-inc/{company}/ && git commit`
 
+### Default Checklist (founder can override any item)
+
+| Item | Default | Founder decision |
+|------|---------|-----------------|
+| Landing page / website | YES — deploy via Vercel | Founder can say no |
+| Custom domain | NO — use Vercel subdomain until ready | Founder decides |
+| Analytics (PostHog) | NO — add before 100 users | Auto-triggered |
+| Privacy policy | YES — before any public launch | Required |
+| Git repo | YES — committed to asawa-inc/{company}/ | Required |
+
+The landing page is part of every company by default. Sutra builds and deploys it during onboarding. If the founder explicitly says "no landing page," skip it. Otherwise, ship it.
+
 ---
 
 ## Phase 8: ACTIVATE — Start Building

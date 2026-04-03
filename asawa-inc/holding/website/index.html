@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Asawa Inc.</title>
+<meta name="description" content="Asawa Inc. builds companies with AI. Sutra is our operating system. DayFlow is our first product.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #F5F0E8;
+    --surface: #FFFFFF;
+    --text: #1A1714;
+    --muted: #8C857D;
+    --border: #E0D9CE;
+    --primary: #2D5A3E;
+    --accent: #C4956A;
+    --accent-dim: rgba(196, 149, 106, 0.08);
+    --primary-dim: rgba(45, 90, 62, 0.08);
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .container {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  nav {
+    padding: 20px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  nav .container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .logo {
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: -0.3px;
+  }
+
+  .hero {
+    padding: 80px 0 48px;
+    text-align: center;
+  }
+  .hero h1 {
+    font-size: 40px;
+    font-weight: 800;
+    line-height: 1.15;
+    letter-spacing: -1px;
+    margin-bottom: 16px;
+  }
+  .hero p {
+    font-size: 17px;
+    color: var(--muted);
+    max-width: 500px;
+    margin: 0 auto;
+    line-height: 1.7;
+  }
+
+  .companies {
+    padding: 48px 0 64px;
+  }
+  .companies-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--muted);
+    margin-bottom: 24px;
+    text-align: center;
+  }
+  .company-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .company-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px 32px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    text-decoration: none;
+    color: var(--text);
+    transition: all 0.2s;
+  }
+  .company-card:hover {
+    border-color: var(--accent);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+    transform: translateY(-2px);
+  }
+  .company-info h2 {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .company-info p {
+    font-size: 14px;
+    color: var(--muted);
+  }
+  .company-badge {
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+  .badge-os {
+    background: var(--accent-dim);
+    color: var(--accent);
+  }
+  .badge-product {
+    background: var(--primary-dim);
+    color: var(--primary);
+  }
+  .badge-coming {
+    background: rgba(140,133,125,0.1);
+    color: var(--muted);
+  }
+  .company-arrow {
+    font-size: 18px;
+    color: var(--muted);
+    margin-left: 16px;
+  }
+
+  .philosophy {
+    padding: 48px 0;
+    border-top: 1px solid var(--border);
+    text-align: center;
+  }
+  .philosophy h2 {
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+    margin-bottom: 16px;
+  }
+  .philosophy p {
+    font-size: 15px;
+    color: var(--muted);
+    max-width: 520px;
+    margin: 0 auto;
+    line-height: 1.8;
+  }
+
+  .principles {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-top: 32px;
+    text-align: left;
+  }
+  .principle {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+  }
+  .principle h3 {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+  .principle p {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.6;
+    margin: 0;
+  }
+
+  footer {
+    padding: 32px 0;
+    border-top: 1px solid var(--border);
+    text-align: center;
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  @media (max-width: 640px) {
+    .hero h1 { font-size: 28px; }
+    .principles { grid-template-columns: 1fr; }
+    .company-card { flex-direction: column; align-items: flex-start; gap: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="container">
+    <div class="logo">Asawa Inc.</div>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="container">
+    <h1>We build companies with AI</h1>
+    <p>Asawa Inc. is a holding company that builds and operates AI-native businesses. Our operating system, Sutra, structures how companies get built.</p>
+  </div>
+</section>
+
+<section class="companies">
+  <div class="container">
+    <div class="companies-label">Our Companies</div>
+    <div class="company-cards">
+      <a class="company-card" href="#" id="sutra-link">
+        <div class="company-info">
+          <h2>Sutra</h2>
+          <p>The operating system. Takes founders from idea to running company in 60 minutes. 89 AI skills. Structured process.</p>
+        </div>
+        <span class="company-badge badge-os">Operating System</span>
+        <span class="company-arrow">&rarr;</span>
+      </a>
+      <a class="company-card" href="#">
+        <div class="company-info">
+          <h2>DayFlow</h2>
+          <p>Personal operating system for daily life. Time blocks, activities, AI-powered planning. iOS app built with Sutra.</p>
+        </div>
+        <span class="company-badge badge-product">Product</span>
+        <span class="company-arrow">&rarr;</span>
+      </a>
+      <a class="company-card" href="#" style="opacity: 0.5; pointer-events: none;">
+        <div class="company-info">
+          <h2>Next company</h2>
+          <p>Built through Sutra by a founder. Coming soon.</p>
+        </div>
+        <span class="company-badge badge-coming">Coming Soon</span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<section class="philosophy">
+  <div class="container">
+    <h2>How we think</h2>
+    <p>Design how an ideal company operates, then have AI drive it. Not the other way around. Company-first, not LLM-first.</p>
+
+    <div class="principles">
+      <div class="principle">
+        <h3>Structure before speed</h3>
+        <p>10 minutes of clarity saves 10 hours of rework. Every company gets an operating system before writing code.</p>
+      </div>
+      <div class="principle">
+        <h3>Data decides, not faith</h3>
+        <p>Every company A/B tests whether Sutra's process helps. If it doesn't, Sutra adapts. Data wins.</p>
+      </div>
+      <div class="principle">
+        <h3>Feedback loops</h3>
+        <p>Companies feed learnings back to Sutra. Sutra improves for all future companies. Every client makes the system better.</p>
+      </div>
+      <div class="principle">
+        <h3>Session isolation</h3>
+        <p>Each company runs in its own cognitive space. No contamination. Five enforcement levels from instructions to fresh context.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    Asawa Inc.
+  </div>
+</footer>
+
+</body>
+</html>
