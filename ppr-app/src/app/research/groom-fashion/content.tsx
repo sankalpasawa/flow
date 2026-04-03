@@ -1,573 +1,380 @@
 "use client";
 
-import { InfoSection } from "@/components/research/info-section";
+import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 
 /* ─── Data ──────────────────────────────────────────── */
 
-const STYLE_TRENDS = [
+const STYLES = [
   {
-    name: "Long Sherwani",
-    vibe: "Classic King",
-    description:
-      "Below-knee, structured, regal. 2026 shifts toward sculptural craftsmanship — raised threadwork, geometric quilting, tone-on-tone zardozi. Cape silhouettes and angrakha-style wraps are trending.",
-    bestFor: "Main ceremony (pheras / varmala)",
-    tags: ["Timeless", "Heritage", "Statement"],
+    name: "Sherwani",
+    when: "Main ceremony",
+    desc: "The classic. 2026 is all about tone-on-tone threadwork, cape silhouettes, and angrakha wraps. Less bling, more craft.",
+    image: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=600&h=400&fit=crop",
   },
   {
     name: "Bandhgala",
-    vibe: "Breakout Star of 2026",
-    description:
-      "Razor-sharp tailoring meets softer shoulders. Velvet-suede blends, raw silk, textured jacquard. The European ceremonial jacket with Indian soul. Biggest trend jump this year.",
-    bestFor: "Cocktail, reception, sangeet",
-    tags: ["Sharp", "Modern", "Versatile"],
+    when: "Reception / Cocktail",
+    desc: "Biggest trend jump this year. Sharp tailoring, velvet-suede blends, raw silk. European ceremony jacket with Indian soul.",
+    image: "https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=600&h=400&fit=crop",
   },
   {
-    name: "Indo-Western Fusion",
-    vibe: "Soft Hybridity",
-    description:
-      "Western tailoring structure + Indian embellishment. Asymmetric achkans, angarakha-style jackets, draped bandhgalas, jacket-sherwanis with detachable elements.",
-    bestFor: "Sangeet, cocktail, reception",
-    tags: ["Contemporary", "Bold", "Experimental"],
+    name: "Indo-Western",
+    when: "Sangeet / Cocktail",
+    desc: "Asymmetric achkans, draped bandhgalas, jacket-sherwanis with detachable elements. Western tailoring + Indian embellishment.",
+    image: "https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=600&h=400&fit=crop",
   },
   {
-    name: "Kurta Sets",
-    vibe: "Effortless Cool",
-    description:
-      "Hip-length short sherwanis with straight trousers. Minimal embellishment, focus on fabric and fit. The modern groom's go-to for less formal functions.",
-    bestFor: "Mehendi, haldi, pre-wedding events",
-    tags: ["Casual", "Comfortable", "Clean"],
-  },
-  {
-    name: "Jodhpuri Suit",
-    vibe: "Princely Precision",
-    description:
-      "Structured, bespoke, royal. Associated with Raghavendra Rathore's iconic Jodhpur aesthetic. Clean lines, no excess embellishment — the outfit speaks through cut.",
-    bestFor: "Reception, formal events",
-    tags: ["Bespoke", "Royal", "Minimalist"],
+    name: "Kurta Set",
+    when: "Mehendi / Haldi",
+    desc: "Hip-length, straight trousers, minimal embellishment. Focus on fabric and fit. The easy, comfortable choice.",
+    image: "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=600&h=400&fit=crop",
   },
 ];
 
 const DESIGNERS = [
   {
-    name: "Sabyasachi Mukherjee",
-    instagram: "@sabyasachiofficial",
-    instagramUrl: "https://www.instagram.com/sabyasachiofficial/",
-    website: "https://www.sabyasachi.com",
-    specialty: "Heritage sherwanis, ivory/gold/jewel tones, heirloom hand-embroidery",
-    priceRange: "₹3L – ₹25L+",
-    vibe: "Heirloom maximalism",
+    name: "Sabyasachi",
+    ig: "sabyasachiofficial",
+    vibe: "Heritage maximalism",
+    price: "3L+",
+    known: "Ivory & gold sherwanis, heirloom embroidery. Vicky Kaushal & Ranveer wore him.",
   },
   {
     name: "Manish Malhotra",
-    instagram: "@manishmalhotra05",
-    instagramUrl: "https://www.instagram.com/manishmalhotra05/",
-    website: "https://www.manishmalhotra.in",
-    specialty: "Cinematic velvet sherwanis, embellished Indo-westerns, Bollywood couture",
-    priceRange: "₹2L – ₹20L+",
+    ig: "manishmalhotra05",
     vibe: "Bollywood glamour",
+    price: "2L+",
+    known: "Velvet sherwanis, cinematic embellishment. Sidharth Malhotra's gold sherwani.",
   },
   {
     name: "Raghavendra Rathore",
-    instagram: "@raghavendra.rathore",
-    instagramUrl: "https://www.instagram.com/raghavendra.rathore/",
-    website: "https://www.rathore.com",
-    specialty: "Minimalist Jodhpuri bespoke menswear, structured heritage looks",
-    priceRange: "₹1.5L – ₹10L+",
-    vibe: "Princely restraint",
+    ig: "raghavendra.rathore",
+    vibe: "Princely minimalism",
+    price: "1.5L+",
+    known: "The Jodhpuri suit master. Clean lines, zero excess. Bespoke only.",
   },
   {
     name: "Shantanu & Nikhil",
-    instagram: "@shantanunikhil",
-    instagramUrl: "https://www.instagram.com/shantanunikhil/",
-    website: "https://www.shantanunikhil.com",
-    specialty: "Contemporary structured couture, dramatic silhouettes, military-inspired",
-    priceRange: "₹1L – ₹8L+",
-    vibe: "Modern Indian power dressing",
+    ig: "shantanunikhil",
+    vibe: "Modern power dressing",
+    price: "1L+",
+    known: "Structured couture, military-inspired, dramatic silhouettes.",
   },
   {
     name: "Kunal Rawal",
-    instagram: "@kunalrawaldotcom",
-    instagramUrl: "https://www.instagram.com/kunalrawaldotcom/",
-    website: "https://www.kunalrawal.com",
-    specialty: "Bold colors, innovative cuts, unusual fabrics — the cocktail/sangeet king",
-    priceRange: "₹80K – ₹6L+",
+    ig: "kunalrawaldotcom",
     vibe: "Edgy experimentalist",
+    price: "80K+",
+    known: "Bold colors, unusual fabrics. The cocktail/sangeet king.",
   },
   {
     name: "Tarun Tahiliani",
-    instagram: "@taraborellitahiliani",
-    instagramUrl: "https://www.instagram.com/taraborellitahiliani/",
-    website: "https://www.taruntahiliani.com",
-    specialty: "Fluid draping, refined embroidery, embroidered stoles, timeless elegance",
-    priceRange: "₹1.5L – ₹12L+",
+    ig: "taruntahiliani",
     vibe: "Sculptural grace",
+    price: "1.5L+",
+    known: "Fluid draping, embroidered stoles. Also runs Tasva (accessible line).",
   },
   {
     name: "Anita Dongre",
-    instagram: "@aaborell",
-    instagramUrl: "https://www.instagram.com/anitadongre/",
-    website: "https://www.anitadongre.com",
-    specialty: "Light eco-conscious fabrics, pastel palettes, day weddings, destination-friendly",
-    priceRange: "₹80K – ₹5L+",
+    ig: "anitadongre",
     vibe: "Sustainable elegance",
+    price: "80K+",
+    known: "Light eco-conscious fabrics, pastels, destination weddings.",
   },
   {
-    name: "Manyavar / Tasva",
-    instagram: "@manyavar",
-    instagramUrl: "https://www.instagram.com/manyavar/",
-    website: "https://www.manyavar.com",
-    specialty: "Mass-premium, widest range, all budgets. Tasva (by Tarun Tahiliani) for accessible luxury",
-    priceRange: "₹15K – ₹1.5L",
+    name: "Manyavar",
+    ig: "manyavar",
     vibe: "Accessible for everyone",
+    price: "15K+",
+    known: "Widest range, all budgets, pan-India stores. Good starting point.",
   },
 ];
 
-const INSTAGRAM_INSPO = [
-  {
-    handle: "@indiangroom",
-    url: "https://www.instagram.com/indiangroom/",
-    followers: "109K",
-    description: "Dedicated Indian groom menswear — curated looks, real weddings, designer features",
-  },
-  {
-    handle: "@lakshay_thakur",
-    url: "https://www.instagram.com/lakshay_thakur/",
-    followers: "239K",
-    description: "Indian men's traditional fashion influencer — styling, outfit ideas, reels",
-  },
-  {
-    handle: "@manishmalhotravows",
-    url: "https://www.instagram.com/manishmalhotravows/",
-    followers: "–",
-    description: "Manish Malhotra's wedding-specific account — bridal & groom couture",
-  },
-  {
-    handle: "@weddingsutra",
-    url: "https://www.instagram.com/weddingsutra/",
-    followers: "1.2M+",
-    description: "India's leading wedding platform — groom style edits, trend reports",
-  },
-  {
-    handle: "@wedmegood",
-    url: "https://www.instagram.com/wedmegood/",
-    followers: "3M+",
-    description: "Wedding planning platform — real wedding groom looks, vendor discovery",
-  },
-  {
-    handle: "@weddingbazaar",
-    url: "https://www.instagram.com/weddingbazaar/",
-    followers: "500K+",
-    description: "Wedding inspiration — groom outfits, decor, planning tips",
-  },
+const INSPO_ACCOUNTS = [
+  { handle: "indiangroom", followers: "109K", desc: "Curated groom looks from real weddings" },
+  { handle: "lakshay_thakur", followers: "239K", desc: "Men's traditional fashion styling" },
+  { handle: "manishmalhotravows", followers: "–", desc: "MM's wedding-specific account" },
+  { handle: "weddingsutra", followers: "1.2M", desc: "India's top wedding platform" },
+  { handle: "wedmegood", followers: "3M", desc: "Real wedding looks + vendor discovery" },
+  { handle: "weddingbazaar", followers: "500K", desc: "Wedding inspo + planning" },
 ];
 
 const CELEB_LOOKS = [
-  {
-    name: "Vicky Kaushal",
-    designer: "Sabyasachi",
-    look: "Ivory sherwani with floral motifs, heavy emerald & diamond jewelry, tussar georgette shawl, Banarasi silk safa",
-    vibe: "The most referenced groom look in recent years. Gold standard for traditional grandeur.",
-    searchTag: "#vickykaushalwedding",
-  },
-  {
-    name: "Ranveer Singh",
-    designer: "Sabyasachi + Abu Jani Sandeep Khosla",
-    look: "Deep red sherwani (Sindhi ceremony) + ivory with silver threadwork & pearls (reception)",
-    vibe: "Maximalist, unapologetic, joyful. Two distinct moods for two functions.",
-    searchTag: "#ranveersinghwedding",
-  },
-  {
-    name: "Sidharth Malhotra",
-    designer: "Manish Malhotra",
-    look: "Metallic gold sherwani with ivory threadwork, gold zardozi, badla embroidery",
-    vibe: "Modern Bollywood royalty. Gold done right — warm, not flashy.",
-    searchTag: "#sidharthmalhotrawedding",
-  },
-  {
-    name: "Ranbir Kapoor",
-    designer: "Sabyasachi",
-    look: "Clean understated ivory sherwani, minimal jewelry, elegant simplicity",
-    vibe: "For grooms who want subtle sophistication. Less is more, perfectly executed.",
-    searchTag: "#ranbirkapoorwedding",
-  },
+  { name: "Vicky Kaushal", designer: "Sabyasachi", desc: "Ivory sherwani, emerald jewelry, Banarasi safa. THE reference look.", tag: "vickykaushalwedding" },
+  { name: "Ranveer Singh", designer: "Sabyasachi", desc: "Deep red for ceremony, ivory + silver for reception. Two moods, both iconic.", tag: "ranveersinghwedding" },
+  { name: "Sidharth Malhotra", designer: "Manish Malhotra", desc: "Metallic gold with ivory threadwork. Modern Bollywood royalty.", tag: "sidharthmalhotrawedding" },
+  { name: "Ranbir Kapoor", designer: "Sabyasachi", desc: "Clean understated ivory. Less is more, perfectly done.", tag: "ranbirkapoorwedding" },
 ];
 
-const COLOR_PALETTES = [
-  {
-    name: "Pastels",
-    trending: true,
-    description: "The #1 trend for 2026. Photographs beautifully in natural light.",
-    colors: [
-      { name: "Powder Pink", hex: "#E8C4C4" },
-      { name: "Dusty Lavender", hex: "#B4A7D6" },
-      { name: "Ice Blue", hex: "#B5D4E8" },
-      { name: "Sage Mint", hex: "#B5C9B3" },
-      { name: "Champagne", hex: "#E8D5B7" },
-      { name: "Pearl Grey", hex: "#C8C8C8" },
-    ],
-  },
-  {
-    name: "Jewel Tones",
-    trending: false,
-    description: "Rich, photogenic, flattering on Indian skin tones. Best for winter weddings.",
-    colors: [
-      { name: "Deep Plum", hex: "#6B3A5E" },
-      { name: "Midnight Blue", hex: "#1B3A5C" },
-      { name: "Emerald", hex: "#2D6A4F" },
-      { name: "Wine", hex: "#722F37" },
-      { name: "Amber", hex: "#B8860B" },
-      { name: "Amethyst", hex: "#7B5EA7" },
-    ],
-  },
-  {
-    name: "Classic / Timeless",
-    trending: false,
-    description: "Eternally photogenic. Ivory and gold are always safe bets.",
-    colors: [
-      { name: "Ivory", hex: "#FFFFF0" },
-      { name: "Cream", hex: "#FFFDD0" },
-      { name: "Gold", hex: "#C9A84C" },
-      { name: "Almond", hex: "#EFDECD" },
-      { name: "Stone", hex: "#928E85" },
-      { name: "Charcoal", hex: "#36454F" },
-    ],
-  },
-];
-
-const ACCESSORIES = [
-  {
-    name: "Safa / Turban",
-    description:
-      "The most important accessory. Handwoven pagdis, organza drapes, vintage Banarasi borders, color-dipped fabrics. Jewel-toned safa + ivory sherwani is the most-photographed combo of 2026.",
-    tip: "Add a sarpech (brooch) for princely impact.",
-  },
-  {
-    name: "Brooch / Sarpech",
-    description:
-      "Pinned to the front of the turban or lapel. Pearl or kundan pieces trending. Minimalist brooches over heavy ornate styles.",
-    tip: "Match metal tone to your jewelry.",
-  },
-  {
-    name: "Necklace / Mala",
-    description:
-      "Layered uncut polki necklaces, structured pearl malas, emerald-and-diamond sets. Vicky Kaushal's heavy emerald look remains a major reference.",
-    tip: "One statement piece > multiple small ones.",
-  },
-  {
-    name: "Juttis / Mojaris",
-    description:
-      "Intricate embroidery, beadwork, metallic accents. Flat toe, no socks. Can match or contrast sherwani color.",
-    tip: "Break them in before the wedding day.",
-  },
-  {
-    name: "Stole / Dupatta",
-    description:
-      "Tussar georgette shawls, embroidered dupatta stoles — adds a layered, regal dimension. Drape over one shoulder.",
-    tip: "Lighter fabrics drape better for photos.",
-  },
+const COLORS = [
+  { group: "Pastels (trending)", items: ["Powder Pink", "Dusty Lavender", "Ice Blue", "Sage Mint", "Champagne"], hexes: ["#E8C4C4", "#B4A7D6", "#B5D4E8", "#B5C9B3", "#E8D5B7"] },
+  { group: "Jewel Tones", items: ["Deep Plum", "Midnight Blue", "Emerald", "Wine", "Amber"], hexes: ["#6B3A5E", "#1B3A5C", "#2D6A4F", "#722F37", "#B8860B"] },
+  { group: "Classics", items: ["Ivory", "Cream", "Gold", "Charcoal", "Stone"], hexes: ["#FFFFF0", "#FFFDD0", "#C9A84C", "#36454F", "#928E85"] },
 ];
 
 const SHOPS = [
-  { name: "Manyavar", url: "https://www.manyavar.com", best: "All budgets, largest selection, pan-India stores" },
-  { name: "Tasva", url: "https://www.tasva.com", best: "Tarun Tahiliani's accessible luxury line" },
-  { name: "Pernia's Pop-Up Shop", url: "https://www.perniaspopupshop.com", best: "Multi-designer luxury curation" },
-  { name: "AZA Fashions", url: "https://www.azafashions.com", best: "Designer menswear, bespoke labels" },
-  { name: "Kalki Fashion", url: "https://www.kalkifashion.com", best: "Bridal + groom sets, accessible luxury" },
-  { name: "Utsav Fashion", url: "https://www.utsavfashion.com", best: "Wide range, global shipping, customization" },
-  { name: "Ogaan", url: "https://www.ogaan.com", best: "Niche designer menswear" },
-  { name: "Rathore (direct)", url: "https://www.rathore.com", best: "Bespoke Jodhpuri suits from the master" },
-];
-
-const HASHTAGS = [
-  "#groomfashion2026",
-  "#indiangroom",
-  "#groomsherwani",
-  "#weddingsherwani",
-  "#groomstyle",
-  "#indianwedding2026",
-  "#groomwear",
-  "#weddingmenswear",
-  "#indiangroomwear",
-  "#bandhgala",
-  "#sherwanidesign",
-  "#groomoutfit",
+  { name: "Manyavar", url: "https://www.manyavar.com", note: "All budgets" },
+  { name: "Tasva", url: "https://www.tasva.com", note: "Tarun Tahiliani's line" },
+  { name: "Pernia's Pop-Up Shop", url: "https://www.perniaspopupshop.com", note: "Multi-designer luxury" },
+  { name: "AZA Fashions", url: "https://www.azafashions.com", note: "Designer menswear" },
+  { name: "Kalki Fashion", url: "https://www.kalkifashion.com", note: "Groom + bridal sets" },
+  { name: "Rathore", url: "https://www.rathore.com", note: "Bespoke Jodhpuri" },
 ];
 
 /* ─── Component ─────────────────────────────────────── */
 
+function InstagramLink({ handle }: { handle: string }) {
+  return (
+    <a
+      href={`https://www.instagram.com/${handle}/`}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="inline-flex items-center gap-1.5 text-sm font-medium text-pink-600 hover:text-pink-700 hover:underline"
+    >
+      <svg viewBox="0 0 24 24" className="h-4 w-4 fill-current" aria-hidden="true">
+        <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C16.67.014 16.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z" />
+      </svg>
+      @{handle}
+    </a>
+  );
+}
+
 export function GroomFashionContent() {
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">
-          Groom Fashion Trends 2026
-        </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          The complete style guide — trending silhouettes, top designers, Instagram inspo, color palettes, and where to buy
-        </p>
+    <div className="space-y-8">
+      {/* Hero */}
+      <div className="relative overflow-hidden rounded-xl">
+        <Image
+          src="https://images.unsplash.com/photo-1519741497674-611481863552?w=1200&h=400&fit=crop"
+          alt="Groom fashion"
+          width={1200}
+          height={400}
+          className="h-48 w-full object-cover brightness-50 sm:h-56"
+          priority
+        />
+        <div className="absolute inset-0 flex flex-col justify-end p-5">
+          <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
+            Groom Fashion 2026
+          </h1>
+          <p className="mt-1 text-sm text-white/80">
+            What to wear, who to follow, where to buy
+          </p>
+        </div>
       </div>
 
-      <Separator />
-
-      {/* ─── Trending Styles ─── */}
-      <div>
-        <h2 className="mb-3 text-lg font-semibold">Trending Silhouettes</h2>
-        <div className="grid gap-3 sm:grid-cols-2">
-          {STYLE_TRENDS.map((style) => (
-            <Card key={style.name}>
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between gap-2">
-                  <CardTitle className="text-base">{style.name}</CardTitle>
-                  <Badge variant="outline" className="shrink-0 text-xs">
-                    {style.vibe}
-                  </Badge>
+      {/* ─── What to Wear ─── */}
+      <section>
+        <h2 className="mb-4 text-lg font-semibold">What to Wear</h2>
+        <div className="grid gap-4 sm:grid-cols-2">
+          {STYLES.map((s) => (
+            <Card key={s.name} className="overflow-hidden">
+              <Image
+                src={s.image}
+                alt={s.name}
+                width={600}
+                height={400}
+                className="h-40 w-full object-cover"
+              />
+              <CardContent className="pt-3 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold">{s.name}</h3>
+                  <Badge variant="outline" className="text-xs">{s.when}</Badge>
                 </div>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <p className="text-sm text-muted-foreground">{style.description}</p>
-                <p className="text-xs text-muted-foreground">
-                  <strong>Best for:</strong> {style.bestFor}
-                </p>
-                <div className="flex flex-wrap gap-1">
-                  {style.tags.map((t) => (
-                    <Badge key={t} variant="secondary" className="text-xs">
-                      {t}
-                    </Badge>
-                  ))}
-                </div>
+                <p className="text-sm text-muted-foreground">{s.desc}</p>
               </CardContent>
             </Card>
           ))}
         </div>
-      </div>
+      </section>
 
       <Separator />
 
-      {/* ─── Color Palettes ─── */}
-      <div>
-        <h2 className="mb-3 text-lg font-semibold">Color Trends</h2>
+      {/* ─── Colors ─── */}
+      <section>
+        <h2 className="mb-4 text-lg font-semibold">Trending Colors</h2>
         <div className="space-y-4">
-          {COLOR_PALETTES.map((palette) => (
-            <Card key={palette.name}>
-              <CardHeader className="pb-3">
-                <div className="flex items-center gap-2">
-                  <CardTitle className="text-base">{palette.name}</CardTitle>
-                  {palette.trending && (
-                    <Badge className="text-xs bg-green-100 text-green-800 border-green-200">
-                      #1 Trend
-                    </Badge>
-                  )}
-                </div>
-                <p className="text-sm text-muted-foreground">{palette.description}</p>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-wrap gap-2">
-                  {palette.colors.map((c) => (
-                    <div key={c.name} className="flex items-center gap-2">
-                      <div
-                        className="h-8 w-8 rounded-md border border-border shadow-sm"
-                        style={{ backgroundColor: c.hex }}
-                      />
-                      <span className="text-xs text-muted-foreground">{c.name}</span>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+          {COLORS.map((group) => (
+            <div key={group.group}>
+              <p className="mb-2 text-sm font-medium">{group.group}</p>
+              <div className="flex gap-3">
+                {group.items.map((name, i) => (
+                  <div key={name} className="flex flex-col items-center gap-1">
+                    <div
+                      className="h-10 w-10 rounded-full border border-border shadow-sm"
+                      style={{ backgroundColor: group.hexes[i] }}
+                    />
+                    <span className="text-[10px] text-muted-foreground text-center leading-tight w-12">{name}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           ))}
         </div>
-      </div>
+      </section>
 
       <Separator />
 
-      {/* ─── Top Designers ─── */}
-      <div>
-        <h2 className="mb-3 text-lg font-semibold">Top Designers</h2>
+      {/* ─── Designers ─── */}
+      <section>
+        <h2 className="mb-4 text-lg font-semibold">Top Designers</h2>
         <div className="space-y-3">
           {DESIGNERS.map((d) => (
             <Card key={d.name}>
-              <CardContent className="pt-4 space-y-2">
-                <div className="flex items-start justify-between gap-2">
-                  <div>
+              <CardContent className="flex items-start justify-between gap-3 pt-4">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
                     <h3 className="font-semibold text-sm">{d.name}</h3>
-                    <a
-                      href={d.instagramUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs text-blue-600 hover:underline"
-                    >
-                      {d.instagram}
-                    </a>
-                    {" · "}
-                    <a
-                      href={d.website}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs text-blue-600 hover:underline"
-                    >
-                      Website
-                    </a>
+                    <span className="text-xs text-muted-foreground">({d.vibe})</span>
                   </div>
-                  <Badge variant="outline" className="shrink-0 text-xs">
-                    {d.priceRange}
-                  </Badge>
+                  <p className="mt-1 text-sm text-muted-foreground">{d.known}</p>
+                  <div className="mt-2">
+                    <InstagramLink handle={d.ig} />
+                  </div>
                 </div>
-                <p className="text-sm text-muted-foreground">{d.specialty}</p>
-                <p className="text-xs italic text-muted-foreground">Vibe: {d.vibe}</p>
+                <Badge variant="secondary" className="shrink-0 text-xs">
+                  {d.price}
+                </Badge>
               </CardContent>
             </Card>
           ))}
         </div>
-      </div>
+      </section>
 
       <Separator />
 
-      {/* ─── Instagram Inspo ─── */}
-      <div>
-        <h2 className="mb-3 text-lg font-semibold">Instagram Accounts to Follow</h2>
-        <div className="grid gap-3 sm:grid-cols-2">
-          {INSTAGRAM_INSPO.map((account) => (
-            <Card key={account.handle}>
-              <CardContent className="pt-4">
-                <div className="flex items-center justify-between">
-                  <a
-                    href={account.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="font-semibold text-sm text-blue-600 hover:underline"
-                  >
-                    {account.handle}
-                  </a>
-                  <span className="text-xs text-muted-foreground">{account.followers}</span>
-                </div>
-                <p className="mt-1 text-xs text-muted-foreground">{account.description}</p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-        <div className="mt-3 flex flex-wrap gap-1.5">
-          {HASHTAGS.map((h) => (
+      {/* ─── Instagram Accounts ─── */}
+      <section>
+        <h2 className="mb-4 text-lg font-semibold">Instagram Accounts to Follow</h2>
+        <div className="grid gap-2 sm:grid-cols-2">
+          {INSPO_ACCOUNTS.map((a) => (
             <a
-              key={h}
-              href={`https://www.instagram.com/explore/tags/${h.slice(1)}/`}
+              key={a.handle}
+              href={`https://www.instagram.com/${a.handle}/`}
               target="_blank"
               rel="noopener noreferrer"
+              className="flex items-center gap-3 rounded-lg border p-3 transition-colors hover:bg-muted/50"
             >
-              <Badge variant="secondary" className="text-xs hover:bg-secondary/80 cursor-pointer">
-                {h}
-              </Badge>
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-purple-500 via-pink-500 to-orange-400">
+                <svg viewBox="0 0 24 24" className="h-5 w-5 fill-white" aria-hidden="true">
+                  <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C16.67.014 16.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z" />
+                </svg>
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-semibold">@{a.handle}</span>
+                  <span className="text-xs text-muted-foreground">{a.followers}</span>
+                </div>
+                <p className="text-xs text-muted-foreground truncate">{a.desc}</p>
+              </div>
             </a>
           ))}
         </div>
-      </div>
+      </section>
 
       <Separator />
 
       {/* ─── Celebrity Looks ─── */}
-      <div>
-        <h2 className="mb-3 text-lg font-semibold">Celebrity Reference Looks</h2>
-        <div className="space-y-3">
-          {CELEB_LOOKS.map((celeb) => (
-            <Card key={celeb.name}>
-              <CardContent className="pt-4 space-y-1">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-semibold text-sm">{celeb.name}</h3>
-                  <Badge variant="outline" className="text-xs">{celeb.designer}</Badge>
-                </div>
-                <p className="text-sm text-muted-foreground">{celeb.look}</p>
-                <p className="text-xs italic text-muted-foreground">{celeb.vibe}</p>
-                <a
-                  href={`https://www.instagram.com/explore/tags/${celeb.searchTag.slice(1)}/`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs text-blue-600 hover:underline"
-                >
-                  Search {celeb.searchTag} on Instagram
-                </a>
-              </CardContent>
-            </Card>
+      <section>
+        <h2 className="mb-4 text-lg font-semibold">Celebrity Looks to Reference</h2>
+        <div className="grid gap-3 sm:grid-cols-2">
+          {CELEB_LOOKS.map((c) => (
+            <a
+              key={c.name}
+              href={`https://www.instagram.com/explore/tags/${c.tag}/`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block rounded-lg border p-4 transition-colors hover:bg-muted/50"
+            >
+              <div className="flex items-center justify-between">
+                <span className="font-semibold text-sm">{c.name}</span>
+                <Badge variant="outline" className="text-xs">{c.designer}</Badge>
+              </div>
+              <p className="mt-1.5 text-sm text-muted-foreground">{c.desc}</p>
+              <p className="mt-2 text-xs text-pink-600">#{c.tag} on Instagram</p>
+            </a>
           ))}
         </div>
-      </div>
+      </section>
 
       <Separator />
 
-      {/* ─── Accessories ─── */}
-      <InfoSection title="Trending Accessories">
-        <div className="space-y-3">
-          {ACCESSORIES.map((acc) => (
-            <div key={acc.name} className="space-y-1">
-              <h4 className="font-medium text-foreground">{acc.name}</h4>
-              <p className="text-sm">{acc.description}</p>
-              <p className="text-xs italic">Tip: {acc.tip}</p>
-            </div>
-          ))}
+      {/* ─── Quick Guide ─── */}
+      <section>
+        <h2 className="mb-4 text-lg font-semibold">Quick Guide</h2>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Card>
+            <CardContent className="pt-4">
+              <h3 className="font-semibold text-sm mb-2">By Function</h3>
+              <div className="space-y-1.5 text-sm text-muted-foreground">
+                <p><strong className="text-foreground">Pheras:</strong> Long sherwani + safa + jewelry</p>
+                <p><strong className="text-foreground">Reception:</strong> Bandhgala or Jodhpuri suit</p>
+                <p><strong className="text-foreground">Sangeet:</strong> Indo-western or bold kurta</p>
+                <p><strong className="text-foreground">Mehendi:</strong> Light kurta set, pastels</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-4">
+              <h3 className="font-semibold text-sm mb-2">By Budget</h3>
+              <div className="space-y-1.5 text-sm text-muted-foreground">
+                <p><strong className="text-foreground">Under 50K:</strong> Manyavar, Tasva, Kalki</p>
+                <p><strong className="text-foreground">50K - 2L:</strong> Kunal Rawal, Anita Dongre</p>
+                <p><strong className="text-foreground">2L - 5L:</strong> Rathore, Tarun Tahiliani</p>
+                <p><strong className="text-foreground">5L+:</strong> Sabyasachi, Manish Malhotra</p>
+              </div>
+            </CardContent>
+          </Card>
         </div>
-      </InfoSection>
+      </section>
 
       <Separator />
 
       {/* ─── Where to Buy ─── */}
-      <InfoSection title="Where to Buy Online">
-        <div className="space-y-2">
-          {SHOPS.map((shop) => (
-            <div key={shop.name} className="flex items-center justify-between rounded-md border p-3">
+      <section>
+        <h2 className="mb-4 text-lg font-semibold">Where to Buy Online</h2>
+        <div className="grid gap-2 sm:grid-cols-2">
+          {SHOPS.map((s) => (
+            <a
+              key={s.name}
+              href={s.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-between rounded-lg border p-3 transition-colors hover:bg-muted/50"
+            >
               <div>
-                <a
-                  href={shop.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="font-medium text-sm text-blue-600 hover:underline"
-                >
-                  {shop.name}
-                </a>
-                <p className="text-xs text-muted-foreground">{shop.best}</p>
+                <span className="text-sm font-medium">{s.name}</span>
+                <p className="text-xs text-muted-foreground">{s.note}</p>
               </div>
-              <Badge variant="outline" className="text-xs shrink-0">Shop</Badge>
-            </div>
+              <svg className="h-4 w-4 shrink-0 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              </svg>
+            </a>
           ))}
         </div>
-      </InfoSection>
-
-      {/* ─── Quick Decision Guide ─── */}
-      <InfoSection title="Quick Decision Guide">
-        <div className="space-y-2">
-          <div>
-            <h4 className="font-medium text-foreground">By Function</h4>
-            <ul className="list-disc pl-5 space-y-1 mt-1">
-              <li><strong>Pheras / Main ceremony:</strong> Long sherwani (ivory/gold/red) + safa + jewelry</li>
-              <li><strong>Reception:</strong> Bandhgala or Jodhpuri suit (midnight blue / deep plum / charcoal)</li>
-              <li><strong>Sangeet / Cocktail:</strong> Indo-western or bold kurta set (pastels / teal / emerald)</li>
-              <li><strong>Mehendi / Haldi:</strong> Short kurta set (light pastels / prints)</li>
-            </ul>
-          </div>
-          <div>
-            <h4 className="font-medium text-foreground">By Budget</h4>
-            <ul className="list-disc pl-5 space-y-1 mt-1">
-              <li><strong>Under ₹50K:</strong> Manyavar, Tasva, Kalki Fashion</li>
-              <li><strong>₹50K – ₹2L:</strong> Kunal Rawal, Anita Dongre, Shantanu & Nikhil</li>
-              <li><strong>₹2L – ₹5L:</strong> Raghavendra Rathore, Tarun Tahiliani</li>
-              <li><strong>₹5L+:</strong> Sabyasachi, Manish Malhotra</li>
-            </ul>
-          </div>
-        </div>
-      </InfoSection>
+      </section>
 
       {/* Share */}
       <div className="flex justify-center py-4">
         <Button
           variant="outline"
+          size="lg"
           onClick={() => {
-            navigator.clipboard.writeText(window.location.href);
-            alert("Link copied! Share it on WhatsApp.");
+            const url = window.location.href;
+            if (navigator.share) {
+              navigator.share({ title: "Groom Fashion 2026", url });
+            } else {
+              navigator.clipboard.writeText(url);
+              alert("Link copied!");
+            }
           }}
         >
-          Copy Link to Share
+          Share this page
         </Button>
       </div>
     </div>
