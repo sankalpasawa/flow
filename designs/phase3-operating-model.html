@@ -1,0 +1,1309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DayFlow Operating Model</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cream: #F5F0E8;
+    --cream-dark: #EBE4D8;
+    --green: #2D5A3E;
+    --green-light: #3A7A52;
+    --green-pale: rgba(45,90,62,0.08);
+    --dark: #1A1714;
+    --muted: #8C857D;
+    --accent: #C4956A;
+    --accent-light: rgba(196,149,106,0.15);
+    --glass: rgba(255,255,255,0.45);
+    --glass-border: rgba(255,255,255,0.6);
+    --glass-dark: rgba(26,23,20,0.04);
+    --red: #B85450;
+    --blue: #4A7FB5;
+    --purple: #7B5EA7;
+    --shadow: 0 4px 24px rgba(26,23,20,0.06);
+    --shadow-lg: 0 8px 40px rgba(26,23,20,0.08);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html {
+    scroll-snap-type: y mandatory;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: var(--cream);
+    color: var(--dark);
+    overflow-x: hidden;
+  }
+
+  .slide {
+    min-height: 100vh;
+    scroll-snap-align: start;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 60px 80px;
+    position: relative;
+  }
+
+  .slide-number {
+    position: absolute;
+    top: 32px;
+    right: 40px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--muted);
+    letter-spacing: 0.5px;
+  }
+
+  h1 {
+    font-size: 52px;
+    font-weight: 800;
+    letter-spacing: -1.5px;
+    line-height: 1.1;
+    color: var(--dark);
+  }
+
+  h2 {
+    font-size: 36px;
+    font-weight: 700;
+    letter-spacing: -0.8px;
+    line-height: 1.2;
+    margin-bottom: 40px;
+    color: var(--dark);
+  }
+
+  h3 {
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: -0.2px;
+    margin-bottom: 8px;
+  }
+
+  .subtitle {
+    font-size: 20px;
+    font-weight: 400;
+    color: var(--muted);
+    margin-top: 16px;
+    line-height: 1.5;
+  }
+
+  .glass-card {
+    background: var(--glass);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    padding: 28px 32px;
+    box-shadow: var(--shadow);
+  }
+
+  .glass-card-dark {
+    background: rgba(26,23,20,0.03);
+    border: 1px solid rgba(26,23,20,0.06);
+    border-radius: 20px;
+    padding: 28px 32px;
+  }
+
+  .tag {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 100px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+  }
+
+  .tag-green { background: rgba(45,90,62,0.12); color: var(--green); }
+  .tag-accent { background: var(--accent-light); color: var(--accent); }
+  .tag-muted { background: rgba(140,133,125,0.12); color: var(--muted); }
+  .tag-red { background: rgba(184,84,80,0.12); color: var(--red); }
+  .tag-blue { background: rgba(74,127,181,0.12); color: var(--blue); }
+  .tag-purple { background: rgba(123,94,167,0.12); color: var(--purple); }
+
+  .divider {
+    width: 60px;
+    height: 3px;
+    background: var(--green);
+    border-radius: 2px;
+    margin: 24px 0;
+  }
+
+  .content-grid {
+    display: grid;
+    gap: 20px;
+    width: 100%;
+    max-width: 1100px;
+  }
+
+  .two-col { grid-template-columns: 1fr 1fr; }
+  .three-col { grid-template-columns: 1fr 1fr 1fr; }
+
+  .mono {
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 13px;
+  }
+
+  .fade { color: var(--muted); }
+
+  /* Nav dots */
+  .nav-dots {
+    position: fixed;
+    right: 24px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 100;
+  }
+  .nav-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: rgba(140,133,125,0.3);
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+  .nav-dot:hover, .nav-dot.active {
+    background: var(--green);
+    transform: scale(1.4);
+  }
+
+  /* Animations */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .slide > * {
+    animation: fadeUp 0.6s ease-out both;
+  }
+</style>
+</head>
+<body>
+
+<!-- Nav dots -->
+<div class="nav-dots" id="navDots"></div>
+
+<!-- ============================================ -->
+<!-- SLIDE 1: Title -->
+<!-- ============================================ -->
+<div class="slide" style="text-align: center;">
+  <span class="slide-number">01 / 12</span>
+  <div style="max-width: 700px;">
+    <span class="tag tag-green" style="margin-bottom: 20px;">OPERATING MODEL v1.0</span>
+    <h1 style="margin-top: 16px;">The Operating Model</h1>
+    <h1 style="color: var(--green); margin-top: 4px;">How DayFlow Runs</h1>
+    <div class="divider" style="margin: 28px auto;"></div>
+    <p class="subtitle">One document. If it is not here, it is not how we operate.<br>
+    Three layers. Seven principles. One flow.</p>
+    <div style="margin-top: 48px; display: flex; gap: 24px; justify-content: center;">
+      <div style="text-align: center;">
+        <div style="font-size: 28px; font-weight: 700; color: var(--green);">3</div>
+        <div style="font-size: 13px; color: var(--muted); margin-top: 2px;">Layers</div>
+      </div>
+      <div style="width: 1px; background: var(--cream-dark);"></div>
+      <div style="text-align: center;">
+        <div style="font-size: 28px; font-weight: 700; color: var(--green);">7</div>
+        <div style="font-size: 13px; color: var(--muted); margin-top: 2px;">Principles</div>
+      </div>
+      <div style="width: 1px; background: var(--cream-dark);"></div>
+      <div style="text-align: center;">
+        <div style="font-size: 28px; font-weight: 700; color: var(--green);">6</div>
+        <div style="font-size: 13px; color: var(--muted); margin-top: 2px;">Flow Stages</div>
+      </div>
+      <div style="width: 1px; background: var(--cream-dark);"></div>
+      <div style="text-align: center;">
+        <div style="font-size: 28px; font-weight: 700; color: var(--green);">6</div>
+        <div style="font-size: 13px; color: var(--muted); margin-top: 2px;">Sensors</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================ -->
+<!-- SLIDE 2: Three Layers -->
+<!-- ============================================ -->
+<div class="slide">
+  <span class="slide-number">02 / 12</span>
+  <h2 style="text-align: center;">The Three Layers</h2>
+  <div style="max-width: 600px; width: 100%; display: flex; flex-direction: column; gap: 0;">
+
+    <!-- Layer 1 -->
+    <div class="glass-card" style="border-radius: 20px 20px 4px 4px; border-bottom: none; padding: 36px 40px; background: rgba(45,90,62,0.06); border-color: rgba(45,90,62,0.15);">
+      <div style="display: flex; justify-content: space-between; align-items: start;">
+        <div>
+          <span class="tag tag-green" style="font-size: 11px;">LAYER 1 &middot; CHANGES YEARLY</span>
+          <h3 style="font-size: 24px; margin-top: 12px; color: var(--green);">Identity</h3>
+          <p style="color: var(--muted); font-size: 14px; margin-top: 8px; line-height: 1.6;">
+            Mission, vision, values, 7 principles, 6 tensions.<br>
+            Loaded into every agent session (Ring 1, ~500 tokens).
+          </p>
+        </div>
+        <div style="font-size: 40px; opacity: 0.15; font-weight: 800;">01</div>
+      </div>
+      <div style="display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap;">
+        <span class="tag tag-muted">Mission</span>
+        <span class="tag tag-muted">Vision</span>
+        <span class="tag tag-muted">Values (5)</span>
+        <span class="tag tag-muted">Principles (7)</span>
+        <span class="tag tag-muted">Tensions (6)</span>
+      </div>
+    </div>
+
+    <!-- Arrow -->
+    <div style="text-align: center; padding: 2px 0; color: var(--muted); font-size: 18px;">
+      <svg width="20" height="16" viewBox="0 0 20 16" style="opacity: 0.3;"><path d="M10 16 L0 0 L20 0 Z" fill="currentColor"/></svg>
+    </div>
+
+    <!-- Layer 2 -->
+    <div class="glass-card" style="border-radius: 4px; border-top: none; border-bottom: none; padding: 36px 40px; background: rgba(196,149,106,0.06); border-color: rgba(196,149,106,0.2);">
+      <div style="display: flex; justify-content: space-between; align-items: start;">
+        <div>
+          <span class="tag tag-accent" style="font-size: 11px;">LAYER 2 &middot; CHANGES MONTHLY-QUARTERLY</span>
+          <h3 style="font-size: 24px; margin-top: 12px; color: var(--accent);">Operating System</h3>
+          <p style="color: var(--muted); font-size: 14px; margin-top: 8px; line-height: 1.6;">
+            The Idea Flow, node types, impact model, decision framework,<br>
+            cadences, sensors. Loaded per-role (Ring 2, ~2000 tokens).
+          </p>
+        </div>
+        <div style="font-size: 40px; opacity: 0.15; font-weight: 800;">02</div>
+      </div>
+      <div style="display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap;">
+        <span class="tag tag-muted">Idea Flow (6 stages)</span>
+        <span class="tag tag-muted">Node Types (3)</span>
+        <span class="tag tag-muted">Impact Model (3D)</span>
+        <span class="tag tag-muted">Decision Framework</span>
+      </div>
+    </div>
+
+    <!-- Arrow -->
+    <div style="text-align: center; padding: 2px 0; color: var(--muted); font-size: 18px;">
+      <svg width="20" height="16" viewBox="0 0 20 16" style="opacity: 0.3;"><path d="M10 16 L0 0 L20 0 Z" fill="currentColor"/></svg>
+    </div>
+
+    <!-- Layer 3 -->
+    <div class="glass-card" style="border-radius: 4px 4px 20px 20px; border-top: none; padding: 36px 40px; background: rgba(140,133,125,0.04); border-color: rgba(140,133,125,0.15);">
+      <div style="display: flex; justify-content: space-between; align-items: start;">
+        <div>
+          <span class="tag tag-muted" style="font-size: 11px;">LAYER 3 &middot; CHANGES MONTHLY</span>
+          <h3 style="font-size: 24px; margin-top: 12px;">Execution</h3>
+          <p style="color: var(--muted); font-size: 14px; margin-top: 8px; line-height: 1.6;">
+            Concrete protocols for code, design, product, and ops changes.<br>
+            Sensors, templates, LLM context loading rules.
+          </p>
+        </div>
+        <div style="font-size: 40px; opacity: 0.15; font-weight: 800;">03</div>
+      </div>
+      <div style="display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap;">
+        <span class="tag tag-muted">Code Protocol</span>
+        <span class="tag tag-muted">Design Protocol</span>
+        <span class="tag tag-muted">Product Protocol</span>
+        <span class="tag tag-muted">6 Sensors</span>
+        <span class="tag tag-muted">4 Templates</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================ -->
+<!-- SLIDE 3: 7 Universal Principles -->
+<!-- ============================================ -->
+<div class="slide">
+  <span class="slide-number">03 / 12</span>
+  <h2 style="text-align: center;">7 Universal Principles</h2>
+  <p class="subtitle" style="text-align: center; margin-top: -30px; margin-bottom: 32px;">Machine-readable. Each has a trigger condition and violation signal.</p>
+
+  <div style="max-width: 900px; width: 100%; display: flex; flex-direction: column; gap: 12px;">
+
+    <div class="glass-card" style="padding: 20px 28px; display: flex; align-items: center; gap: 20px;">
+      <div style="min-width: 44px; height: 44px; border-radius: 12px; background: var(--green); color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px;">P1</div>
+      <div style="flex: 1;">
+        <div style="font-weight: 600; font-size: 15px;">Make work visible and explicit</div>
+        <div style="font-size: 13px; color: var(--muted); margin-top: 3px;">If it is not written down, it does not exist for agents.</div>
+      </div>
+      <span class="tag tag-red" style="font-size: 11px;">Violation: "I assumed..."</span>
+    </div>
+
+    <div class="glass-card" style="padding: 20px 28px; display: flex; align-items: center; gap: 20px;">
+      <div style="min-width: 44px; height: 44px; border-radius: 12px; background: var(--green); color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px;">P2</div>
+      <div style="flex: 1;">
+        <div style="font-weight: 600; font-size: 15px;">Constrain to accelerate</div>
+        <div style="font-size: 13px; color: var(--muted); margin-top: 3px;">Limit scope, context, and WIP. One task at a time.</div>
+      </div>
+      <span class="tag tag-red" style="font-size: 11px;">Violation: Generic output</span>
+    </div>
+
+    <div class="glass-card" style="padding: 20px 28px; display: flex; align-items: center; gap: 20px;">
+      <div style="min-width: 44px; height: 44px; border-radius: 12px; background: var(--green); color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px;">P3</div>
+      <div style="flex: 1;">
+        <div style="font-weight: 600; font-size: 15px;">Feedback loops determine health</div>
+        <div style="font-size: 13px; color: var(--muted); margin-top: 3px;">Every action produces a measurable signal. Tighter loop = faster learning.</div>
+      </div>
+      <span class="tag tag-red" style="font-size: 11px;">Violation: No way to measure</span>
+    </div>
+
+    <div class="glass-card" style="padding: 20px 28px; display: flex; align-items: center; gap: 20px;">
+      <div style="min-width: 44px; height: 44px; border-radius: 12px; background: var(--green); color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px;">P4</div>
+      <div style="flex: 1;">
+        <div style="font-weight: 600; font-size: 15px;">Separate things that change at different rates</div>
+        <div style="font-size: 13px; color: var(--muted); margin-top: 3px;">Consult shearing layers. Cross-layer coupling needs contracts.</div>
+      </div>
+      <span class="tag tag-red" style="font-size: 11px;">Violation: UI needs data change</span>
+    </div>
+
+    <div class="glass-card" style="padding: 20px 28px; display: flex; align-items: center; gap: 20px;">
+      <div style="min-width: 44px; height: 44px; border-radius: 12px; background: var(--green); color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px;">P5</div>
+      <div style="flex: 1;">
+        <div style="font-weight: 600; font-size: 15px;">Start simple, earn complexity</div>
+        <div style="font-size: 13px; color: var(--muted); margin-top: 3px;">Build the simplest thing that works. Add complexity only when proven insufficient.</div>
+      </div>
+      <span class="tag tag-red" style="font-size: 11px;">Violation: Abstraction before 3 uses</span>
+    </div>
+
+    <div class="glass-card" style="padding: 20px 28px; display: flex; align-items: center; gap: 20px;">
+      <div style="min-width: 44px; height: 44px; border-radius: 12px; background: var(--green); color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px;">P6</div>
+      <div style="flex: 1;">
+        <div style="font-weight: 600; font-size: 15px;">Align by intent, not instruction</div>
+        <div style="font-size: 13px; color: var(--muted); margin-top: 3px;">Tell agents WHAT and WHY. Leave HOW open.</div>
+      </div>
+      <span class="tag tag-red" style="font-size: 11px;">Violation: 20 numbered steps</span>
+    </div>
+
+    <div class="glass-card" style="padding: 20px 28px; display: flex; align-items: center; gap: 20px;">
+      <div style="min-width: 44px; height: 44px; border-radius: 12px; background: var(--green); color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px;">P7</div>
+      <div style="flex: 1;">
+        <div style="font-weight: 600; font-size: 15px;">Decisions need an owner</div>
+        <div style="font-size: 13px; color: var(--muted); margin-top: 3px;">Every decision has exactly one DRI. "The team decided" is not allowed.</div>
+      </div>
+      <span class="tag tag-red" style="font-size: 11px;">Violation: No owner named</span>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================ -->
+<!-- SLIDE 4: The Idea Flow -->
+<!-- ============================================ -->
+<div class="slide">
+  <span class="slide-number">04 / 12</span>
+  <h2 style="text-align: center;">The Idea Flow</h2>
+
+  <!-- Flow arrow bar -->
+  <div style="max-width: 1050px; width: 100%; display: flex; align-items: center; gap: 0; margin-bottom: 36px;">
+    <div style="flex: 1; text-align: center; padding: 14px 0; background: rgba(45,90,62,0.10); border-radius: 12px 0 0 12px; font-weight: 700; font-size: 14px; color: var(--green);">SENSE</div>
+    <div style="width: 0; height: 0; border-top: 22px solid transparent; border-bottom: 22px solid transparent; border-left: 14px solid rgba(45,90,62,0.10);"></div>
+    <div style="flex: 1; text-align: center; padding: 14px 0; background: rgba(45,90,62,0.15); font-weight: 700; font-size: 14px; color: var(--green);">SHAPE</div>
+    <div style="width: 0; height: 0; border-top: 22px solid transparent; border-bottom: 22px solid transparent; border-left: 14px solid rgba(45,90,62,0.15);"></div>
+    <div style="flex: 1; text-align: center; padding: 14px 0; background: rgba(45,90,62,0.22); font-weight: 700; font-size: 14px; color: var(--green);">DECIDE</div>
+    <div style="width: 0; height: 0; border-top: 22px solid transparent; border-bottom: 22px solid transparent; border-left: 14px solid rgba(45,90,62,0.22);"></div>
+    <div style="flex: 1; text-align: center; padding: 14px 0; background: rgba(45,90,62,0.30); font-weight: 700; font-size: 14px; color: white;">SPECIFY</div>
+    <div style="width: 0; height: 0; border-top: 22px solid transparent; border-bottom: 22px solid transparent; border-left: 14px solid rgba(45,90,62,0.30);"></div>
+    <div style="flex: 1; text-align: center; padding: 14px 0; background: rgba(45,90,62,0.50); font-weight: 700; font-size: 14px; color: white;">EXECUTE</div>
+    <div style="width: 0; height: 0; border-top: 22px solid transparent; border-bottom: 22px solid transparent; border-left: 14px solid rgba(45,90,62,0.50);"></div>
+    <div style="flex: 1; text-align: center; padding: 14px 0; background: var(--green); border-radius: 0 12px 12px 0; font-weight: 700; font-size: 14px; color: white;">LEARN</div>
+  </div>
+
+  <!-- Feedback loop label -->
+  <div style="max-width: 1050px; width: 100%; text-align: center; margin-bottom: 28px; position: relative;">
+    <div style="border: 2px dashed rgba(45,90,62,0.2); border-top: none; border-radius: 0 0 20px 20px; height: 28px; margin: 0 40px;"></div>
+    <span style="position: absolute; bottom: -6px; left: 50%; transform: translateX(-50%); background: var(--cream); padding: 0 12px; font-size: 12px; color: var(--muted); font-weight: 500; letter-spacing: 1px;">FEEDBACK LOOP</span>
+  </div>
+
+  <!-- Stage details -->
+  <div class="content-grid three-col" style="max-width: 1050px;">
+    <div class="glass-card" style="padding: 20px 24px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <span style="font-weight: 700; color: var(--green); font-size: 14px;">SENSE</span>
+        <span class="tag tag-green" style="font-size: 10px;">Founder</span>
+      </div>
+      <p style="font-size: 13px; color: var(--muted); line-height: 1.5;">Identify signals: Pull (user feedback), Push (founder vision), Pain (bugs, annoyance). Gate: signal appears 3+ times.</p>
+      <div style="margin-top: 10px; font-size: 12px; color: var(--muted);"><strong>Artifact:</strong> Signal entry in pain/ideas log</div>
+    </div>
+
+    <div class="glass-card" style="padding: 20px 24px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <span style="font-weight: 700; color: var(--green); font-size: 14px;">SHAPE</span>
+        <span class="tag tag-accent" style="font-size: 10px;">Founder + Agent</span>
+      </div>
+      <p style="font-size: 13px; color: var(--muted); line-height: 1.5;">Turn signal into 1-page brief: customer intent, hypothesis, boundary conditions, risks, impact map.</p>
+      <div style="margin-top: 10px; font-size: 12px; color: var(--muted);"><strong>Gate:</strong> Brief stress-tested, risks mitigated</div>
+    </div>
+
+    <div class="glass-card" style="padding: 20px 24px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <span style="font-weight: 700; color: var(--green); font-size: 14px;">DECIDE</span>
+        <span class="tag tag-green" style="font-size: 10px;">Founder</span>
+      </div>
+      <p style="font-size: 13px; color: var(--muted); line-height: 1.5;">Apply 2x2 matrix: reversibility vs data richness. Experiment, debate, captain call, or taste.</p>
+      <div style="margin-top: 10px; font-size: 12px; color: var(--muted);"><strong>Artifact:</strong> Decision record with P1/P2/P3 scope</div>
+    </div>
+
+    <div class="glass-card" style="padding: 20px 24px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <span style="font-weight: 700; color: var(--green); font-size: 14px;">SPECIFY</span>
+        <span class="tag tag-accent" style="font-size: 10px;">Agent drafts, Founder confirms</span>
+      </div>
+      <p style="font-size: 13px; color: var(--muted); line-height: 1.5;">Three parallel specs: Product (user experience), Technical (system changes), Verification (acceptance criteria).</p>
+      <div style="margin-top: 10px; font-size: 12px; color: var(--muted);"><strong>Gate:</strong> Founder confirms backbrief</div>
+    </div>
+
+    <div class="glass-card" style="padding: 20px 24px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <span style="font-weight: 700; color: var(--green); font-size: 14px;">EXECUTE</span>
+        <span class="tag tag-purple" style="font-size: 10px;">Agent builds, Founder reviews</span>
+      </div>
+      <p style="font-size: 13px; color: var(--muted); line-height: 1.5;">Build layer by layer, slowest first. One file at a time. Run sensors after each change. Commit per logical unit.</p>
+      <div style="margin-top: 10px; font-size: 12px; color: var(--muted);"><strong>Gate:</strong> All sensors pass + founder approves</div>
+    </div>
+
+    <div class="glass-card" style="padding: 20px 24px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <span style="font-weight: 700; color: var(--green); font-size: 14px;">LEARN</span>
+        <span class="tag tag-green" style="font-size: 10px;">Founder + Agent</span>
+      </div>
+      <p style="font-size: 13px; color: var(--muted); line-height: 1.5;">Three outputs: decision update (pivot/persevere/kill), process update, knowledge archive. Insights feed back to SENSE.</p>
+      <div style="margin-top: 10px; font-size: 12px; color: var(--muted);"><strong>Closes:</strong> Feedback loop to sensing</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================ -->
+<!-- SLIDE 5: Node Types -->
+<!-- ============================================ -->
+<div class="slide">
+  <span class="slide-number">05 / 12</span>
+  <h2 style="text-align: center;">Node Types: The Work Hierarchy</h2>
+
+  <div style="max-width: 900px; width: 100%; display: flex; flex-direction: column; align-items: center; gap: 0;">
+
+    <!-- Mission -->
+    <div class="glass-card" style="width: 560px; padding: 28px 32px; border-radius: 20px 20px 6px 6px; background: rgba(45,90,62,0.06); border-color: rgba(45,90,62,0.15);">
+      <div style="display: flex; justify-content: space-between; align-items: start;">
+        <div>
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <span class="tag tag-green">MISSION</span>
+            <span style="font-size: 12px; color: var(--muted);">Level 1 &middot; Slow</span>
+          </div>
+          <h3 style="font-size: 20px; margin-top: 12px; color: var(--green);">Strategic Intent</h3>
+        </div>
+        <span style="font-size: 12px; color: var(--muted); font-weight: 500;">Changes monthly-quarterly</span>
+      </div>
+      <div style="display: flex; gap: 32px; margin-top: 16px;">
+        <div>
+          <div style="font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px;">Properties</div>
+          <div style="font-size: 13px; margin-top: 4px; line-height: 1.7;">title, intent, owner, status, success_criteria, commitments[]</div>
+        </div>
+        <div>
+          <div style="font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px;">Example</div>
+          <div style="font-size: 13px; margin-top: 4px; line-height: 1.7;">M-001: Natural, intelligent time management</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Connector -->
+    <div style="display: flex; flex-direction: column; align-items: center; padding: 4px 0;">
+      <div style="width: 2px; height: 12px; background: var(--muted); opacity: 0.25;"></div>
+      <svg width="12" height="8" viewBox="0 0 12 8" style="opacity: 0.25;"><path d="M6 8 L0 0 L12 0 Z" fill="var(--muted)"/></svg>
+    </div>
+
+    <!-- Commitment -->
+    <div class="glass-card" style="width: 480px; padding: 28px 32px; border-radius: 6px; background: rgba(196,149,106,0.06); border-color: rgba(196,149,106,0.2);">
+      <div style="display: flex; justify-content: space-between; align-items: start;">
+        <div>
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <span class="tag tag-accent">COMMITMENT</span>
+            <span style="font-size: 12px; color: var(--muted);">Level 2 &middot; Medium</span>
+          </div>
+          <h3 style="font-size: 20px; margin-top: 12px; color: var(--accent);">Scoped User Value</h3>
+        </div>
+        <span style="font-size: 12px; color: var(--muted); font-weight: 500;">Changes weekly-monthly</span>
+      </div>
+      <div style="display: flex; gap: 32px; margin-top: 16px;">
+        <div>
+          <div style="font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px;">Properties</div>
+          <div style="font-size: 13px; margin-top: 4px; line-height: 1.7;">title, mission (parent), intent, owner, scope (P1/P2/P3), spec, tasks[], dependencies</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Connector -->
+    <div style="display: flex; flex-direction: column; align-items: center; padding: 4px 0;">
+      <div style="width: 2px; height: 12px; background: var(--muted); opacity: 0.25;"></div>
+      <svg width="12" height="8" viewBox="0 0 12 8" style="opacity: 0.25;"><path d="M6 8 L0 0 L12 0 Z" fill="var(--muted)"/></svg>
+    </div>
+
+    <!-- Task -->
+    <div style="display: flex; gap: 16px; justify-content: center;">
+      <div class="glass-card" style="width: 200px; padding: 20px 24px; border-radius: 6px 6px 20px 20px;">
+        <span class="tag tag-muted" style="font-size: 11px;">TASK</span>
+        <div style="font-weight: 600; font-size: 14px; margin-top: 8px;">T-041</div>
+        <div style="font-size: 12px; color: var(--muted); margin-top: 4px;">Write NL tests</div>
+        <div style="font-size: 11px; color: var(--muted); margin-top: 8px;">1-5 files &middot; daily-hourly</div>
+      </div>
+      <div class="glass-card" style="width: 200px; padding: 20px 24px; border-radius: 6px 6px 20px 20px;">
+        <span class="tag tag-muted" style="font-size: 11px;">TASK</span>
+        <div style="font-weight: 600; font-size: 14px; margin-top: 8px;">T-042</div>
+        <div style="font-size: 12px; color: var(--muted); margin-top: 4px;">Implement NL parsing</div>
+        <div style="font-size: 11px; color: var(--muted); margin-top: 8px;">1-5 files &middot; daily-hourly</div>
+      </div>
+      <div class="glass-card" style="width: 200px; padding: 20px 24px; border-radius: 6px 6px 20px 20px;">
+        <span class="tag tag-muted" style="font-size: 11px;">TASK</span>
+        <div style="font-weight: 600; font-size: 14px; margin-top: 8px;">T-043</div>
+        <div style="font-size: 12px; color: var(--muted); margin-top: 4px;">Update QuickAdd UI</div>
+        <div style="font-size: 11px; color: var(--muted); margin-top: 8px;">1-5 files &middot; daily-hourly</div>
+      </div>
+    </div>
+
+    <!-- Rules -->
+    <div style="margin-top: 28px; display: flex; gap: 20px; font-size: 13px; color: var(--muted);">
+      <span>Every task belongs to one commitment</span>
+      <span style="opacity: 0.3;">|</span>
+      <span>Every commitment belongs to one mission</span>
+      <span style="opacity: 0.3;">|</span>
+      <span>Missions are independent</span>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================ -->
+<!-- SLIDE 6: Operating Intensity -->
+<!-- ============================================ -->
+<div class="slide">
+  <span class="slide-number">06 / 12</span>
+  <h2 style="text-align: center;">Operating Intensity</h2>
+  <p class="subtitle" style="text-align: center; margin-top: -30px; margin-bottom: 36px;">Match process weight to change size. Small changes skip stages.</p>
+
+  <div style="max-width: 1000px; width: 100%; display: flex; gap: 20px;">
+
+    <!-- Small -->
+    <div class="glass-card" style="flex: 1; padding: 28px; position: relative; overflow: hidden;">
+      <div style="position: absolute; top: 16px; right: 20px; font-size: 52px; font-weight: 800; opacity: 0.04;">S</div>
+      <span class="tag tag-green" style="font-size: 11px;">SMALL</span>
+      <h3 style="font-size: 20px; margin-top: 12px;">Quick Fix</h3>
+      <div style="font-size: 28px; font-weight: 700; color: var(--green); margin-top: 8px;">~5 min</div>
+      <div class="divider" style="margin: 16px 0; width: 40px;"></div>
+      <div style="font-size: 13px; color: var(--muted); line-height: 1.7;">
+        <div><strong>Files:</strong> 1-3</div>
+        <div><strong>Commits:</strong> 1</div>
+        <div><strong>Sessions:</strong> 1</div>
+        <div style="margin-top: 12px;"><strong>Flow:</strong> Sense to Execute (skip Shape, Decide)</div>
+        <div><strong>Brief:</strong> 3 sentences</div>
+        <div><strong>Spec:</strong> 3 bullets</div>
+      </div>
+      <div style="margin-top: 16px; padding: 10px 14px; background: var(--green-pale); border-radius: 10px; font-size: 12px;">
+        Known issue, obvious fix. Bug in single component. Content string change.
+      </div>
+    </div>
+
+    <!-- Medium -->
+    <div class="glass-card" style="flex: 1; padding: 28px; position: relative; overflow: hidden;">
+      <div style="position: absolute; top: 16px; right: 20px; font-size: 52px; font-weight: 800; opacity: 0.04;">M</div>
+      <span class="tag tag-accent" style="font-size: 11px;">MEDIUM</span>
+      <h3 style="font-size: 20px; margin-top: 12px;">Feature Gap</h3>
+      <div style="font-size: 28px; font-weight: 700; color: var(--accent); margin-top: 8px;">1-3 days</div>
+      <div class="divider" style="margin: 16px 0; width: 40px; background: var(--accent);"></div>
+      <div style="font-size: 13px; color: var(--muted); line-height: 1.7;">
+        <div><strong>Files:</strong> 5-15</div>
+        <div><strong>Commits:</strong> Multiple</div>
+        <div><strong>Sessions:</strong> 3-7</div>
+        <div style="margin-top: 12px;"><strong>Flow:</strong> Full 6-stage flow</div>
+        <div><strong>Brief:</strong> Full 1-page</div>
+        <div><strong>Spec:</strong> 3-part, 1-2 pages</div>
+      </div>
+      <div style="margin-top: 16px; padding: 10px 14px; background: var(--accent-light); border-radius: 10px; font-size: 12px;">
+        New screen or interaction. Multi-file refactor. New design pattern.
+      </div>
+    </div>
+
+    <!-- Large -->
+    <div class="glass-card" style="flex: 1; padding: 28px; position: relative; overflow: hidden;">
+      <div style="position: absolute; top: 16px; right: 20px; font-size: 52px; font-weight: 800; opacity: 0.04;">L</div>
+      <span class="tag tag-purple" style="font-size: 11px;">LARGE</span>
+      <h3 style="font-size: 20px; margin-top: 12px;">Architecture</h3>
+      <div style="font-size: 28px; font-weight: 700; color: var(--purple); margin-top: 8px;">1-3 weeks</div>
+      <div class="divider" style="margin: 16px 0; width: 40px; background: var(--purple);"></div>
+      <div style="font-size: 13px; color: var(--muted); line-height: 1.7;">
+        <div><strong>Files:</strong> 15+</div>
+        <div><strong>Commits:</strong> Feature branch</div>
+        <div><strong>Sessions:</strong> 7-20</div>
+        <div style="margin-top: 12px;"><strong>Flow:</strong> Full flow + feasibility spike</div>
+        <div><strong>Brief:</strong> Brief + tech spike</div>
+        <div><strong>Spec:</strong> Multi-page + diagrams</div>
+      </div>
+      <div style="margin-top: 16px; padding: 10px 14px; background: rgba(123,94,167,0.08); border-radius: 10px; font-size: 12px;">
+        Data model change. New bounded context. Core architecture shift.
+      </div>
+    </div>
+
+    <!-- Emergency -->
+    <div class="glass-card" style="flex: 1; padding: 28px; position: relative; overflow: hidden; border-color: rgba(184,84,80,0.2);">
+      <div style="position: absolute; top: 16px; right: 20px; font-size: 52px; font-weight: 800; opacity: 0.04;">!</div>
+      <span class="tag tag-red" style="font-size: 11px;">EMERGENCY</span>
+      <h3 style="font-size: 20px; margin-top: 12px;">Incident</h3>
+      <div style="font-size: 28px; font-weight: 700; color: var(--red); margin-top: 8px;">Minutes</div>
+      <div class="divider" style="margin: 16px 0; width: 40px; background: var(--red);"></div>
+      <div style="font-size: 13px; color: var(--muted); line-height: 1.7;">
+        <div><strong>WIP limit:</strong> 0 for features</div>
+        <div><strong>Protocol:</strong> 7-step</div>
+        <div><strong>Sessions:</strong> Until fixed</div>
+        <div style="margin-top: 12px;"><strong>Flow:</strong> STOP &rarr; ASSESS &rarr; TRACE &rarr; FIX &rarr; VERIFY &rarr; LEARN &rarr; RESUME</div>
+      </div>
+      <div style="margin-top: 16px; padding: 10px 14px; background: rgba(184,84,80,0.06); border-radius: 10px; font-size: 12px;">
+        Production broken. Data corruption. Silent failures (virtual ID bugs).
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================ -->
+<!-- SLIDE 7: 3D Impact Model -->
+<!-- ============================================ -->
+<div class="slide">
+  <span class="slide-number">07 / 12</span>
+  <h2 style="text-align: center;">The 3D Impact Model</h2>
+  <p class="subtitle" style="text-align: center; margin-top: -30px; margin-bottom: 36px;">Every change is assessed across three dimensions before work begins.</p>
+
+  <div style="max-width: 1050px; width: 100%; display: flex; gap: 24px;">
+
+    <!-- Dimension 1: Shearing Layers -->
+    <div class="glass-card" style="flex: 1.2; padding: 28px;">
+      <span class="tag tag-green" style="font-size: 11px;">DIMENSION 1</span>
+      <h3 style="font-size: 18px; margin-top: 10px; color: var(--green);">Shearing Layers</h3>
+      <p style="font-size: 12px; color: var(--muted); margin-bottom: 16px;">Rate of change. Fast depends on slow (fine). Slow on fast (bug).</p>
+      <div style="display: flex; flex-direction: column; gap: 4px;">
+        <div style="display: flex; align-items: center; gap: 8px; padding: 7px 12px; background: rgba(45,90,62,0.12); border-radius: 8px; font-size: 12px;">
+          <span style="font-weight: 700; width: 16px; color: var(--green);">0</span>
+          <span style="flex: 1;">Vision</span>
+          <span style="color: var(--muted); font-size: 11px;">Yearly</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px; padding: 7px 12px; background: rgba(45,90,62,0.09); border-radius: 8px; font-size: 12px;">
+          <span style="font-weight: 700; width: 16px; color: var(--green);">1</span>
+          <span style="flex: 1;">Data Model</span>
+          <span style="color: var(--muted); font-size: 11px;">Quarterly</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px; padding: 7px 12px; background: rgba(45,90,62,0.06); border-radius: 8px; font-size: 12px;">
+          <span style="font-weight: 700; width: 16px; color: var(--green);">2</span>
+          <span style="flex: 1;">Business Logic</span>
+          <span style="color: var(--muted); font-size: 11px;">Monthly</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px; padding: 7px 12px; background: rgba(196,149,106,0.10); border-radius: 8px; font-size: 12px;">
+          <span style="font-weight: 700; width: 16px;">3</span>
+          <span style="flex: 1;">Product Features</span>
+          <span style="color: var(--muted); font-size: 11px;">Weekly</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px; padding: 7px 12px; background: rgba(196,149,106,0.06); border-radius: 8px; font-size: 12px;">
+          <span style="font-weight: 700; width: 16px;">4</span>
+          <span style="flex: 1;">Design System</span>
+          <span style="color: var(--muted); font-size: 11px;">Biweekly</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px; padding: 7px 12px; background: rgba(140,133,125,0.08); border-radius: 8px; font-size: 12px;">
+          <span style="font-weight: 700; width: 16px;">5</span>
+          <span style="flex: 1;">UI Components</span>
+          <span style="color: var(--muted); font-size: 11px;">Daily</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px; padding: 7px 12px; background: rgba(140,133,125,0.04); border-radius: 8px; font-size: 12px;">
+          <span style="font-weight: 700; width: 16px;">6</span>
+          <span style="flex: 1;">Content</span>
+          <span style="color: var(--muted); font-size: 11px;">Anytime</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px; padding: 7px 12px; background: rgba(140,133,125,0.02); border-radius: 8px; font-size: 12px;">
+          <span style="font-weight: 700; width: 16px;">7</span>
+          <span style="flex: 1;">Ops / Config</span>
+          <span style="color: var(--muted); font-size: 11px;">On deploy</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dimension 2: Bounded Contexts -->
+    <div class="glass-card" style="flex: 0.9; padding: 28px;">
+      <span class="tag tag-accent" style="font-size: 11px;">DIMENSION 2</span>
+      <h3 style="font-size: 18px; margin-top: 10px; color: var(--accent);">Bounded Contexts</h3>
+      <p style="font-size: 12px; color: var(--muted); margin-bottom: 16px;">Product domains. Cross-domain = higher risk.</p>
+      <div style="display: flex; flex-direction: column; gap: 6px;">
+        <div style="padding: 10px 14px; background: rgba(45,90,62,0.06); border-radius: 10px;">
+          <div style="font-weight: 600; font-size: 13px;">Product</div>
+          <div style="font-size: 11px; color: var(--muted);">Features, UX, user flows</div>
+        </div>
+        <div style="padding: 10px 14px; background: rgba(45,90,62,0.06); border-radius: 10px;">
+          <div style="font-weight: 600; font-size: 13px;">Engineering</div>
+          <div style="font-size: 11px; color: var(--muted);">Code, infra, performance</div>
+        </div>
+        <div style="padding: 10px 14px; background: rgba(196,149,106,0.06); border-radius: 10px;">
+          <div style="font-weight: 600; font-size: 13px;">Design</div>
+          <div style="font-size: 11px; color: var(--muted);">Visual system, interactions</div>
+        </div>
+        <div style="padding: 10px 14px; background: rgba(140,133,125,0.06); border-radius: 10px;">
+          <div style="font-weight: 600; font-size: 13px;">Data / Support / Marketing</div>
+          <div style="font-size: 11px; color: var(--muted);">Analytics, docs, positioning</div>
+        </div>
+        <div style="padding: 10px 14px; background: rgba(140,133,125,0.04); border-radius: 10px;">
+          <div style="font-weight: 600; font-size: 13px;">Legal / Growth</div>
+          <div style="font-size: 11px; color: var(--muted);">Compliance, retention, activation</div>
+        </div>
+      </div>
+      <div style="margin-top: 14px; font-size: 12px; color: var(--muted); font-style: italic;">All owned by Sankalp at current scale</div>
+    </div>
+
+    <!-- Dimension 3: Value Stream -->
+    <div class="glass-card" style="flex: 0.9; padding: 28px;">
+      <span class="tag tag-purple" style="font-size: 11px;">DIMENSION 3</span>
+      <h3 style="font-size: 18px; margin-top: 10px; color: var(--purple);">Value Stream</h3>
+      <p style="font-size: 12px; color: var(--muted); margin-bottom: 16px;">Idea to user. Each stage can be affected by a change.</p>
+      <div style="display: flex; flex-direction: column; gap: 4px;">
+        <div style="padding: 10px 14px; background: rgba(123,94,167,0.05); border-radius: 10px; display: flex; align-items: center; gap: 10px;">
+          <div style="width: 6px; height: 6px; border-radius: 50%; background: var(--purple);"></div>
+          <span style="font-size: 13px; font-weight: 500;">Sense</span>
+        </div>
+        <div style="padding: 10px 14px; background: rgba(123,94,167,0.05); border-radius: 10px; display: flex; align-items: center; gap: 10px;">
+          <div style="width: 6px; height: 6px; border-radius: 50%; background: var(--purple);"></div>
+          <span style="font-size: 13px; font-weight: 500;">Shape</span>
+        </div>
+        <div style="padding: 10px 14px; background: rgba(123,94,167,0.05); border-radius: 10px; display: flex; align-items: center; gap: 10px;">
+          <div style="width: 6px; height: 6px; border-radius: 50%; background: var(--purple);"></div>
+          <span style="font-size: 13px; font-weight: 500;">Decide</span>
+        </div>
+        <div style="padding: 10px 14px; background: rgba(123,94,167,0.05); border-radius: 10px; display: flex; align-items: center; gap: 10px;">
+          <div style="width: 6px; height: 6px; border-radius: 50%; background: var(--purple);"></div>
+          <span style="font-size: 13px; font-weight: 500;">Specify</span>
+        </div>
+        <div style="padding: 10px 14px; background: rgba(123,94,167,0.08); border-radius: 10px; display: flex; align-items: center; gap: 10px;">
+          <div style="width: 6px; height: 6px; border-radius: 50%; background: var(--purple);"></div>
+          <span style="font-size: 13px; font-weight: 500;">Execute + Ship</span>
+        </div>
+        <div style="padding: 10px 14px; background: rgba(123,94,167,0.05); border-radius: 10px; display: flex; align-items: center; gap: 10px;">
+          <div style="width: 6px; height: 6px; border-radius: 50%; background: var(--purple);"></div>
+          <span style="font-size: 13px; font-weight: 500;">Monitor + Learn</span>
+        </div>
+      </div>
+      <div style="margin-top: 14px; padding: 10px 14px; background: rgba(184,84,80,0.06); border-radius: 10px; font-size: 12px; color: var(--red);">
+        <strong>Example:</strong> Data model change (Layer 1) affects Specify, Execute, Ship, and Monitor.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================ -->
+<!-- SLIDE 8: Decision Framework -->
+<!-- ============================================ -->
+<div class="slide">
+  <span class="slide-number">08 / 12</span>
+  <h2 style="text-align: center;">Decision Framework</h2>
+  <p class="subtitle" style="text-align: center; margin-top: -30px; margin-bottom: 36px;">Who decides what, and how confidence maps to action.</p>
+
+  <div style="max-width: 1000px; width: 100%; display: flex; gap: 24px;">
+
+    <!-- Left: Decision Matrix -->
+    <div style="flex: 1;">
+      <div class="glass-card" style="padding: 28px; margin-bottom: 20px;">
+        <h3 style="font-size: 16px; margin-bottom: 16px;">Decision Matrix (2x2)</h3>
+        <div style="display: grid; grid-template-columns: auto 1fr 1fr; gap: 0;">
+          <!-- Header row -->
+          <div></div>
+          <div style="text-align: center; padding: 10px; font-size: 12px; font-weight: 600; color: var(--green);">High Reversibility</div>
+          <div style="text-align: center; padding: 10px; font-size: 12px; font-weight: 600; color: var(--red);">Low Reversibility</div>
+          <!-- Row 1 -->
+          <div style="padding: 10px; font-size: 12px; font-weight: 600; writing-mode: horizontal-tb; display: flex; align-items: center;">Data-rich</div>
+          <div style="padding: 14px; background: rgba(45,90,62,0.06); border-radius: 10px 0 0 0; margin: 2px; text-align: center;">
+            <div style="font-weight: 600; font-size: 14px;">Experiment</div>
+            <div style="font-size: 11px; color: var(--muted); margin-top: 4px;">Ship behind flag, measure</div>
+          </div>
+          <div style="padding: 14px; background: rgba(196,149,106,0.08); border-radius: 0 10px 0 0; margin: 2px; text-align: center;">
+            <div style="font-weight: 600; font-size: 14px;">Meritocratic Debate</div>
+            <div style="font-size: 11px; color: var(--muted); margin-top: 4px;">Design doc, adversarial review</div>
+          </div>
+          <!-- Row 2 -->
+          <div style="padding: 10px; font-size: 12px; font-weight: 600; display: flex; align-items: center;">Data-poor</div>
+          <div style="padding: 14px; background: rgba(74,127,181,0.06); border-radius: 0 0 0 10px; margin: 2px; text-align: center;">
+            <div style="font-weight: 600; font-size: 14px;">Informed Captain</div>
+            <div style="font-size: 11px; color: var(--muted); margin-top: 4px;">Founder decides fast</div>
+          </div>
+          <div style="padding: 14px; background: rgba(184,84,80,0.06); border-radius: 0 0 10px 0; margin: 2px; text-align: center;">
+            <div style="font-weight: 600; font-size: 14px;">Founder Taste</div>
+            <div style="font-size: 11px; color: var(--muted); margin-top: 4px;">Intuition + principles</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Confidence scoring -->
+      <div class="glass-card" style="padding: 24px;">
+        <h3 style="font-size: 16px; margin-bottom: 12px;">Confidence Scoring</h3>
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="min-width: 60px; text-align: center; padding: 4px 8px; background: rgba(184,84,80,0.08); border-radius: 6px; font-size: 13px; font-weight: 600; color: var(--red);">&lt; 0.5</div>
+            <span style="font-size: 13px; color: var(--muted);">Present alternatives, founder decides</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="min-width: 60px; text-align: center; padding: 4px 8px; background: rgba(196,149,106,0.12); border-radius: 6px; font-size: 13px; font-weight: 600; color: var(--accent);">0.5-0.8</div>
+            <span style="font-size: 13px; color: var(--muted);">Agent recommends, founder can override</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="min-width: 60px; text-align: center; padding: 4px 8px; background: rgba(45,90,62,0.10); border-radius: 6px; font-size: 13px; font-weight: 600; color: var(--green);">&gt; 0.8</div>
+            <span style="font-size: 13px; color: var(--muted);">Low risk: proceed. High risk: still needs founder.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Agent vs Founder -->
+    <div style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
+      <div class="glass-card" style="padding: 24px; background: rgba(45,90,62,0.04); border-color: rgba(45,90,62,0.12);">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 14px;">
+          <div style="width: 32px; height: 32px; border-radius: 8px; background: var(--green); display: flex; align-items: center; justify-content: center;">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="white"><circle cx="8" cy="5" r="3"/><path d="M2 14 C2 10 14 10 14 14"/></svg>
+          </div>
+          <h3 style="font-size: 16px; margin-bottom: 0; color: var(--green);">Agents Decide Autonomously</h3>
+        </div>
+        <div style="font-size: 13px; color: var(--muted); line-height: 1.8;">
+          <div>Single shearing layer only</div>
+          <div>Single bounded context only</div>
+          <div>Low risk, reversible (&lt; 1 hour to undo)</div>
+          <div>Consistent with existing patterns</div>
+          <div style="margin-top: 10px; font-size: 12px; padding: 8px 12px; background: rgba(45,90,62,0.06); border-radius: 8px;">
+            <strong>Examples:</strong> Fix bug in one component, refactor one file, update content strings, add test, apply existing design token
+          </div>
+        </div>
+      </div>
+
+      <div class="glass-card" style="padding: 24px; background: rgba(196,149,106,0.04); border-color: rgba(196,149,106,0.15);">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 14px;">
+          <div style="width: 32px; height: 32px; border-radius: 8px; background: var(--accent); display: flex; align-items: center; justify-content: center;">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="white"><path d="M8 2 L10 6 L14 7 L11 10 L12 14 L8 12 L4 14 L5 10 L2 7 L6 6 Z"/></svg>
+          </div>
+          <h3 style="font-size: 16px; margin-bottom: 0; color: var(--accent);">Founder Decides</h3>
+        </div>
+        <div style="font-size: 13px; color: var(--muted); line-height: 1.8;">
+          <div>Any layer boundary crossing</div>
+          <div>New design token or visual pattern</div>
+          <div>Data model or ID system change</div>
+          <div>New dependency (npm, API)</div>
+          <div>Rendering rule changes</div>
+          <div>P2/P3 scope expansion</div>
+          <div>Killing a task or commitment</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================ -->
+<!-- SLIDE 9: The 6 Sensors -->
+<!-- ============================================ -->
+<div class="slide">
+  <span class="slide-number">09 / 12</span>
+  <h2 style="text-align: center;">The 6 Sensors</h2>
+  <p class="subtitle" style="text-align: center; margin-top: -30px; margin-bottom: 36px;">Run before every commit. Any failure blocks until resolved.</p>
+
+  <div class="content-grid three-col" style="max-width: 1050px;">
+
+    <div class="glass-card" style="padding: 24px;">
+      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+        <div style="width: 36px; height: 36px; border-radius: 10px; background: var(--green); color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 15px;">1</div>
+        <h3 style="font-size: 15px; margin-bottom: 0;">Design Token Compliance</h3>
+      </div>
+      <div style="font-size: 13px; color: var(--muted); line-height: 1.6;">
+        <strong>Checks:</strong> No hardcoded hex in .tsx files<br>
+        <strong>When:</strong> Any .tsx file commit<br>
+        <strong>Pass:</strong> Zero hardcoded colors
+      </div>
+      <div style="margin-top: 10px; padding: 8px 12px; background: rgba(184,84,80,0.05); border-radius: 8px; font-size: 11px; color: var(--red);">
+        Failure = component bypasses theme system
+      </div>
+    </div>
+
+    <div class="glass-card" style="padding: 24px;">
+      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+        <div style="width: 36px; height: 36px; border-radius: 10px; background: var(--green); color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 15px;">2</div>
+        <h3 style="font-size: 15px; margin-bottom: 0;">Theme Values Match Spec</h3>
+      </div>
+      <div style="font-size: 13px; color: var(--muted); line-height: 1.6;">
+        <strong>Checks:</strong> theme.ts matches DESIGN.md<br>
+        <strong>When:</strong> theme.ts or DESIGN.md change<br>
+        <strong>Pass:</strong> All key values match
+      </div>
+      <div style="margin-top: 10px; padding: 8px 12px; background: rgba(184,84,80,0.05); border-radius: 8px; font-size: 11px; color: var(--red);">
+        Failure = spec and implementation diverged
+      </div>
+    </div>
+
+    <div class="glass-card" style="padding: 24px;">
+      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+        <div style="width: 36px; height: 36px; border-radius: 10px; background: var(--green); color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 15px;">3</div>
+        <h3 style="font-size: 15px; margin-bottom: 0;">Virtual ID Safety</h3>
+      </div>
+      <div style="font-size: 13px; color: var(--muted); line-height: 1.6;">
+        <strong>Checks:</strong> Store has no ID manipulation. Callers resolve virtual IDs.<br>
+        <strong>When:</strong> Store or screen changes<br>
+        <strong>Pass:</strong> Clean boundary
+      </div>
+      <div style="margin-top: 10px; padding: 8px 12px; background: rgba(184,84,80,0.05); border-radius: 8px; font-size: 11px; color: var(--red);">
+        Most dangerous failure: silent DB no-ops
+      </div>
+    </div>
+
+    <div class="glass-card" style="padding: 24px;">
+      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+        <div style="width: 36px; height: 36px; border-radius: 10px; background: var(--green); color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 15px;">4</div>
+        <h3 style="font-size: 15px; margin-bottom: 0;">Rendering Rule Consistency</h3>
+      </div>
+      <div style="font-size: 13px; color: var(--muted); line-height: 1.6;">
+        <strong>Checks:</strong> CanvasScreen filters match DESIGN.md rules<br>
+        <strong>When:</strong> Canvas, DESIGN.md, or store changes<br>
+        <strong>Pass:</strong> Code filters = spec
+      </div>
+      <div style="margin-top: 10px; padding: 8px 12px; background: rgba(184,84,80,0.05); border-radius: 8px; font-size: 11px; color: var(--red);">
+        Failure = users see wrong visual treatment
+      </div>
+    </div>
+
+    <div class="glass-card" style="padding: 24px;">
+      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+        <div style="width: 36px; height: 36px; border-radius: 10px; background: var(--green); color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 15px;">5</div>
+        <h3 style="font-size: 15px; margin-bottom: 0;">Seed Data Safety</h3>
+      </div>
+      <div style="font-size: 13px; color: var(--muted); line-height: 1.6;">
+        <strong>Checks:</strong> No INSERT OR REPLACE for user data<br>
+        <strong>When:</strong> seed.ts changes<br>
+        <strong>Pass:</strong> INSERT OR IGNORE only
+      </div>
+      <div style="margin-top: 10px; padding: 8px 12px; background: rgba(184,84,80,0.05); border-radius: 8px; font-size: 11px; color: var(--red);">
+        Failure = hot-reload overwrites user edits
+      </div>
+    </div>
+
+    <div class="glass-card" style="padding: 24px;">
+      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+        <div style="width: 36px; height: 36px; border-radius: 10px; background: var(--green); color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 15px;">6</div>
+        <h3 style="font-size: 15px; margin-bottom: 0;">Type Safety</h3>
+      </div>
+      <div style="font-size: 13px; color: var(--muted); line-height: 1.6;">
+        <strong>Checks:</strong> TypeScript compiles with zero errors<br>
+        <strong>When:</strong> Every commit<br>
+        <strong>Pass:</strong> <code style="font-size: 12px;">npx tsc --noEmit</code> = 0
+      </div>
+      <div style="margin-top: 10px; padding: 8px 12px; background: rgba(184,84,80,0.05); border-radius: 8px; font-size: 11px; color: var(--red);">
+        Failure = type contract broken. No @ts-ignore.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================ -->
+<!-- SLIDE 10: The Learning Loop -->
+<!-- ============================================ -->
+<div class="slide">
+  <span class="slide-number">10 / 12</span>
+  <h2 style="text-align: center;">The Learning Loop</h2>
+  <p class="subtitle" style="text-align: center; margin-top: -30px; margin-bottom: 36px;">The system improves itself. Every incident and metric feeds back into the model.</p>
+
+  <div style="max-width: 950px; width: 100%; display: flex; gap: 24px;">
+
+    <!-- Incidents -->
+    <div class="glass-card" style="flex: 1; padding: 28px;">
+      <span class="tag tag-red" style="font-size: 11px;">INCIDENTS</span>
+      <h3 style="font-size: 18px; margin-top: 10px;">Incidents Update Sensors</h3>
+      <div class="divider" style="width: 40px;"></div>
+      <p style="font-size: 13px; color: var(--muted); line-height: 1.7;">Every incident produces at least one systemic improvement:</p>
+      <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 14px;">
+        <div style="padding: 10px 14px; background: rgba(184,84,80,0.05); border-radius: 10px; font-size: 13px; display: flex; align-items: start; gap: 8px;">
+          <span style="color: var(--red); font-weight: 700; margin-top: 1px;">1</span>
+          <span><strong>New sensor</strong> if none caught it</span>
+        </div>
+        <div style="padding: 10px 14px; background: rgba(184,84,80,0.05); border-radius: 10px; font-size: 13px; display: flex; align-items: start; gap: 8px;">
+          <span style="color: var(--red); font-weight: 700; margin-top: 1px;">2</span>
+          <span><strong>Updated Change Flow Map</strong> if dependency was undocumented</span>
+        </div>
+        <div style="padding: 10px 14px; background: rgba(184,84,80,0.05); border-radius: 10px; font-size: 13px; display: flex; align-items: start; gap: 8px;">
+          <span style="color: var(--red); font-weight: 700; margin-top: 1px;">3</span>
+          <span><strong>Updated boundary contract</strong> if unclear or missing</span>
+        </div>
+        <div style="padding: 10px 14px; background: rgba(184,84,80,0.05); border-radius: 10px; font-size: 13px; display: flex; align-items: start; gap: 8px;">
+          <span style="color: var(--red); font-weight: 700; margin-top: 1px;">4</span>
+          <span><strong>Decision record</strong> with root cause and prevention</span>
+        </div>
+      </div>
+      <div style="margin-top: 14px; padding: 10px 14px; border: 1px dashed rgba(184,84,80,0.2); border-radius: 10px; font-size: 12px; color: var(--red); font-weight: 500;">
+        Incident is not closed until a systemic improvement ships.
+      </div>
+    </div>
+
+    <!-- Analytics -->
+    <div class="glass-card" style="flex: 1; padding: 28px;">
+      <span class="tag tag-blue" style="font-size: 11px;">ANALYTICS</span>
+      <h3 style="font-size: 18px; margin-top: 10px;">Analytics Feed Ideas</h3>
+      <div class="divider" style="width: 40px; background: var(--blue);"></div>
+      <p style="font-size: 13px; color: var(--muted); line-height: 1.7;">Input metrics to track (each with a hypothesis):</p>
+      <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 14px;">
+        <div style="padding: 10px 14px; background: rgba(74,127,181,0.05); border-radius: 10px; font-size: 13px;">
+          <strong>Actions per session</strong><br><span style="color: var(--muted); font-size: 12px;">Are users doing things or just looking?</span>
+        </div>
+        <div style="padding: 10px 14px; background: rgba(74,127,181,0.05); border-radius: 10px; font-size: 13px;">
+          <strong>Quick-add usage rate</strong><br><span style="color: var(--muted); font-size: 12px;">Is NL input reducing friction?</span>
+        </div>
+        <div style="padding: 10px 14px; background: rgba(74,127,181,0.05); border-radius: 10px; font-size: 13px;">
+          <strong>Time-to-first-action</strong><br><span style="color: var(--muted); font-size: 12px;">How fast can a new user capture a thought?</span>
+        </div>
+        <div style="padding: 10px 14px; background: rgba(74,127,181,0.05); border-radius: 10px; font-size: 13px;">
+          <strong>Session length trends</strong><br><span style="color: var(--muted); font-size: 12px;">Shorter (efficient) or longer (engaged)?</span>
+        </div>
+      </div>
+      <div style="margin-top: 14px; font-size: 12px; color: var(--muted);">Unexpected movement in any metric triggers a new signal in the SENSE stage.</div>
+    </div>
+
+    <!-- Decisions -->
+    <div class="glass-card" style="flex: 1; padding: 28px;">
+      <span class="tag tag-green" style="font-size: 11px;">DECISIONS</span>
+      <h3 style="font-size: 18px; margin-top: 10px;">Decisions Get Tracked</h3>
+      <div class="divider" style="width: 40px;"></div>
+      <p style="font-size: 13px; color: var(--muted); line-height: 1.7;">Outcome field filled 2-4 weeks post-decision:</p>
+      <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 14px;">
+        <div style="padding: 10px 14px; background: var(--green-pale); border-radius: 10px; font-size: 13px;">
+          <strong>Result</strong><br><span style="color: var(--muted); font-size: 12px;">Did the hypothesis hold?</span>
+        </div>
+        <div style="padding: 10px 14px; background: var(--green-pale); border-radius: 10px; font-size: 13px;">
+          <strong>Surprises</strong><br><span style="color: var(--muted); font-size: 12px;">What we did not anticipate</span>
+        </div>
+        <div style="padding: 10px 14px; background: var(--green-pale); border-radius: 10px; font-size: 13px;">
+          <strong>Quality rating</strong><br><span style="color: var(--muted); font-size: 12px;">Good / neutral / bad</span>
+        </div>
+        <div style="padding: 10px 14px; background: var(--green-pale); border-radius: 10px; font-size: 13px;">
+          <strong>Would decide differently?</strong><br><span style="color: var(--muted); font-size: 12px;">Calibrates future confidence</span>
+        </div>
+      </div>
+      <div style="margin-top: 14px; font-size: 12px; color: var(--muted);">Quarterly: review all outcomes. High confidence + bad outcome = our models are wrong.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================ -->
+<!-- SLIDE 11: LLM Compatibility -->
+<!-- ============================================ -->
+<div class="slide">
+  <span class="slide-number">11 / 12</span>
+  <h2 style="text-align: center;">LLM Compatibility</h2>
+  <p class="subtitle" style="text-align: center; margin-top: -30px; margin-bottom: 36px;">Ring-based context loading and templates for common operations.</p>
+
+  <div style="max-width: 1050px; width: 100%; display: flex; gap: 24px;">
+
+    <!-- Ring diagram -->
+    <div style="flex: 1;">
+      <div class="glass-card" style="padding: 28px; text-align: center;">
+        <h3 style="font-size: 16px; margin-bottom: 20px; text-align: left;">Context Rings</h3>
+        <!-- Concentric boxes -->
+        <div style="padding: 20px; border: 2px solid rgba(140,133,125,0.15); border-radius: 16px; background: rgba(140,133,125,0.03);">
+          <div style="font-size: 11px; color: var(--muted); text-align: left; margin-bottom: 8px; font-weight: 600;">Ring 4: Reference Material (on demand)</div>
+          <div style="font-size: 11px; color: var(--muted); text-align: left; margin-bottom: 12px;">Full specs, design docs, source files</div>
+          <div style="padding: 18px; border: 2px solid rgba(123,94,167,0.2); border-radius: 14px; background: rgba(123,94,167,0.03);">
+            <div style="font-size: 11px; color: var(--purple); text-align: left; margin-bottom: 6px; font-weight: 600;">Ring 3: Task Context (~5000 tokens)</div>
+            <div style="font-size: 11px; color: var(--muted); text-align: left; margin-bottom: 12px;">Current task, spec, recent decisions. Changes per session.</div>
+            <div style="padding: 16px; border: 2px solid rgba(196,149,106,0.25); border-radius: 12px; background: rgba(196,149,106,0.04);">
+              <div style="font-size: 11px; color: var(--accent); text-align: left; margin-bottom: 6px; font-weight: 600;">Ring 2: Role Context (~2000 tokens)</div>
+              <div style="font-size: 11px; color: var(--muted); text-align: left; margin-bottom: 12px;">Responsibilities, standards. Changes monthly.</div>
+              <div style="padding: 14px; border: 2px solid rgba(45,90,62,0.25); border-radius: 10px; background: rgba(45,90,62,0.05);">
+                <div style="font-size: 12px; color: var(--green); font-weight: 700;">Ring 1: Identity (~500 tokens)</div>
+                <div style="font-size: 11px; color: var(--muted); margin-top: 4px;">Mission, principles. Changes yearly.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top: 16px; font-size: 12px; color: var(--muted);">Always load Ring 1+2. Load 3 per task. Load 4 on demand. Recency bias: load 3+4 LAST.</div>
+      </div>
+    </div>
+
+    <!-- Templates -->
+    <div style="flex: 1; display: flex; flex-direction: column; gap: 16px;">
+      <h3 style="font-size: 16px;">Templates for Common Operations</h3>
+
+      <div class="glass-card" style="padding: 18px 22px;">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+          <span class="tag tag-red" style="font-size: 10px;">BUG FIX</span>
+        </div>
+        <div style="font-size: 12px; color: var(--muted); line-height: 1.6;">
+          Load: CLAUDE.md + bug file + Failure Flow Map + 1-hop deps<br>
+          Protocol: Reproduce &rarr; Trace via Flow Map &rarr; Fix at boundary &rarr; Add test &rarr; Sensors &rarr; Incident record
+        </div>
+      </div>
+
+      <div class="glass-card" style="padding: 18px 22px;">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+          <span class="tag tag-blue" style="font-size: 10px;">NEW UI COMPONENT</span>
+        </div>
+        <div style="font-size: 12px; color: var(--muted); line-height: 1.6;">
+          Load: CLAUDE.md + DESIGN.md + theme.ts + similar component<br>
+          Protocol: Read spec &rarr; Build with tokens &rarr; Sensor 1 &rarr; Verify on device &rarr; Update FEATURE-SPECS
+        </div>
+      </div>
+
+      <div class="glass-card" style="padding: 18px 22px;">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+          <span class="tag tag-purple" style="font-size: 10px;">DATA MODEL CHANGE</span>
+        </div>
+        <div style="font-size: 12px; color: var(--muted); line-height: 1.6;">
+          Load: CLAUDE.md + types + PKS Change Flow Map + store + recurrence + seed<br>
+          Protocol: Brief &rarr; Founder approval &rarr; types &rarr; DB &rarr; store &rarr; recurrence &rarr; seed &rarr; screens &rarr; ALL sensors
+        </div>
+      </div>
+
+      <div class="glass-card" style="padding: 18px 22px;">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+          <span class="tag tag-green" style="font-size: 10px;">FEATURE ADDITION</span>
+        </div>
+        <div style="font-size: 12px; color: var(--muted); line-height: 1.6;">
+          Load: CLAUDE.md + FEATURE-SPECS + DESIGN.md + PKS Change Flow Map<br>
+          Protocol: Confirm spec &rarr; Impact assessment &rarr; Layer by layer &rarr; One file at a time &rarr; Sensors &rarr; Commit per crossing
+        </div>
+      </div>
+
+      <!-- Context loading per stage table -->
+      <div class="glass-card" style="padding: 18px 22px;">
+        <h3 style="font-size: 14px; margin-bottom: 10px;">Context Per Idea Flow Stage</h3>
+        <div style="display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; font-size: 12px;">
+          <span style="font-weight: 600; color: var(--green);">SENSE</span><span style="color: var(--muted);">Ring 1 only. Human activity.</span>
+          <span style="font-weight: 600; color: var(--green);">SHAPE</span><span style="color: var(--muted);">R1 + R2 + ARCHITECTURE.md</span>
+          <span style="font-weight: 600; color: var(--green);">DECIDE</span><span style="color: var(--muted);">R1 + R2 + brief + past decisions</span>
+          <span style="font-weight: 600; color: var(--green);">SPECIFY</span><span style="color: var(--muted);">R1 + R2 + R3 + DESIGN.md + PKS</span>
+          <span style="font-weight: 600; color: var(--green);">EXECUTE</span><span style="color: var(--muted);">R1 + R2 + R3 + source files (1-hop)</span>
+          <span style="font-weight: 600; color: var(--green);">LEARN</span><span style="color: var(--muted);">R1 + decision record + metrics</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================ -->
+<!-- SLIDE 12: Before vs After -->
+<!-- ============================================ -->
+<div class="slide">
+  <span class="slide-number">12 / 12</span>
+  <h2 style="text-align: center;">What Changes From Today</h2>
+  <p class="subtitle" style="text-align: center; margin-top: -30px; margin-bottom: 36px;">From scattered process docs and ad-hoc decisions to one coherent system.</p>
+
+  <div style="max-width: 950px; width: 100%; display: flex; gap: 32px;">
+
+    <!-- Before -->
+    <div style="flex: 1;">
+      <div style="text-align: center; margin-bottom: 20px;">
+        <span class="tag tag-red" style="font-size: 13px; padding: 6px 18px;">BEFORE</span>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <div style="padding: 14px 18px; background: rgba(184,84,80,0.04); border: 1px solid rgba(184,84,80,0.1); border-radius: 12px; font-size: 14px; display: flex; align-items: center; gap: 10px;">
+          <span style="color: var(--red); font-size: 16px;">x</span>
+          <span>12+ scattered process documents</span>
+        </div>
+        <div style="padding: 14px 18px; background: rgba(184,84,80,0.04); border: 1px solid rgba(184,84,80,0.1); border-radius: 12px; font-size: 14px; display: flex; align-items: center; gap: 10px;">
+          <span style="color: var(--red); font-size: 16px;">x</span>
+          <span>No clear idea-to-shipped pipeline</span>
+        </div>
+        <div style="padding: 14px 18px; background: rgba(184,84,80,0.04); border: 1px solid rgba(184,84,80,0.1); border-radius: 12px; font-size: 14px; display: flex; align-items: center; gap: 10px;">
+          <span style="color: var(--red); font-size: 16px;">x</span>
+          <span>Agents guess what to load into context</span>
+        </div>
+        <div style="padding: 14px 18px; background: rgba(184,84,80,0.04); border: 1px solid rgba(184,84,80,0.1); border-radius: 12px; font-size: 14px; display: flex; align-items: center; gap: 10px;">
+          <span style="color: var(--red); font-size: 16px;">x</span>
+          <span>Decisions made ad-hoc, not recorded</span>
+        </div>
+        <div style="padding: 14px 18px; background: rgba(184,84,80,0.04); border: 1px solid rgba(184,84,80,0.1); border-radius: 12px; font-size: 14px; display: flex; align-items: center; gap: 10px;">
+          <span style="color: var(--red); font-size: 16px;">x</span>
+          <span>No sensors — bugs caught manually</span>
+        </div>
+        <div style="padding: 14px 18px; background: rgba(184,84,80,0.04); border: 1px solid rgba(184,84,80,0.1); border-radius: 12px; font-size: 14px; display: flex; align-items: center; gap: 10px;">
+          <span style="color: var(--red); font-size: 16px;">x</span>
+          <span>Incidents fix symptoms, not systems</span>
+        </div>
+        <div style="padding: 14px 18px; background: rgba(184,84,80,0.04); border: 1px solid rgba(184,84,80,0.1); border-radius: 12px; font-size: 14px; display: flex; align-items: center; gap: 10px;">
+          <span style="color: var(--red); font-size: 16px;">x</span>
+          <span>Unclear when agents act vs ask founder</span>
+        </div>
+        <div style="padding: 14px 18px; background: rgba(184,84,80,0.04); border: 1px solid rgba(184,84,80,0.1); border-radius: 12px; font-size: 14px; display: flex; align-items: center; gap: 10px;">
+          <span style="color: var(--red); font-size: 16px;">x</span>
+          <span>Departments model — too complex for 1 person</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Arrow -->
+    <div style="display: flex; align-items: center;">
+      <svg width="40" height="40" viewBox="0 0 40 40" style="opacity: 0.2;"><path d="M8 20 H28 M22 12 L30 20 L22 28" stroke="var(--dark)" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+
+    <!-- After -->
+    <div style="flex: 1;">
+      <div style="text-align: center; margin-bottom: 20px;">
+        <span class="tag tag-green" style="font-size: 13px; padding: 6px 18px;">AFTER</span>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <div style="padding: 14px 18px; background: rgba(45,90,62,0.04); border: 1px solid rgba(45,90,62,0.12); border-radius: 12px; font-size: 14px; display: flex; align-items: center; gap: 10px;">
+          <span style="color: var(--green); font-weight: 700;">1</span>
+          <span><strong>One document</strong> — the single source of truth</span>
+        </div>
+        <div style="padding: 14px 18px; background: rgba(45,90,62,0.04); border: 1px solid rgba(45,90,62,0.12); border-radius: 12px; font-size: 14px; display: flex; align-items: center; gap: 10px;">
+          <span style="color: var(--green); font-weight: 700;">6</span>
+          <span><strong>Idea Flow stages</strong> — Sense to Learn, every time</span>
+        </div>
+        <div style="padding: 14px 18px; background: rgba(45,90,62,0.04); border: 1px solid rgba(45,90,62,0.12); border-radius: 12px; font-size: 14px; display: flex; align-items: center; gap: 10px;">
+          <span style="color: var(--green); font-weight: 700;">4</span>
+          <span><strong>Context rings</strong> — agents load exactly what they need</span>
+        </div>
+        <div style="padding: 14px 18px; background: rgba(45,90,62,0.04); border: 1px solid rgba(45,90,62,0.12); border-radius: 12px; font-size: 14px; display: flex; align-items: center; gap: 10px;">
+          <span style="color: var(--green); font-weight: 700;">D</span>
+          <span><strong>Decision records</strong> — every call logged with outcome</span>
+        </div>
+        <div style="padding: 14px 18px; background: rgba(45,90,62,0.04); border: 1px solid rgba(45,90,62,0.12); border-radius: 12px; font-size: 14px; display: flex; align-items: center; gap: 10px;">
+          <span style="color: var(--green); font-weight: 700;">6</span>
+          <span><strong>Sensors</strong> — automated checks before every commit</span>
+        </div>
+        <div style="padding: 14px 18px; background: rgba(45,90,62,0.04); border: 1px solid rgba(45,90,62,0.12); border-radius: 12px; font-size: 14px; display: flex; align-items: center; gap: 10px;">
+          <span style="color: var(--green); font-weight: 700;">L</span>
+          <span><strong>Learning loop</strong> — incidents improve the system itself</span>
+        </div>
+        <div style="padding: 14px 18px; background: rgba(45,90,62,0.04); border: 1px solid rgba(45,90,62,0.12); border-radius: 12px; font-size: 14px; display: flex; align-items: center; gap: 10px;">
+          <span style="color: var(--green); font-weight: 700;">B</span>
+          <span><strong>Bounded autonomy</strong> — clear agent vs founder decisions</span>
+        </div>
+        <div style="padding: 14px 18px; background: rgba(45,90,62,0.04); border: 1px solid rgba(45,90,62,0.12); border-radius: 12px; font-size: 14px; display: flex; align-items: center; gap: 10px;">
+          <span style="color: var(--green); font-weight: 700;">3</span>
+          <span><strong>Layers + Domains + Stream</strong> — 3D impact model</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Superseded docs count -->
+  <div style="max-width: 950px; width: 100%; margin-top: 36px; text-align: center;">
+    <div class="glass-card" style="display: inline-block; padding: 16px 32px;">
+      <span style="font-size: 14px; color: var(--muted);">Supersedes <strong style="color: var(--dark);">12 documents</strong> including CHARTER.md, PROCESSES.md, ROUTING.md, STANDUP-PROTOCOL.md, and all department files. Active docs (CLAUDE.md, DESIGN.md, PKS, etc.) remain and conform to this model.</span>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Create nav dots
+  const slides = document.querySelectorAll('.slide');
+  const navDots = document.getElementById('navDots');
+  slides.forEach((slide, i) => {
+    const dot = document.createElement('div');
+    dot.className = 'nav-dot' + (i === 0 ? ' active' : '');
+    dot.onclick = () => slide.scrollIntoView({ behavior: 'smooth' });
+    navDots.appendChild(dot);
+  });
+
+  // Update active dot on scroll
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const index = Array.from(slides).indexOf(entry.target);
+        document.querySelectorAll('.nav-dot').forEach((d, i) => {
+          d.classList.toggle('active', i === index);
+        });
+      }
+    });
+  }, { threshold: 0.5 });
+
+  slides.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Phase 2: The Synthesis</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-snap-type: y mandatory; }
+  body { font-family: 'Inter', -apple-system, sans-serif; color: #1A1714; -webkit-font-smoothing: antialiased; }
+
+  .slide { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 44px 24px; scroll-snap-align: start; position: relative; overflow: hidden; }
+  .inner { max-width: 720px; width: 100%; }
+  .bg-cream { background: #F5F0E8; }
+  .bg-green { background: #2D5A3E; color: #fff; }
+  .bg-dark { background: #1A1714; color: #F5F0E8; }
+  .bg-warm { background: linear-gradient(135deg, #F5F0E8, #EDE5D8); }
+  .bg-accent { background: linear-gradient(160deg, #C4795B, #A05A3E); color: #fff; }
+  .bg-deep { background: linear-gradient(160deg, #1A1714, #2D2822); color: #F5F0E8; }
+  .bg-forest { background: linear-gradient(160deg, #2D5A3E, #1E3D2A); color: #fff; }
+  .deco { position: absolute; border-radius: 50%; opacity: 0.05; pointer-events: none; }
+
+  .mega { font-size: clamp(28px, 5vw, 48px); font-weight: 900; letter-spacing: -2px; line-height: 1.05; }
+  .big { font-size: clamp(20px, 3.5vw, 32px); font-weight: 800; letter-spacing: -1px; line-height: 1.2; }
+  .mid { font-size: clamp(16px, 2.5vw, 22px); font-weight: 700; letter-spacing: -0.5px; line-height: 1.3; }
+  .body { font-size: clamp(12px, 1.5vw, 14px); line-height: 1.7; opacity: 0.7; }
+  .label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; opacity: 0.35; margin-bottom: 12px; }
+  .center { text-align: center; }
+  .mt-8 { margin-top: 8px; } .mt-12 { margin-top: 12px; } .mt-16 { margin-top: 16px; } .mt-20 { margin-top: 20px; } .mt-24 { margin-top: 24px; }
+  .sn { position: absolute; bottom: 16px; right: 24px; font-size: 9px; font-weight: 600; opacity: 0.15; }
+
+  /* Glass card */
+  .glass { background: rgba(255,255,255,0.06); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 14px 16px; }
+  .glass-light { background: rgba(45,90,62,0.04); backdrop-filter: blur(8px); border: 1px solid rgba(45,90,62,0.08); border-radius: 12px; padding: 14px 16px; }
+
+  /* Principle cards */
+  .p-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; }
+  .p-card { border-radius: 12px; padding: 12px 14px; }
+  .p-num { font-size: 10px; font-weight: 800; opacity: 0.3; margin-bottom: 4px; }
+  .p-title { font-size: 13px; font-weight: 700; line-height: 1.3; }
+  .p-src { font-size: 9px; opacity: 0.45; margin-top: 4px; line-height: 1.4; }
+  .p-card-full { grid-column: 1 / -1; }
+
+  /* Tension visual */
+  .tension-row { display: flex; align-items: stretch; gap: 0; margin-bottom: 10px; border-radius: 12px; overflow: hidden; }
+  .tension-side { flex: 1; padding: 10px 12px; font-size: 11px; }
+  .tension-left { background: rgba(255,255,255,0.06); text-align: right; }
+  .tension-right { background: rgba(255,255,255,0.06); text-align: left; }
+  .tension-mid { width: 80px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; padding: 8px 4px; text-align: center; line-height: 1.3; }
+  .tension-mid-green { background: rgba(45,90,62,0.3); color: #a3d9b1; }
+  .tension-who { font-weight: 700; font-size: 10px; margin-bottom: 2px; }
+  .tension-what { opacity: 0.6; font-size: 10px; line-height: 1.4; }
+
+  /* Node hierarchy */
+  .node-stack { display: flex; flex-direction: column; gap: 0; margin-top: 16px; }
+  .node-level { border-radius: 12px; padding: 16px 18px; position: relative; }
+  .node-connector { width: 2px; height: 12px; background: rgba(255,255,255,0.15); margin: 0 auto; }
+  .node-type { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; opacity: 0.5; }
+  .node-title { font-size: 15px; font-weight: 700; margin-top: 4px; }
+  .node-example { font-size: 11px; opacity: 0.5; margin-top: 4px; font-style: italic; }
+  .node-meta { display: flex; gap: 12px; margin-top: 8px; font-size: 9px; opacity: 0.4; }
+  .node-maps { font-size: 9px; opacity: 0.35; margin-top: 6px; }
+
+  /* Flow stages */
+  .flow-container { display: flex; gap: 4px; margin-top: 16px; align-items: stretch; }
+  .flow-stage { flex: 1; border-radius: 10px; padding: 10px 8px; text-align: center; position: relative; }
+  .flow-num { font-size: 8px; font-weight: 800; opacity: 0.3; }
+  .flow-name { font-size: 11px; font-weight: 800; margin-top: 2px; }
+  .flow-key { font-size: 8px; opacity: 0.5; margin-top: 4px; line-height: 1.4; }
+  .flow-arrow { display: flex; align-items: center; font-size: 14px; opacity: 0.2; flex-shrink: 0; }
+  .flow-loop { margin-top: 12px; border-radius: 10px; padding: 10px 16px; text-align: center; font-size: 10px; font-weight: 600; }
+
+  /* Impact dimensions */
+  .dim-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 14px; }
+  .dim-card { border-radius: 12px; padding: 14px; }
+  .dim-icon { font-size: 24px; margin-bottom: 6px; }
+  .dim-name { font-size: 13px; font-weight: 800; }
+  .dim-sub { font-size: 10px; opacity: 0.5; margin-top: 2px; }
+  .dim-items { margin-top: 8px; font-size: 9px; line-height: 1.8; opacity: 0.6; }
+
+  /* LLM principles */
+  .llm-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; }
+  .llm-card { border-radius: 12px; padding: 12px 14px; }
+  .llm-title { font-size: 12px; font-weight: 700; }
+  .llm-desc { font-size: 10px; opacity: 0.5; margin-top: 4px; line-height: 1.5; }
+
+  /* Warning list */
+  .warn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 14px; }
+  .warn-item { border-radius: 10px; padding: 10px 12px; display: flex; gap: 10px; align-items: flex-start; }
+  .warn-x { width: 20px; height: 20px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 900; flex-shrink: 0; }
+  .warn-text { font-size: 10px; font-weight: 600; line-height: 1.4; }
+  .warn-instead { font-size: 9px; opacity: 0.45; margin-top: 2px; }
+  .warn-src { font-size: 8px; opacity: 0.3; }
+
+  /* Operating model layers */
+  .om-layer { border-radius: 12px; padding: 16px 18px; margin-bottom: 8px; }
+  .om-letter { font-size: 10px; font-weight: 900; opacity: 0.3; letter-spacing: 2px; }
+  .om-name { font-size: 16px; font-weight: 800; margin-top: 2px; }
+  .om-what { font-size: 11px; opacity: 0.6; margin-top: 4px; line-height: 1.5; }
+  .om-meta-row { display: flex; gap: 16px; margin-top: 8px; }
+  .om-meta { font-size: 9px; opacity: 0.35; }
+  .om-meta b { opacity: 1; font-weight: 700; }
+
+  /* Source table */
+  .src-table { width: 100%; border-collapse: collapse; margin-top: 14px; font-size: 10px; }
+  .src-table th { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.35; padding: 6px 8px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.08); }
+  .src-table td { padding: 6px 8px; border-bottom: 1px solid rgba(255,255,255,0.04); vertical-align: top; }
+  .src-name { font-weight: 700; font-size: 11px; }
+  .src-take { opacity: 0.6; font-size: 10px; }
+  .src-how { opacity: 0.4; font-size: 9px; }
+  .src-cat { font-size: 8px; font-weight: 700; padding: 2px 6px; border-radius: 4px; display: inline-block; margin-bottom: 2px; }
+  .cat-book { background: rgba(196,121,91,0.15); color: #C4795B; }
+  .cat-llm { background: rgba(59,130,246,0.15); color: #6BA3F7; }
+  .cat-co { background: rgba(45,90,62,0.2); color: #6BBF8A; }
+</style>
+</head>
+<body>
+
+<!-- SLIDE 1: Title -->
+<div class="slide bg-cream">
+  <div class="deco" style="width:400px;height:400px;background:#2D5A3E;top:-120px;right:-120px;"></div>
+  <div class="deco" style="width:200px;height:200px;background:#C4795B;bottom:-60px;left:-60px;"></div>
+  <div class="inner center">
+    <p class="label">DayFlow Operating Model</p>
+    <h1 class="mega">Phase 2:<br>The Synthesis</h1>
+    <p class="body mt-12">23 sources. 10 books. 5 LLM practice domains. 8 company case studies.<br>Cross-referenced into one unified operating model for an AI-agent-driven company.</p>
+    <div style="display:flex;gap:8px;justify-content:center;margin-top:24px;flex-wrap:wrap;">
+      <span style="font-size:10px;font-weight:600;padding:6px 12px;border-radius:8px;background:rgba(45,90,62,0.08);color:#2D5A3E;">7 Universal Principles</span>
+      <span style="font-size:10px;font-weight:600;padding:6px 12px;border-radius:8px;background:rgba(196,121,91,0.08);color:#C4795B;">6 Tensions Resolved</span>
+      <span style="font-size:10px;font-weight:600;padding:6px 12px;border-radius:8px;background:rgba(26,23,20,0.06);color:#1A1714;">3-Layer Architecture</span>
+    </div>
+  </div>
+  <div class="sn">01 / 12</div>
+</div>
+
+<!-- SLIDE 2: 7 Universal Principles -->
+<div class="slide bg-dark">
+  <div class="deco" style="width:300px;height:300px;background:#C4795B;bottom:-100px;right:-80px;"></div>
+  <div class="inner">
+    <p class="label" style="color:#8C857D;">Section 1</p>
+    <h2 class="big">7 Universal Principles</h2>
+    <p class="body">Convergent discoveries across all 23 sources -- books, LLM practices, AND companies independently arrive at the same truths.</p>
+    <div class="p-grid">
+      <div class="p-card glass">
+        <div class="p-num">01</div>
+        <div class="p-title">Make Work Visible and Explicit</div>
+        <div class="p-src">Phoenix Project, Systems Thinking, Amazon memos, Stripe writing culture, Toyota visual mgmt</div>
+      </div>
+      <div class="p-card glass">
+        <div class="p-num">02</div>
+        <div class="p-title">Constrain to Accelerate</div>
+        <div class="p-src">The Goal, Art of Action, DDD bounded contexts, Amazon 2-pizza teams, Apple "few products"</div>
+      </div>
+      <div class="p-card glass">
+        <div class="p-num">03</div>
+        <div class="p-title">Feedback Loops Determine Health</div>
+        <div class="p-src">Systems Thinking, Lean Startup, Toyota andon, Spotify A/B tests, Bridgewater pain+reflection</div>
+      </div>
+      <div class="p-card glass">
+        <div class="p-num">04</div>
+        <div class="p-title">Separate by Rate of Change</div>
+        <div class="p-src">How Buildings Learn shearing layers, DDD, Team Topologies, Amazon platform vs. product</div>
+      </div>
+      <div class="p-card glass">
+        <div class="p-num">05</div>
+        <div class="p-title">Start Simple, Earn Complexity</div>
+        <div class="p-src">Gall's Law, Lean Startup MVP, Toyota kaizen, Linear "say no", Netflix fewer controls</div>
+      </div>
+      <div class="p-card glass">
+        <div class="p-num">06</div>
+        <div class="p-title">Align by Intent, Not Instruction</div>
+        <div class="p-src">Art of Action directed opportunism, Amazon PR/FAQ, Netflix context not control, LLM prompting</div>
+      </div>
+      <div class="p-card glass p-card-full" style="text-align:center;">
+        <div class="p-num">07</div>
+        <div class="p-title">Decisions Need an Owner, Not a Committee</div>
+        <div class="p-src">Apple DRI, Amazon single-threaded leader, Netflix informed captain, Bridgewater believability-weighted</div>
+      </div>
+    </div>
+    <p style="font-size:9px;opacity:0.25;margin-top:12px;text-align:center;">Strongest consensus: Principle 5 -- not one source advocates designing a complex system from scratch</p>
+  </div>
+  <div class="sn" style="color:#F5F0E8;">02 / 12</div>
+</div>
+
+<!-- SLIDE 3: AI Implications of Principles -->
+<div class="slide bg-forest">
+  <div class="deco" style="width:350px;height:350px;background:#F5F0E8;top:-100px;left:-100px;"></div>
+  <div class="inner">
+    <p class="label" style="color:rgba(255,255,255,0.3);">Section 1 Continued</p>
+    <h2 class="big">Why These Principles<br>Hit Harder for AI</h2>
+    <p class="body">AI agents have zero persistent memory. Every principle intensifies.</p>
+    <div style="margin-top:16px;display:flex;flex-direction:column;gap:8px;">
+      <div class="glass" style="display:flex;gap:14px;align-items:flex-start;">
+        <div style="font-size:20px;flex-shrink:0;margin-top:2px;">P1</div>
+        <div>
+          <div style="font-size:12px;font-weight:700;">Visibility is a physical constraint</div>
+          <div style="font-size:10px;opacity:0.5;margin-top:2px;">If it's not written down, it literally doesn't exist for the agent. No tribal knowledge.</div>
+        </div>
+      </div>
+      <div class="glass" style="display:flex;gap:14px;align-items:flex-start;">
+        <div style="font-size:20px;flex-shrink:0;margin-top:2px;">P2</div>
+        <div>
+          <div style="font-size:12px;font-weight:700;">Context window IS the constraint</div>
+          <div style="font-size:10px;opacity:0.5;margin-top:2px;">4k focused tokens outperforms 200k unfocused tokens. Less noise = better output.</div>
+        </div>
+      </div>
+      <div class="glass" style="display:flex;gap:14px;align-items:flex-start;">
+        <div style="font-size:20px;flex-shrink:0;margin-top:2px;">P3</div>
+        <div>
+          <div style="font-size:12px;font-weight:700;">Feedback loops in seconds, not weeks</div>
+          <div style="font-size:10px;opacity:0.5;margin-top:2px;">Agent writes code, runs tests, sees failures, fixes -- all in one session. Exploit this.</div>
+        </div>
+      </div>
+      <div class="glass" style="display:flex;gap:14px;align-items:flex-start;">
+        <div style="font-size:20px;flex-shrink:0;margin-top:2px;">P6</div>
+        <div>
+          <div style="font-size:12px;font-weight:700;">Intent prompts beat instruction prompts</div>
+          <div style="font-size:10px;opacity:0.5;margin-top:2px;">"Ensure visual consistency" outperforms "Step 1: check colors. Step 2: verify spacing."</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="sn">03 / 12</div>
+</div>
+
+<!-- SLIDE 4: 6 Tensions -->
+<div class="slide bg-deep">
+  <div class="deco" style="width:250px;height:250px;background:#C4795B;top:-80px;right:-60px;"></div>
+  <div class="inner">
+    <p class="label" style="color:#8C857D;">Section 2</p>
+    <h2 class="big">6 Tensions Resolved</h2>
+    <p class="body">The sources genuinely disagree. The resolution: different approaches for different conditions.</p>
+    <div style="margin-top:14px;display:flex;flex-direction:column;gap:6px;">
+
+      <div class="tension-row">
+        <div class="tension-side tension-left">
+          <div class="tension-who">Toyota</div>
+          <div class="tension-what">Standardize everything</div>
+        </div>
+        <div class="tension-mid tension-mid-green">Match to variance cost</div>
+        <div class="tension-side tension-right">
+          <div class="tension-who">Netflix</div>
+          <div class="tension-what">Remove all controls</div>
+        </div>
+      </div>
+
+      <div class="tension-row">
+        <div class="tension-side tension-left">
+          <div class="tension-who">Amazon</div>
+          <div class="tension-what">Plan thoroughly (PR/FAQ)</div>
+        </div>
+        <div class="tension-mid tension-mid-green">Match to reversibility</div>
+        <div class="tension-side tension-right">
+          <div class="tension-who">Lean Startup</div>
+          <div class="tension-what">Experiment rapidly</div>
+        </div>
+      </div>
+
+      <div class="tension-row">
+        <div class="tension-side tension-left">
+          <div class="tension-who">Apple</div>
+          <div class="tension-what">Deep expertise</div>
+        </div>
+        <div class="tension-mid tension-mid-green">Match to competitive advantage</div>
+        <div class="tension-side tension-right">
+          <div class="tension-who">Amazon</div>
+          <div class="tension-what">Cross-functional breadth</div>
+        </div>
+      </div>
+
+      <div class="tension-row">
+        <div class="tension-side tension-left">
+          <div class="tension-who">Netflix</div>
+          <div class="tension-what">Maximum autonomy</div>
+        </div>
+        <div class="tension-mid tension-mid-green">Bounded autonomy</div>
+        <div class="tension-side tension-right">
+          <div class="tension-who">Bridgewater</div>
+          <div class="tension-what">Maximum transparency</div>
+        </div>
+      </div>
+
+      <div class="tension-row">
+        <div class="tension-side tension-left">
+          <div class="tension-who">Stripe</div>
+          <div class="tension-what">Document everything</div>
+        </div>
+        <div class="tension-mid tension-mid-green">Docs that improve agent output</div>
+        <div class="tension-side tension-right">
+          <div class="tension-who">Linear</div>
+          <div class="tension-what">Ship, don't document</div>
+        </div>
+      </div>
+
+      <div class="tension-row">
+        <div class="tension-side tension-left">
+          <div class="tension-who">Bridgewater</div>
+          <div class="tension-what">Meritocracy of ideas</div>
+        </div>
+        <div class="tension-mid tension-mid-green">Decision type determines method</div>
+        <div class="tension-side tension-right">
+          <div class="tension-who">Apple</div>
+          <div class="tension-what">Taste of the founder</div>
+        </div>
+      </div>
+
+    </div>
+    <p style="font-size:9px;opacity:0.2;margin-top:10px;text-align:center;">Key insight: these are not contradictions -- they apply to different conditions. The resolution is situational, not universal.</p>
+  </div>
+  <div class="sn" style="color:#F5F0E8;">04 / 12</div>
+</div>
+
+<!-- SLIDE 5: Decision Matrix -->
+<div class="slide bg-cream">
+  <div class="deco" style="width:300px;height:300px;background:#2D5A3E;bottom:-100px;left:-100px;"></div>
+  <div class="inner">
+    <p class="label">Tension Resolution Framework</p>
+    <h2 class="big" style="color:#1A1714;">When to Apply Which</h2>
+    <div style="margin-top:16px;display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+      <div class="glass-light">
+        <div style="font-size:10px;font-weight:800;color:#2D5A3E;text-transform:uppercase;letter-spacing:1px;">Standardize</div>
+        <div style="font-size:11px;margin-top:6px;line-height:1.6;opacity:0.6;">Repetitive work, high variance cost. Data models, schemas, deploy pipelines.</div>
+      </div>
+      <div class="glass-light">
+        <div style="font-size:10px;font-weight:800;color:#C4795B;text-transform:uppercase;letter-spacing:1px;">Remove Controls</div>
+        <div style="font-size:11px;margin-top:6px;line-height:1.6;opacity:0.6;">Creative work, high conformity cost. Strategy, design exploration, problem-solving.</div>
+      </div>
+      <div class="glass-light">
+        <div style="font-size:10px;font-weight:800;color:#2D5A3E;text-transform:uppercase;letter-spacing:1px;">Plan Thoroughly</div>
+        <div style="font-size:11px;margin-top:6px;line-height:1.6;opacity:0.6;">High cost of failure, irreversible. New products, data model changes, core infra.</div>
+      </div>
+      <div class="glass-light">
+        <div style="font-size:10px;font-weight:800;color:#C4795B;text-transform:uppercase;letter-spacing:1px;">Experiment Rapidly</div>
+        <div style="font-size:11px;margin-top:6px;line-height:1.6;opacity:0.6;">Low cost of failure, reversible. UI changes, copy, feature variations, pricing.</div>
+      </div>
+      <div class="glass-light">
+        <div style="font-size:10px;font-weight:800;color:#2D5A3E;text-transform:uppercase;letter-spacing:1px;">Meritocracy</div>
+        <div style="font-size:11px;margin-top:6px;line-height:1.6;opacity:0.6;">Technical + analytical decisions. Architecture, metrics, experiment interpretation.</div>
+      </div>
+      <div class="glass-light">
+        <div style="font-size:10px;font-weight:800;color:#C4795B;text-transform:uppercase;letter-spacing:1px;">Founder Taste</div>
+        <div style="font-size:11px;margin-top:6px;line-height:1.6;opacity:0.6;">Aesthetic + product decisions. Design, brand, UX, coherence of vision.</div>
+      </div>
+    </div>
+    <div style="margin-top:12px;padding:12px 16px;border-radius:10px;background:rgba(45,90,62,0.06);text-align:center;">
+      <div style="font-size:11px;font-weight:700;color:#2D5A3E;">Toyota's Universal Insight</div>
+      <div style="font-size:10px;opacity:0.5;margin-top:4px;">PDCA always applies -- the CYCLE TIME varies. PR/FAQ = 6-week cycle. A/B test = 2-week cycle. Type check = 2-second cycle.</div>
+    </div>
+  </div>
+  <div class="sn">05 / 12</div>
+</div>
+
+<!-- SLIDE 6: Node Types -->
+<div class="slide bg-dark">
+  <div class="deco" style="width:350px;height:350px;background:#2D5A3E;top:-120px;left:-120px;"></div>
+  <div class="inner">
+    <p class="label" style="color:#8C857D;">Section 3</p>
+    <h2 class="big">The Node Hierarchy</h2>
+    <p class="body">13 competing node types from 13 sources. Synthesized into three levels that map to natural cadences.</p>
+    <div class="node-stack">
+      <div class="node-level" style="background:rgba(196,121,91,0.15);border:1px solid rgba(196,121,91,0.2);">
+        <div class="node-type" style="color:#C4795B;">Level 1 -- Mission</div>
+        <div class="node-title">Slow-changing, intent-level</div>
+        <div class="node-example">"Make task management delightful for solo knowledge workers"</div>
+        <div class="node-meta">
+          <span>Changes: monthly-quarterly</span>
+          <span>Owner: Founder</span>
+        </div>
+        <div class="node-maps">Maps to: Art of Action mission, Amazon PR/FAQ, Netflix context memo</div>
+      </div>
+      <div class="node-connector" style="background:rgba(196,121,91,0.3);"></div>
+      <div class="node-level" style="background:rgba(45,90,62,0.15);border:1px solid rgba(45,90,62,0.2);">
+        <div class="node-type" style="color:#6BBF8A;">Level 2 -- Commitment</div>
+        <div class="node-title">Medium-changing, scope-level</div>
+        <div class="node-example">"Build a natural language quick-add feature"</div>
+        <div class="node-meta">
+          <span>Changes: weekly-monthly</span>
+          <span>Owner: DRI</span>
+        </div>
+        <div class="node-maps">Maps to: DRI assignment, design doc, bounded context, standard</div>
+      </div>
+      <div class="node-connector" style="background:rgba(45,90,62,0.3);"></div>
+      <div class="node-level" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);">
+        <div class="node-type">Level 3 -- Task</div>
+        <div class="node-title">Fast-changing, execution-level</div>
+        <div class="node-example">"Implement parseActivity function for NL time extraction"</div>
+        <div class="node-meta">
+          <span>Changes: daily-hourly</span>
+          <span>Owner: Agent</span>
+        </div>
+        <div class="node-maps">Maps to: Linear issue, feature flag, experiment, constraint</div>
+      </div>
+    </div>
+    <div style="margin-top:14px;padding:10px 14px;border-radius:10px;background:rgba(196,121,91,0.08);border:1px solid rgba(196,121,91,0.12);text-align:center;">
+      <div style="font-size:10px;font-weight:700;color:#C4795B;">Context Loading Order</div>
+      <div style="font-size:9px;opacity:0.4;margin-top:4px;">Agent loads: Mission (stable) -> Commitment (refreshed weekly) -> Task + Decisions (per session) -- slow to fast, matching Brand's shearing layers</div>
+    </div>
+  </div>
+  <div class="sn" style="color:#F5F0E8;">06 / 12</div>
+</div>
+
+<!-- SLIDE 7: Idea Flow -->
+<div class="slide bg-accent">
+  <div class="deco" style="width:400px;height:400px;background:#fff;top:-150px;right:-150px;"></div>
+  <div class="inner">
+    <p class="label" style="color:rgba(255,255,255,0.35);">Section 4</p>
+    <h2 class="big">The Idea Flow</h2>
+    <p class="body">Six stages every idea passes through. Every source touches all six.</p>
+    <div class="flow-container">
+      <div class="flow-stage" style="background:rgba(255,255,255,0.12);">
+        <div class="flow-num">1</div>
+        <div class="flow-name">Sense</div>
+        <div class="flow-key">Pull / Push / Pain</div>
+      </div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-stage" style="background:rgba(255,255,255,0.10);">
+        <div class="flow-num">2</div>
+        <div class="flow-name">Shape</div>
+        <div class="flow-key">PR/FAQ + Hypothesis + Stress test</div>
+      </div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-stage" style="background:rgba(255,255,255,0.08);">
+        <div class="flow-num">3</div>
+        <div class="flow-name">Decide</div>
+        <div class="flow-key">Reversibility x Data richness</div>
+      </div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-stage" style="background:rgba(255,255,255,0.06);">
+        <div class="flow-num">4</div>
+        <div class="flow-name">Specify</div>
+        <div class="flow-key">Product + Tech + Verify specs</div>
+      </div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-stage" style="background:rgba(255,255,255,0.05);">
+        <div class="flow-num">5</div>
+        <div class="flow-name">Execute</div>
+        <div class="flow-key">Small batches + WIP limits</div>
+      </div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-stage" style="background:rgba(255,255,255,0.04);">
+        <div class="flow-num">6</div>
+        <div class="flow-name">Learn</div>
+        <div class="flow-key">Pivot / Improve / Archive</div>
+      </div>
+    </div>
+    <div class="flow-loop" style="background:rgba(255,255,255,0.08);">
+      &#x21A9; FEEDBACK LOOP: Learning feeds back into Sensing -- this makes it a system, not a pipeline
+    </div>
+    <div style="margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+      <div style="padding:8px 12px;border-radius:8px;background:rgba(255,255,255,0.06);">
+        <div style="font-size:9px;font-weight:700;opacity:0.5;">DECISION MATRIX</div>
+        <div style="font-size:10px;margin-top:4px;display:grid;grid-template-columns:auto 1fr 1fr;gap:2px 8px;opacity:0.7;">
+          <span></span><span style="font-size:8px;font-weight:700;">Reversible</span><span style="font-size:8px;font-weight:700;">Irreversible</span>
+          <span style="font-size:8px;font-weight:700;">Data-rich</span><span style="font-size:9px;">Experiment</span><span style="font-size:9px;">Meritocratic debate</span>
+          <span style="font-size:8px;font-weight:700;">Data-poor</span><span style="font-size:9px;">Informed captain</span><span style="font-size:9px;">Founder taste</span>
+        </div>
+      </div>
+      <div style="padding:8px 12px;border-radius:8px;background:rgba(255,255,255,0.06);">
+        <div style="font-size:9px;font-weight:700;opacity:0.5;">THREE SENSING CHANNELS</div>
+        <div style="font-size:10px;margin-top:4px;line-height:1.8;opacity:0.7;">
+          Pull: feedback, analytics, market gaps<br>
+          Push: expertise, vision, capability<br>
+          Pain: bugs, complaints, incidents
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="sn">07 / 12</div>
+</div>
+
+<!-- SLIDE 8: Cross-Functional Impact -->
+<div class="slide bg-cream">
+  <div class="deco" style="width:300px;height:300px;background:#C4795B;top:-100px;left:-80px;"></div>
+  <div class="inner">
+    <p class="label">Section 5</p>
+    <h2 class="big" style="color:#1A1714;">Cross-Functional Impact</h2>
+    <p class="body">Impact is not just code dependencies. Every change ripples across three dimensions.</p>
+    <div class="dim-grid">
+      <div class="dim-card glass-light" style="border-color:rgba(45,90,62,0.12);">
+        <div style="font-size:20px;margin-bottom:6px;color:#2D5A3E;">&#9649;</div>
+        <div class="dim-name" style="color:#2D5A3E;">Layers</div>
+        <div class="dim-sub">Brand / Shearing Layers</div>
+        <div class="dim-items" style="color:#1A1714;">
+          L0: Vision (yearly)<br>
+          L1: Data Model (quarterly)<br>
+          L2: Business Logic (monthly)<br>
+          L3: Features (weekly)<br>
+          L4: Design System (biweekly)<br>
+          L5: UI Components (daily)<br>
+          L6: Content (anytime)<br>
+          L7: Ops/Config (on deploy)
+        </div>
+      </div>
+      <div class="dim-card glass-light" style="border-color:rgba(196,121,91,0.12);">
+        <div style="font-size:20px;margin-bottom:6px;color:#C4795B;">&#9673;</div>
+        <div class="dim-name" style="color:#C4795B;">Domains</div>
+        <div class="dim-sub">DDD / Bounded Contexts</div>
+        <div class="dim-items" style="color:#1A1714;">
+          Product<br>
+          Engineering<br>
+          Design<br>
+          Data / Analytics<br>
+          Support<br>
+          Marketing<br>
+          Legal / Compliance<br>
+          Finance<br>
+          Growth
+        </div>
+      </div>
+      <div class="dim-card glass-light" style="border-color:rgba(26,23,20,0.08);">
+        <div style="font-size:20px;margin-bottom:6px;color:#1A1714;">&#8594;</div>
+        <div class="dim-name" style="color:#1A1714;">Flow</div>
+        <div class="dim-sub">Toyota / Value Stream</div>
+        <div class="dim-items" style="color:#1A1714;">
+          Sensing<br>
+          Shaping<br>
+          Deciding<br>
+          Specifying<br>
+          Executing<br>
+          Shipping<br>
+          Monitoring<br>
+          Learning
+        </div>
+      </div>
+    </div>
+    <div style="margin-top:12px;padding:10px 14px;border-radius:10px;background:rgba(196,121,91,0.06);border:1px solid rgba(196,121,91,0.1);">
+      <div style="font-size:10px;font-weight:700;color:#C4795B;text-align:center;">The Impact Question</div>
+      <div style="font-size:10px;opacity:0.5;margin-top:4px;text-align:center;color:#1A1714;">For any change: Which LAYERS does it cross? (upward = dangerous) Which DOMAINS does it touch? Where in the FLOW does it land?</div>
+    </div>
+  </div>
+  <div class="sn">08 / 12</div>
+</div>
+
+<!-- SLIDE 9: LLM Compatibility -->
+<div class="slide bg-green">
+  <div class="deco" style="width:350px;height:350px;background:#fff;bottom:-120px;right:-120px;"></div>
+  <div class="inner">
+    <p class="label" style="color:rgba(255,255,255,0.3);">Section 6</p>
+    <h2 class="big">LLM-Compatible<br>Operating Model</h2>
+    <p class="body">6 design principles that make the model work for AI agents, not just humans.</p>
+    <div class="llm-grid">
+      <div class="llm-card glass">
+        <div class="llm-title">1. Layered Context Loading</div>
+        <div class="llm-desc">Ring 1 (always, ~500t): Identity. Ring 2 (per-role, ~2kt): Role. Ring 3 (per-task, ~5kt): Task. Ring 4 (on demand): Reference.</div>
+      </div>
+      <div class="llm-card glass">
+        <div class="llm-title">2. Structured Artifacts Over Prose</div>
+        <div class="llm-desc">YAML-style decisions, not paragraphs. Agents parse structure; they skim prose. what/chose/why/rejected.</div>
+      </div>
+      <div class="llm-card glass">
+        <div class="llm-title">3. Decision Logs as First-Class</div>
+        <div class="llm-desc">Consistency across sessions. Pattern learning from examples. Understanding WHY, not just WHAT.</div>
+      </div>
+      <div class="llm-card glass">
+        <div class="llm-title">4. Templates Over Rules</div>
+        <div class="llm-desc">Concrete patterns agents can match and extend, not abstract principles they must interpret.</div>
+      </div>
+      <div class="llm-card glass">
+        <div class="llm-title">5. State Machines for Processes</div>
+        <div class="llm-desc">DRAFT -> REVIEW -> REVISE -> APPROVE | KILL. Agent always knows: current state, valid next actions, transition criteria.</div>
+      </div>
+      <div class="llm-card glass">
+        <div class="llm-title">6. 2-3 Hops, Not the Whole Graph</div>
+        <div class="llm-desc">Task + parent commitment + grandparent mission + siblings + dependents. Not every task across every mission.</div>
+      </div>
+    </div>
+    <div style="margin-top:12px;padding:10px 14px;border-radius:10px;background:rgba(255,255,255,0.06);text-align:center;">
+      <div style="font-size:10px;font-weight:600;opacity:0.6;">Core constraint: No persistent memory. Everything not written down does not exist. Recency bias means most important info loaded LAST.</div>
+    </div>
+  </div>
+  <div class="sn">09 / 12</div>
+</div>
+
+<!-- SLIDE 10: What NOT to Build -->
+<div class="slide bg-dark">
+  <div class="deco" style="width:300px;height:300px;background:#C4795B;bottom:-80px;left:-80px;"></div>
+  <div class="inner">
+    <p class="label" style="color:#8C857D;">Section 7</p>
+    <h2 class="big">What NOT to Build</h2>
+    <p class="body">10 warnings from the research. What the operating model should explicitly exclude.</p>
+    <div class="warn-grid">
+      <div class="warn-item glass">
+        <div class="warn-x" style="background:rgba(220,80,60,0.2);color:#E85D4A;">x</div>
+        <div>
+          <div class="warn-text">Complex org structure on paper</div>
+          <div class="warn-instead">Start with 1 working agent, add incrementally</div>
+          <div class="warn-src">Gall's Law</div>
+        </div>
+      </div>
+      <div class="warn-item glass">
+        <div class="warn-x" style="background:rgba(220,80,60,0.2);color:#E85D4A;">x</div>
+        <div>
+          <div class="warn-text">Process to fix capability gaps</div>
+          <div class="warn-instead">Fix the capability: better context, better model</div>
+          <div class="warn-src">Netflix</div>
+        </div>
+      </div>
+      <div class="warn-item glass">
+        <div class="warn-x" style="background:rgba(220,80,60,0.2);color:#E85D4A;">x</div>
+        <div>
+          <div class="warn-text">Vocabulary without behavior</div>
+          <div class="warn-instead">Implement behaviors, name them later</div>
+          <div class="warn-src">Spotify</div>
+        </div>
+      </div>
+      <div class="warn-item glass">
+        <div class="warn-x" style="background:rgba(220,80,60,0.2);color:#E85D4A;">x</div>
+        <div>
+          <div class="warn-text">Documentation for its own sake</div>
+          <div class="warn-instead">Only docs that improve agent output</div>
+          <div class="warn-src">Gall, Linear</div>
+        </div>
+      </div>
+      <div class="warn-item glass">
+        <div class="warn-x" style="background:rgba(220,80,60,0.2);color:#E85D4A;">x</div>
+        <div>
+          <div class="warn-text">Pre-emptive coordination</div>
+          <div class="warn-instead">Build coordination after coordination failures</div>
+          <div class="warn-src">Gall, Team Topologies</div>
+        </div>
+      </div>
+      <div class="warn-item glass">
+        <div class="warn-x" style="background:rgba(220,80,60,0.2);color:#E85D4A;">x</div>
+        <div>
+          <div class="warn-text">Output metric dashboards</div>
+          <div class="warn-instead">Input metrics only: what you can control</div>
+          <div class="warn-src">Amazon, The Goal</div>
+        </div>
+      </div>
+      <div class="warn-item glass">
+        <div class="warn-x" style="background:rgba(220,80,60,0.2);color:#E85D4A;">x</div>
+        <div>
+          <div class="warn-text">Autonomy without accountability</div>
+          <div class="warn-instead">Owner + metric + cadence + kill criteria</div>
+          <div class="warn-src">Spotify, Art of Action</div>
+        </div>
+      </div>
+      <div class="warn-item glass">
+        <div class="warn-x" style="background:rgba(220,80,60,0.2);color:#E85D4A;">x</div>
+        <div>
+          <div class="warn-text">Multi-agent swarms too early</div>
+          <div class="warn-instead">One excellent agent first</div>
+          <div class="warn-src">LLM research</div>
+        </div>
+      </div>
+      <div class="warn-item glass">
+        <div class="warn-x" style="background:rgba(220,80,60,0.2);color:#E85D4A;">x</div>
+        <div>
+          <div class="warn-text">Approval workflows before trust</div>
+          <div class="warn-instead">Start with advice process, earn trust</div>
+          <div class="warn-src">Netflix, Bridgewater</div>
+        </div>
+      </div>
+      <div class="warn-item glass">
+        <div class="warn-x" style="background:rgba(220,80,60,0.2);color:#E85D4A;">x</div>
+        <div>
+          <div class="warn-text">Grand unified knowledge base</div>
+          <div class="warn-instead">2-3 hops of relevant context per task</div>
+          <div class="warn-src">Knowledge graphs</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="sn" style="color:#F5F0E8;">10 / 12</div>
+</div>
+
+<!-- SLIDE 11: Proposed Operating Model -->
+<div class="slide bg-cream">
+  <div class="deco" style="width:400px;height:400px;background:#2D5A3E;top:-150px;right:-150px;"></div>
+  <div class="inner">
+    <p class="label">Section 8</p>
+    <h2 class="big" style="color:#1A1714;">The Three-Layer<br>Operating Model</h2>
+    <p class="body">Identity, Operating System, Execution -- three layers, three rates of change, loosely coupled.</p>
+
+    <div style="margin-top:16px;">
+      <div class="om-layer" style="background:linear-gradient(135deg,rgba(196,121,91,0.12),rgba(196,121,91,0.06));border:1px solid rgba(196,121,91,0.15);">
+        <div class="om-letter" style="color:#C4795B;">LAYER A</div>
+        <div class="om-name" style="color:#C4795B;">Identity</div>
+        <div class="om-what" style="color:#1A1714;">Purpose, vision, principles, taste. Single IDENTITY.md document, always loaded in Ring 1 context.</div>
+        <div class="om-meta-row">
+          <div class="om-meta" style="color:#1A1714;"><b>Changes:</b> Yearly</div>
+          <div class="om-meta" style="color:#1A1714;"><b>Owner:</b> Founder</div>
+          <div class="om-meta" style="color:#1A1714;"><b>Review:</b> Annually</div>
+        </div>
+      </div>
+      <div class="om-layer" style="background:linear-gradient(135deg,rgba(45,90,62,0.1),rgba(45,90,62,0.04));border:1px solid rgba(45,90,62,0.12);">
+        <div class="om-letter" style="color:#2D5A3E;">LAYER B</div>
+        <div class="om-name" style="color:#2D5A3E;">Operating System</div>
+        <div class="om-what" style="color:#1A1714;">Processes, standards, decision frameworks, domain definitions. Loaded per-role in Ring 2.</div>
+        <div class="om-meta-row">
+          <div class="om-meta" style="color:#1A1714;"><b>Changes:</b> Quarterly-Monthly</div>
+          <div class="om-meta" style="color:#1A1714;"><b>Owner:</b> Founder + agent input</div>
+          <div class="om-meta" style="color:#1A1714;"><b>Review:</b> Monthly</div>
+        </div>
+      </div>
+      <div class="om-layer" style="background:rgba(26,23,20,0.04);border:1px solid rgba(26,23,20,0.08);">
+        <div class="om-letter" style="color:#1A1714;">LAYER C</div>
+        <div class="om-name" style="color:#1A1714;">Execution</div>
+        <div class="om-what" style="color:#1A1714;">Missions, commitments, tasks, decisions, metrics. Structured nodes loaded per-task in Ring 3.</div>
+        <div class="om-meta-row">
+          <div class="om-meta" style="color:#1A1714;"><b>Changes:</b> Daily-Hourly</div>
+          <div class="om-meta" style="color:#1A1714;"><b>Owner:</b> DRI per node</div>
+          <div class="om-meta" style="color:#1A1714;"><b>Review:</b> Weekly / Daily / Per-session</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+      <div style="padding:10px 14px;border-radius:10px;background:rgba(45,90,62,0.05);border:1px solid rgba(45,90,62,0.08);">
+        <div style="font-size:10px;font-weight:800;color:#2D5A3E;text-transform:uppercase;letter-spacing:1px;">Agent Architecture</div>
+        <div style="font-size:9px;opacity:0.5;margin-top:6px;line-height:1.7;color:#1A1714;">
+          Phase 0: One agent, founder as DRI<br>
+          Phase 1: Specialized agents per domain<br>
+          Phase 2: Shared task board + decision log<br>
+          Phase 3: Orchestrator agent (earned)
+        </div>
+      </div>
+      <div style="padding:10px 14px;border-radius:10px;background:rgba(196,121,91,0.05);border:1px solid rgba(196,121,91,0.08);">
+        <div style="font-size:10px;font-weight:800;color:#C4795B;text-transform:uppercase;letter-spacing:1px;">Cadences</div>
+        <div style="font-size:9px;opacity:0.5;margin-top:6px;line-height:1.7;color:#1A1714;">
+          Per-session: Task execution + learning<br>
+          Daily: Review progress, unblock<br>
+          Weekly: Review commitments<br>
+          Monthly: Evaluate missions + experiments<br>
+          Quarterly: Update identity layer
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="sn">11 / 12</div>
+</div>
+
+<!-- SLIDE 12: Source Inheritance Table -->
+<div class="slide bg-deep" style="align-items:center;">
+  <div class="inner" style="max-width:760px;">
+    <p class="label" style="color:#8C857D;">Appendix</p>
+    <h2 class="big">Source Inheritance</h2>
+    <p class="body">What we take from each source and how it appears in the model.</p>
+    <table class="src-table">
+      <thead>
+        <tr>
+          <th style="width:30%;">Source</th>
+          <th style="width:30%;">What We Take</th>
+          <th style="width:40%;">How It Appears</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="src-cat cat-book">Book</span><br><span class="src-name">The Goal</span></td>
+          <td class="src-take">Constraint focus, WIP limits</td>
+          <td class="src-how">1 task at a time; bottleneck = founder attention</td>
+        </tr>
+        <tr>
+          <td><span class="src-cat cat-book">Book</span><br><span class="src-name">Phoenix Project</span></td>
+          <td class="src-take">Make work visible, four work types</td>
+          <td class="src-how">All tasks in structured nodes, typed</td>
+        </tr>
+        <tr>
+          <td><span class="src-cat cat-book">Book</span><br><span class="src-name">Art of Action</span></td>
+          <td class="src-take">Directed opportunism, backbrief</td>
+          <td class="src-how">Intent-based agent prompts, spec confirmation</td>
+        </tr>
+        <tr>
+          <td><span class="src-cat cat-book">Book</span><br><span class="src-name">How Buildings Learn</span></td>
+          <td class="src-take">Shearing layers</td>
+          <td class="src-how">Three-layer model (Identity / OS / Execution)</td>
+        </tr>
+        <tr>
+          <td><span class="src-cat cat-book">Book</span><br><span class="src-name">Systemantics</span></td>
+          <td class="src-take">Gall's Law, start simple</td>
+          <td class="src-how">Phased agent architecture, earn complexity</td>
+        </tr>
+        <tr>
+          <td><span class="src-cat cat-book">Book</span><br><span class="src-name">Lean Startup</span></td>
+          <td class="src-take">Build-Measure-Learn, MVP</td>
+          <td class="src-how">Experiment as decision method, small batches</td>
+        </tr>
+        <tr>
+          <td><span class="src-cat cat-book">Book</span><br><span class="src-name">DDD + Team Topologies</span></td>
+          <td class="src-take">Bounded contexts, team APIs</td>
+          <td class="src-how">Agent domains, cross-domain contracts</td>
+        </tr>
+        <tr>
+          <td><span class="src-cat cat-llm">LLM</span><br><span class="src-name">Context Engineering</span></td>
+          <td class="src-take">Selective loading, precision</td>
+          <td class="src-how">Ring-based context loading (4 rings)</td>
+        </tr>
+        <tr>
+          <td><span class="src-cat cat-llm">LLM</span><br><span class="src-name">Multi-Agent Research</span></td>
+          <td class="src-take">Writer + Critic, one good agent</td>
+          <td class="src-how">Self-review loop, Phase 0 = one agent</td>
+        </tr>
+        <tr>
+          <td><span class="src-cat cat-llm">LLM</span><br><span class="src-name">Knowledge Graphs</span></td>
+          <td class="src-take">2-3 hops, focused context</td>
+          <td class="src-how">Task-local context, not global dumps</td>
+        </tr>
+        <tr>
+          <td><span class="src-cat cat-co">Company</span><br><span class="src-name">Amazon</span></td>
+          <td class="src-take">PR/FAQ, STL, input metrics</td>
+          <td class="src-how">Idea shaping, DRI model, input-only metrics</td>
+        </tr>
+        <tr>
+          <td><span class="src-cat cat-co">Company</span><br><span class="src-name">Apple</span></td>
+          <td class="src-take">DRI, Monday review, few products</td>
+          <td class="src-how">DRI for everything, weekly review, WIP limits</td>
+        </tr>
+        <tr>
+          <td><span class="src-cat cat-co">Company</span><br><span class="src-name">Stripe</span></td>
+          <td class="src-take">Writing culture, craft</td>
+          <td class="src-how">Decision archival, quality gates</td>
+        </tr>
+        <tr>
+          <td><span class="src-cat cat-co">Company</span><br><span class="src-name">Netflix</span></td>
+          <td class="src-take">Context not control, keeper test</td>
+          <td class="src-how">Intent-based direction, kill criteria</td>
+        </tr>
+        <tr>
+          <td><span class="src-cat cat-co">Company</span><br><span class="src-name">Toyota</span></td>
+          <td class="src-take">Standardized work, kaizen, andon</td>
+          <td class="src-how">Process baselines, continuous improvement</td>
+        </tr>
+        <tr>
+          <td><span class="src-cat cat-co">Company</span><br><span class="src-name">Bridgewater</span></td>
+          <td class="src-take">Idea meritocracy, pain + reflection</td>
+          <td class="src-how">Adversarial review, pain log, transparency</td>
+        </tr>
+        <tr>
+          <td><span class="src-cat cat-co">Company</span><br><span class="src-name">Linear</span></td>
+          <td class="src-take">Small team, say no, ship</td>
+          <td class="src-how">WIP limits, deletion test, craft over process</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="sn" style="color:#F5F0E8;">12 / 12</div>
+</div>
+
+</body>
+</html>
