@@ -326,31 +326,39 @@ export function CanvasScreen({ navigation }: Props) {
               refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
               renderItem={({ item }) => {
                 const isDone = item.status === 'COMPLETED' || item.status === 'SKIPPED';
-                const hasLog = !!logs[item.id];
                 const catColor = getCategoryColor(item.category_id);
-                // Three states: empty (planned) → half (done, not reflected) → full (reflected)
-                const circleStyle = isDone
-                  ? (hasLog ? styles.listCircleFull : styles.listCircleHalf)
-                  : styles.listCircle;
-                return (
-                  <View style={styles.listItem}>
-                    {/* Circle: tap empty → complete, tap half → open experience log */}
-                    <TouchableOpacity
-                      style={circleStyle}
-                      onPress={() => {
-                        if (!isDone) {
-                          quickToggleComplete(item.id);
-                        } else if (!hasLog) {
-                          navigation.navigate('ExperienceLog', { activityId: item.id });
-                        }
-                      }}
-                      activeOpacity={0.6}
-                    >
-                      {isDone && <Text style={styles.listCircleCheck}>{'\u2713'}</Text>}
-                    </TouchableOpacity>
+                const tintColor = item.category?.color || catColor.solid;
+                // Glass tint: category color at 6% on white glass
+                const r = parseInt(tintColor.slice(1, 3), 16) || 255;
+                const g = parseInt(tintColor.slice(3, 5), 16) || 255;
+                const b = parseInt(tintColor.slice(5, 7), 16) || 255;
+                const tint = 0.06;
+                const fr = Math.round(255 * (1 - tint) + r * tint);
+                const fg = Math.round(255 * (1 - tint) + g * tint);
+                const fb = Math.round(255 * (1 - tint) + b * tint);
+                const glassBg = `rgba(${fr},${fg},${fb},0.65)`;
 
-                    {/* Content — tap to open */}
-                    <TouchableOpacity style={styles.listContent} onPress={() => navigateToActivity(item)} activeOpacity={0.7}>
+                return (
+                  <TouchableOpacity
+                    style={[
+                      styles.listItem,
+                      {
+                        backgroundColor: glassBg,
+                        borderWidth: 1,
+                        borderColor: colors.glass.border,
+                        borderRadius: 14,
+                        marginBottom: 8,
+                        shadowColor: '#000',
+                        shadowOffset: { width: 0, height: 3 },
+                        shadowOpacity: 0.06,
+                        shadowRadius: 8,
+                        elevation: 3,
+                      },
+                      isDone && { opacity: 0.6 },
+                    ]}
+                    onPress={() => navigateToActivity(item)}
+                    activeOpacity={0.7}
+                  >
                       {/* Row 1: Icon + Title */}
                       <View style={styles.listTitleRow}>
                         <Text style={styles.listIcon}>{item.category?.icon ?? '\u2728'}</Text>
@@ -372,12 +380,11 @@ export function CanvasScreen({ navigation }: Props) {
                         {item.category?.name && (
                           <>
                             <Text style={styles.listDot}>{'\u00B7'}</Text>
-                            <Text style={[styles.listCat, { color: catColor.solid, backgroundColor: catColor.light }]}>{item.category.name}</Text>
+                            <Text style={styles.listCatName}>{item.category.name}</Text>
                           </>
                         )}
                       </View>
-                    </TouchableOpacity>
-                  </View>
+                  </TouchableOpacity>
                 );
               }}
               ListEmptyComponent={<Text style={styles.listEmpty}>No activities today</Text>}
@@ -611,23 +618,17 @@ const styles = StyleSheet.create({
   toggleText: { fontSize: 12, fontWeight: '500' as const, color: colors.muted },
   toggleTextActive: { color: colors.text, fontWeight: '600' as const },
 
-  // List view items
-  listItem: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: colors.border },
-  listCircle: { width: 24, height: 24, borderRadius: 12, borderWidth: 2, borderColor: colors.border, alignItems: 'center', justifyContent: 'center', marginTop: 2 } as any,
-  listCircleHalf: { width: 24, height: 24, borderRadius: 12, borderWidth: 2, borderColor: colors.primary, alignItems: 'center', justifyContent: 'center', marginTop: 2, backgroundColor: colors.primaryBg } as any,
-  listCircleFull: { width: 24, height: 24, borderRadius: 12, borderWidth: 2, borderColor: colors.primary, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center', marginTop: 2 } as any,
-  listCircleCheck: { color: '#fff', fontSize: 12, fontWeight: '700' as const },
+  // List view items — glass morphism cards per DESIGN.md
+  listItem: { paddingVertical: 10, paddingHorizontal: 12 } as any,
   listTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   listTitleDone: { textDecorationLine: 'line-through', color: colors.muted },
   listMeta: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },
   listDot: { fontSize: 10, color: colors.muted, fontWeight: '700' as const },
-  listCat: { fontSize: 11, fontWeight: '600' as const, paddingHorizontal: 7, paddingVertical: 1, borderRadius: 4, overflow: 'hidden' as const },
-  listIcon: { fontSize: 20 },
-  listContent: { flex: 1 },
-  listTitle: { fontSize: 14, fontWeight: '700' as const, color: colors.text },
+  listCatName: { fontSize: 11, fontWeight: '600' as const, color: colors.muted },
+  listIcon: { fontSize: 15 },
+  listTitle: { flex: 1, fontSize: 14, fontWeight: '700' as const, color: colors.text },
   listTime: { fontSize: 11, color: colors.muted, marginTop: 2 },
   listMindset: { fontSize: 9.5, fontStyle: 'italic' as const, color: colors.text2, opacity: 0.6, marginTop: 2, lineHeight: 13 },
-  listCheck: { fontSize: 16, color: colors.primary },
   listEmpty: { textAlign: 'center' as const, color: colors.muted, marginTop: 40 },
 
   fab: {
