@@ -10,6 +10,33 @@ interface IngestResult {
   errors: string[];
 }
 
+async function insertJoke(
+  supabase: SupabaseClient,
+  joke: { type: string; category: string; title: string | null; body: string; source: string; source_id: string },
+  result: IngestResult,
+) {
+  const { error } = await supabase.from("content").insert({
+    type: joke.type,
+    category: joke.category,
+    title: joke.title,
+    body: joke.body,
+    source: joke.source,
+    source_id: joke.source_id,
+    is_active: true,
+  });
+
+  if (error) {
+    if (error.code === "23505") {
+      // Unique constraint violation = duplicate
+      result.duplicates++;
+    } else {
+      result.errors.push(`${joke.source} ${joke.source_id}: ${error.message}`);
+    }
+  } else {
+    result.inserted++;
+  }
+}
+
 // JokeAPI — free, no auth, 6 categories
 async function fetchJokeAPI(supabase: SupabaseClient): Promise<IngestResult> {
   const result: IngestResult = {
@@ -79,24 +106,7 @@ async function fetchJokeAPI(supabase: SupabaseClient): Promise<IngestResult> {
 
   // Bulk insert
   for (const joke of jokes) {
-    const { error } = await supabase.from("content").upsert(
-      {
-        type: joke.type,
-        category: joke.category,
-        title: joke.title,
-        body: joke.body,
-        source: "jokeapi",
-        source_id: joke.source_id,
-        is_active: true,
-      },
-      { onConflict: "source,source_id", ignoreDuplicates: true },
-    );
-
-    if (error) {
-      result.duplicates++;
-    } else {
-      result.inserted++;
-    }
+    await insertJoke(supabase, { ...joke, source: "jokeapi" }, result);
   }
 
   return result;
@@ -148,24 +158,14 @@ async function fetchDadJokes(supabase: SupabaseClient): Promise<IngestResult> {
 
       for (const joke of data.results || []) {
         result.fetched++;
-        const { error } = await supabase.from("content").upsert(
-          {
-            type: "dad_joke",
-            category: "dad_jokes",
-            title: null,
-            body: joke.joke,
-            source: "icanhazdadjoke",
-            source_id: `dadjoke-${joke.id}`,
-            is_active: true,
-          },
-          { onConflict: "source,source_id", ignoreDuplicates: true },
-        );
-
-        if (error) {
-          result.duplicates++;
-        } else {
-          result.inserted++;
-        }
+        await insertJoke(supabase, {
+          type: "dad_joke",
+          category: "dad_jokes",
+          title: null,
+          body: joke.joke,
+          source: "icanhazdadjoke",
+          source_id: `dadjoke-${joke.id}`,
+        }, result);
       }
     } catch (e) {
       result.errors.push(
@@ -195,24 +195,14 @@ async function fetchOfficialJokeAPI(supabase: SupabaseClient): Promise<IngestRes
 
     for (const joke of jokes) {
       result.fetched++;
-      const { error } = await supabase.from("content").upsert(
-        {
-          type: "text_joke",
-          category: mapOfficialCategory(joke.type),
-          title: joke.setup,
-          body: joke.punchline,
-          source: "official_joke_api",
-          source_id: `official-${joke.id}`,
-          is_active: true,
-        },
-        { onConflict: "source,source_id", ignoreDuplicates: true },
-      );
-
-      if (error) {
-        result.duplicates++;
-      } else {
-        result.inserted++;
-      }
+      await insertJoke(supabase, {
+        type: "text_joke",
+        category: mapOfficialCategory(joke.type),
+        title: joke.setup,
+        body: joke.punchline,
+        source: "official_joke_api",
+        source_id: `official-${joke.id}`,
+      }, result);
     }
   } catch (e) {
     result.errors.push(
