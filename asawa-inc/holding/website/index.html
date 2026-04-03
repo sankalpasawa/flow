@@ -4,276 +4,459 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Asawa Inc.</title>
-<meta name="description" content="Asawa Inc. builds companies with AI. Sutra is our operating system. DayFlow is our first product.">
+<meta name="description" content="Asawa Inc. builds enduring companies at the intersection of human intention and artificial intelligence.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
   :root {
-    --bg: #F5F0E8;
-    --surface: #FFFFFF;
-    --text: #1A1714;
-    --muted: #8C857D;
-    --border: #E0D9CE;
-    --primary: #2D5A3E;
-    --accent: #C4956A;
-    --accent-dim: rgba(196, 149, 106, 0.08);
-    --primary-dim: rgba(45, 90, 62, 0.08);
+    --bg: #FAFAF7;
+    --deep: #0F0F0D;
+    --ink: #1A1714;
+    --stone: #6B6560;
+    --warm: #A09889;
+    --line: #E8E3DB;
+    --cream: #F5F0E8;
+    --gold: #B8945F;
+    --gold-dim: rgba(184, 148, 95, 0.06);
+    --forest: #2D5A3E;
+    --forest-dim: rgba(45, 90, 62, 0.06);
   }
 
   body {
     font-family: 'Inter', -apple-system, sans-serif;
     background: var(--bg);
-    color: var(--text);
-    line-height: 1.6;
+    color: var(--ink);
     -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
   }
 
-  .container {
-    max-width: 720px;
-    margin: 0 auto;
-    padding: 0 24px;
-  }
+  /* Typography */
+  .serif { font-family: 'Playfair Display', Georgia, serif; }
 
+  /* Nav */
   nav {
-    padding: 20px 0;
-    border-bottom: 1px solid var(--border);
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    padding: 24px 0;
+    background: rgba(250, 250, 247, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid transparent;
+    transition: border-color 0.3s;
   }
-  nav .container {
+  nav.scrolled { border-bottom-color: var(--line); }
+  nav .inner {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 48px;
     display: flex;
     justify-content: space-between;
     align-items: center;
   }
-  .logo {
-    font-size: 18px;
-    font-weight: 800;
-    letter-spacing: -0.3px;
+  .wordmark {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    color: var(--ink);
   }
+  .nav-links {
+    display: flex;
+    gap: 36px;
+  }
+  .nav-links a {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--stone);
+    text-decoration: none;
+    letter-spacing: 0.3px;
+    transition: color 0.2s;
+  }
+  .nav-links a:hover { color: var(--ink); }
 
+  /* Hero */
   .hero {
-    padding: 80px 0 48px;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     text-align: center;
+    padding: 120px 48px 80px;
+    position: relative;
+  }
+  .hero::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 10%;
+    right: 10%;
+    height: 1px;
+    background: var(--line);
+  }
+  .hero-content {
+    max-width: 700px;
+  }
+  .hero-eyebrow {
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 32px;
   }
   .hero h1 {
-    font-size: 40px;
-    font-weight: 800;
-    line-height: 1.15;
+    font-family: 'Playfair Display', serif;
+    font-size: 64px;
+    font-weight: 400;
+    line-height: 1.12;
     letter-spacing: -1px;
-    margin-bottom: 16px;
+    color: var(--ink);
+    margin-bottom: 28px;
   }
-  .hero p {
-    font-size: 17px;
-    color: var(--muted);
-    max-width: 500px;
+  .hero h1 em {
+    font-style: italic;
+    color: var(--gold);
+  }
+  .hero-body {
+    font-size: 18px;
+    font-weight: 300;
+    line-height: 1.8;
+    color: var(--stone);
+    max-width: 520px;
     margin: 0 auto;
-    line-height: 1.7;
+  }
+  .hero-year {
+    margin-top: 48px;
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--warm);
+    letter-spacing: 1px;
   }
 
-  .companies {
-    padding: 48px 0 64px;
+  /* Section base */
+  .section {
+    padding: 120px 48px;
+    max-width: 1100px;
+    margin: 0 auto;
   }
-  .companies-label {
+  .section-label {
     font-size: 11px;
     font-weight: 600;
+    letter-spacing: 3px;
     text-transform: uppercase;
-    letter-spacing: 1.5px;
-    color: var(--muted);
-    margin-bottom: 24px;
+    color: var(--gold);
+    margin-bottom: 20px;
+  }
+  .section h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 40px;
+    font-weight: 400;
+    line-height: 1.2;
+    letter-spacing: -0.3px;
+    margin-bottom: 20px;
+  }
+  .section-intro {
+    font-size: 17px;
+    font-weight: 300;
+    line-height: 1.8;
+    color: var(--stone);
+    max-width: 560px;
+    margin-bottom: 60px;
+  }
+
+  /* Belief */
+  .belief-section {
+    background: var(--deep);
+    color: var(--cream);
+    padding: 120px 48px;
+    margin: 0;
+    max-width: 100%;
     text-align: center;
   }
-  .company-cards {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
+  .belief-section .inner {
+    max-width: 680px;
+    margin: 0 auto;
+  }
+  .belief-section .section-label { color: var(--gold); }
+  .belief-section h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 36px;
+    font-weight: 400;
+    line-height: 1.35;
+    color: var(--cream);
+    margin-bottom: 28px;
+  }
+  .belief-section p {
+    font-size: 16px;
+    font-weight: 300;
+    line-height: 1.9;
+    color: rgba(245, 240, 232, 0.6);
+    max-width: 500px;
+    margin: 0 auto;
+  }
+
+  /* Companies */
+  .companies-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
   }
   .company-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
+    position: relative;
+    border: 1px solid var(--line);
     border-radius: 16px;
-    padding: 28px 32px;
+    padding: 40px 36px 36px;
+    text-decoration: none;
+    color: var(--ink);
+    transition: all 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    background: var(--bg);
+    overflow: hidden;
+  }
+  .company-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    opacity: 0;
+    transition: opacity 0.35s;
+  }
+  .company-card:hover {
+    border-color: transparent;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04);
+    transform: translateY(-4px);
+  }
+  .company-card:hover::before { opacity: 1; }
+  .company-card.sutra::before { background: var(--gold); }
+  .company-card.dayflow::before { background: var(--forest); }
+  .company-card.coming { opacity: 0.45; pointer-events: none; }
+  .company-card.coming::before { background: var(--warm); }
+
+  .card-badge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 5px 12px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+  }
+  .card-badge.os { background: var(--gold-dim); color: var(--gold); }
+  .card-badge.product { background: var(--forest-dim); color: var(--forest); }
+  .card-badge.soon { background: rgba(160,152,137,0.08); color: var(--warm); }
+
+  .company-card h3 {
+    font-family: 'Playfair Display', serif;
+    font-size: 28px;
+    font-weight: 500;
+    margin-bottom: 10px;
+  }
+  .company-card .desc {
+    font-size: 15px;
+    font-weight: 300;
+    line-height: 1.7;
+    color: var(--stone);
+    margin-bottom: 24px;
+  }
+  .card-link {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--gold);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: gap 0.2s;
+  }
+  .company-card:hover .card-link { gap: 10px; }
+
+  /* Principles */
+  .principles-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+  .principle-cell {
+    background: var(--bg);
+    padding: 36px 32px;
+  }
+  .principle-num {
+    font-family: 'Playfair Display', serif;
+    font-size: 32px;
+    font-weight: 400;
+    color: var(--line);
+    margin-bottom: 16px;
+  }
+  .principle-cell h3 {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    letter-spacing: -0.2px;
+  }
+  .principle-cell p {
+    font-size: 14px;
+    font-weight: 300;
+    line-height: 1.7;
+    color: var(--stone);
+  }
+
+  /* Footer */
+  footer {
+    padding: 60px 48px;
+    max-width: 1100px;
+    margin: 0 auto;
+    border-top: 1px solid var(--line);
     display: flex;
     justify-content: space-between;
     align-items: center;
-    text-decoration: none;
-    color: var(--text);
-    transition: all 0.2s;
   }
-  .company-card:hover {
-    border-color: var(--accent);
-    box-shadow: 0 4px 20px rgba(0,0,0,0.04);
-    transform: translateY(-2px);
+  .footer-left {
+    font-family: 'Playfair Display', serif;
+    font-size: 16px;
+    font-weight: 500;
   }
-  .company-info h2 {
-    font-size: 20px;
-    font-weight: 700;
-    margin-bottom: 4px;
-  }
-  .company-info p {
-    font-size: 14px;
-    color: var(--muted);
-  }
-  .company-badge {
-    padding: 6px 14px;
-    border-radius: 20px;
-    font-size: 12px;
-    font-weight: 600;
-    flex-shrink: 0;
-  }
-  .badge-os {
-    background: var(--accent-dim);
-    color: var(--accent);
-  }
-  .badge-product {
-    background: var(--primary-dim);
-    color: var(--primary);
-  }
-  .badge-coming {
-    background: rgba(140,133,125,0.1);
-    color: var(--muted);
-  }
-  .company-arrow {
-    font-size: 18px;
-    color: var(--muted);
-    margin-left: 16px;
-  }
-
-  .philosophy {
-    padding: 48px 0;
-    border-top: 1px solid var(--border);
-    text-align: center;
-  }
-  .philosophy h2 {
-    font-size: 24px;
-    font-weight: 700;
-    letter-spacing: -0.3px;
-    margin-bottom: 16px;
-  }
-  .philosophy p {
-    font-size: 15px;
-    color: var(--muted);
-    max-width: 520px;
-    margin: 0 auto;
-    line-height: 1.8;
-  }
-
-  .principles {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
-    margin-top: 32px;
-    text-align: left;
-  }
-  .principle {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 20px;
-  }
-  .principle h3 {
-    font-size: 14px;
-    font-weight: 600;
-    margin-bottom: 6px;
-  }
-  .principle p {
+  .footer-right {
     font-size: 13px;
-    color: var(--muted);
-    line-height: 1.6;
-    margin: 0;
+    color: var(--warm);
+    font-weight: 300;
   }
 
-  footer {
-    padding: 32px 0;
-    border-top: 1px solid var(--border);
-    text-align: center;
-    font-size: 13px;
-    color: var(--muted);
-  }
-
-  @media (max-width: 640px) {
-    .hero h1 { font-size: 28px; }
-    .principles { grid-template-columns: 1fr; }
-    .company-card { flex-direction: column; align-items: flex-start; gap: 12px; }
+  /* Responsive */
+  @media (max-width: 768px) {
+    .hero h1 { font-size: 38px; }
+    .hero { padding: 120px 24px 60px; }
+    .section { padding: 80px 24px; }
+    .belief-section { padding: 80px 24px; }
+    .companies-grid { grid-template-columns: 1fr; }
+    .principles-grid { grid-template-columns: 1fr; }
+    nav .inner { padding: 0 24px; }
+    .nav-links { display: none; }
+    footer { flex-direction: column; gap: 12px; padding: 40px 24px; }
   }
 </style>
 </head>
 <body>
 
-<nav>
-  <div class="container">
-    <div class="logo">Asawa Inc.</div>
+<nav id="nav">
+  <div class="inner">
+    <div class="wordmark">Asawa</div>
+    <div class="nav-links">
+      <a href="#companies">Companies</a>
+      <a href="#principles">Principles</a>
+    </div>
   </div>
 </nav>
 
 <section class="hero">
-  <div class="container">
-    <h1>We build companies with AI</h1>
-    <p>Asawa Inc. is a holding company that builds and operates AI-native businesses. Our operating system, Sutra, structures how companies get built.</p>
+  <div class="hero-content">
+    <div class="hero-eyebrow">Building for the long term</div>
+    <h1>We build <em>enduring</em> companies with intelligence</h1>
+    <p class="hero-body">Asawa Inc. creates and operates businesses at the intersection of human intention and artificial intelligence. We don't chase trends. We build systems that compound.</p>
+    <div class="hero-year">Est. 2025</div>
   </div>
 </section>
 
-<section class="companies">
-  <div class="container">
-    <div class="companies-label">Our Companies</div>
-    <div class="company-cards">
-      <a class="company-card" href="https://sutra-os.vercel.app" id="sutra-link">
-        <div class="company-info">
-          <h2>Sutra</h2>
-          <p>The operating system. Takes founders from idea to running company in 60 minutes. 89 AI skills. Structured process.</p>
-        </div>
-        <span class="company-badge badge-os">Operating System</span>
-        <span class="company-arrow">&rarr;</span>
-      </a>
-      <a class="company-card" href="#">
-        <div class="company-info">
-          <h2>DayFlow</h2>
-          <p>Personal operating system for daily life. Time blocks, activities, AI-powered planning. iOS app built with Sutra.</p>
-        </div>
-        <span class="company-badge badge-product">Product</span>
-        <span class="company-arrow">&rarr;</span>
-      </a>
-      <a class="company-card" href="#" style="opacity: 0.5; pointer-events: none;">
-        <div class="company-info">
-          <h2>Next company</h2>
-          <p>Built through Sutra by a founder. Coming soon.</p>
-        </div>
-        <span class="company-badge badge-coming">Coming Soon</span>
-      </a>
+<section class="belief-section">
+  <div class="inner">
+    <div class="section-label">Our Belief</div>
+    <h2>Design how an ideal company operates. Then let intelligence drive it.</h2>
+    <p>Not the other way around. The company comes first. The technology serves the structure. Every business we build starts with principles, not prompts.</p>
+  </div>
+</section>
+
+<section class="section" id="companies">
+  <div class="section-label">Portfolio</div>
+  <h2>Our companies</h2>
+  <p class="section-intro">Each company is built through Sutra, our operating system. Each one makes the system better for the next.</p>
+
+  <div class="companies-grid">
+    <a class="company-card sutra" href="https://sutra-os.vercel.app">
+      <span class="card-badge os">Operating System</span>
+      <h3>Sutra</h3>
+      <p class="desc">The operating system for building companies. Takes founders from a raw idea to a structured, running business. 89 integrated skills. Eight-phase process. Battle-tested.</p>
+      <span class="card-link">Explore Sutra <span>&rarr;</span></span>
+    </a>
+    <a class="company-card dayflow" href="#">
+      <span class="card-badge product">Product</span>
+      <h3>DayFlow</h3>
+      <p class="desc">A personal operating system for daily life. Time blocks, activities, and AI-powered planning on iOS. The first company built with Sutra.</p>
+      <span class="card-link">Coming to TestFlight <span>&rarr;</span></span>
+    </a>
+    <a class="company-card coming" href="#">
+      <span class="card-badge soon">Next</span>
+      <h3>Company Three</h3>
+      <p class="desc">Built through Sutra by a founder with an idea. Every new company teaches Sutra something. The system gets better.</p>
+      <span class="card-link">In progress</span>
+    </a>
+    <a class="company-card coming" href="#">
+      <span class="card-badge soon">Next</span>
+      <h3>And beyond</h3>
+      <p class="desc">Sutra is designed to scale to dozens of companies. Each one independent. Each one structured. Each one feeding back into the system.</p>
+      <span class="card-link">The long game</span>
+    </a>
+  </div>
+</section>
+
+<section class="section" id="principles">
+  <div class="section-label">How We Operate</div>
+  <h2>Six principles</h2>
+  <p class="section-intro">These don't change with the market. They're the foundation everything else is built on.</p>
+
+  <div class="principles-grid">
+    <div class="principle-cell">
+      <div class="principle-num">01</div>
+      <h3>Structure before speed</h3>
+      <p>Ten minutes of clarity saves ten hours of rework. Every company gets an operating system before anyone writes a line of code.</p>
     </div>
-  </div>
-</section>
-
-<section class="philosophy">
-  <div class="container">
-    <h2>How we think</h2>
-    <p>Design how an ideal company operates, then have AI drive it. Not the other way around. Company-first, not LLM-first.</p>
-
-    <div class="principles">
-      <div class="principle">
-        <h3>Structure before speed</h3>
-        <p>10 minutes of clarity saves 10 hours of rework. Every company gets an operating system before writing code.</p>
-      </div>
-      <div class="principle">
-        <h3>Data decides, not faith</h3>
-        <p>Every company A/B tests whether Sutra's process helps. If it doesn't, Sutra adapts. Data wins.</p>
-      </div>
-      <div class="principle">
-        <h3>Feedback loops</h3>
-        <p>Companies feed learnings back to Sutra. Sutra improves for all future companies. Every client makes the system better.</p>
-      </div>
-      <div class="principle">
-        <h3>Session isolation</h3>
-        <p>Each company runs in its own cognitive space. No contamination. Five enforcement levels from instructions to fresh context.</p>
-      </div>
+    <div class="principle-cell">
+      <div class="principle-num">02</div>
+      <h3>Data decides</h3>
+      <p>Every company tests whether its process works. If the data says the process is overhead, the process changes. Not the data.</p>
+    </div>
+    <div class="principle-cell">
+      <div class="principle-num">03</div>
+      <h3>Compounding feedback</h3>
+      <p>Each company feeds learnings back to Sutra. Sutra improves for all future companies. The hundredth company is built better than the first.</p>
+    </div>
+    <div class="principle-cell">
+      <div class="principle-num">04</div>
+      <h3>Cognitive isolation</h3>
+      <p>Each company operates in its own space. No contamination between businesses. Five enforcement levels ensure clean separation.</p>
+    </div>
+    <div class="principle-cell">
+      <div class="principle-num">05</div>
+      <h3>Founder sovereignty</h3>
+      <p>The system advises. The founder decides. Technology handles execution. Strategy, taste, and direction belong to the human.</p>
+    </div>
+    <div class="principle-cell">
+      <div class="principle-num">06</div>
+      <h3>Hard enforcement</h3>
+      <p>Principles are not suggestions. Every protocol is enforced by default. Soft rules become no rules. We build for a hundred years, not a hundred days.</p>
     </div>
   </div>
 </section>
 
 <footer>
-  <div class="container">
-    Asawa Inc.
-  </div>
+  <div class="footer-left">Asawa Inc.</div>
+  <div class="footer-right">Building enduring companies with intelligence</div>
 </footer>
+
+<script>
+  // Nav scroll effect
+  window.addEventListener('scroll', () => {
+    document.getElementById('nav').classList.toggle('scrolled', window.scrollY > 40);
+  });
+</script>
 
 </body>
 </html>
