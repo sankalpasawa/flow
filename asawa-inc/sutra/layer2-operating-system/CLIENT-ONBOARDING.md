@@ -622,3 +622,4 @@ Sutra publishes a new version when:
 | # | Company | Type | Platform | Stage | Sutra Version | Mode | Onboarded | Status |
 |---|---------|------|----------|-------|---------------|------|-----------|--------|
 | 1 | DayFlow | Productivity tool | iOS (Expo) | Pre-launch | v1.0 | A/B Test | 2026-04-01 | Active |
+| 2 | PPR | Productivity tool | Web (Next.js) | Pre-launch | v1.0 | A/B Test | 2026-04-03 | Active |
