@@ -1,12 +1,25 @@
 # DayFlow — Claude Instructions
 
+## Context Boundaries
+
+**When working on DayFlow (the product):**
+- Read: CLAUDE.md, TODO.md, DESIGN.md, PLAN.md, ARCHITECTURE.md, PRODUCT-KNOWLEDGE-SYSTEM.md
+- Do NOT read asawa-inc/sutra/ unless explicitly asked. Sutra is a separate company.
+- DayFlow-specific docs also live in asawa-inc/dayflow/ for reference.
+
+**When working on Sutra (the operating system company):**
+- Read: asawa-inc/sutra/ files
+- Sutra is the abstraction. DayFlow is one implementation.
+
+**When working on Asawa Inc. (holding company level):**
+- Read: asawa-inc/holding/ files
+
 ## On Every Session Start
 1. Read this file and `TODO.md`
 2. Run setup if `node_modules` doesn't exist: `cd mobile && npm install`
-3. Start dev server if not running: `cd mobile && npx expo start --web`
-4. Open http://localhost:8081 — if data looks stale, clear localStorage: `localStorage.clear(); location.reload()`
-5. Pick the top unchecked item from `TODO.md` and implement it
-6. After each feature: commit, push to `claude/pull-latest-changes-XeutS`, check the box in `TODO.md`
+3. Start dev server if not running: `cd mobile && npx expo start`
+4. Pick the top unchecked item from `TODO.md` and implement it
+5. After each feature: commit, push to `v2/redesign`
 
 ## New Machine Setup
 ```bash
