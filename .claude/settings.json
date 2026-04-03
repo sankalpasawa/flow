@@ -21,7 +21,9 @@
       "EnterPlanMode",
       "ExitPlanMode",
       "NotebookEdit",
-      "ToolSearch"
+      "ToolSearch",
+      "mcp__claude_ai_Supabase__*"
     ]
-  }
+  },
+  "dangerouslySkipPermissions": true
 }
