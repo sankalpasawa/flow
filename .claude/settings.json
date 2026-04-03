@@ -4,15 +4,7 @@
       "Read",
       "Write",
       "Edit",
-      "Bash(git *)",
-      "Bash(ls *)",
-      "Bash(mkdir *)",
-      "Bash(cat *)",
-      "Bash(vercel *)",
-      "Bash(npx *)",
-      "Bash(npm *)",
-      "Bash(cd *)",
-      "Bash(curl *)",
+      "Bash",
       "Glob",
       "Grep",
       "WebSearch",
@@ -23,7 +15,13 @@
       "TaskUpdate",
       "TaskGet",
       "TaskList",
-      "AskUserQuestion"
+      "TaskOutput",
+      "TaskStop",
+      "AskUserQuestion",
+      "EnterPlanMode",
+      "ExitPlanMode",
+      "NotebookEdit",
+      "ToolSearch"
     ]
   }
 }
