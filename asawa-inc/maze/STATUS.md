@@ -1,6 +1,7 @@
 # Maze — Onboarding Status
-Phase: 7/8 DEPLOY — COMPLETE
+Phase: 8/8 ACTIVATE — COMPLETE
 Started: 2026-04-04
+Onboarding duration: 15 minutes
 Founder responses: 11/11
 
 ## Key Decisions
@@ -19,7 +20,8 @@ Founder responses: 11/11
 - Phase 4 DECIDE: **GO** — Founder said "Let's go."
 - Phase 5 ARCHITECT: Complete — Architecture Card written to ARCHITECTURE.md
 - Phase 6 CONFIGURE: Complete — Full OS package generated
-- Phase 7 DEPLOY: Complete — Client #3 registered in Sutra. All files committed.
+- Phase 7 DEPLOY: Complete — Client #3 registered in Sutra
+- Phase 8 ACTIVATE: Complete — Skills selected, founder briefed
 
 ## Company Files
 ```

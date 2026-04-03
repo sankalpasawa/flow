@@ -22,8 +22,8 @@
 
 ```yaml
 onboarding_started: "2026-04-04"
-onboarding_duration: "TBD"
-phases_completed: 6
+onboarding_duration: "15 minutes"
+phases_completed: 8
 ```
 
 ## Cost Tracking
