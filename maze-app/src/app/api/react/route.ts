@@ -17,6 +17,11 @@ export async function POST(request: NextRequest) {
 
   const supabase = createServiceClient();
 
+  // Demo mode: no-op when Supabase isn't connected
+  if (!supabase) {
+    return NextResponse.json({ success: true, demo: true });
+  }
+
   // Ensure session exists
   await supabase.from("sessions").upsert(
     {

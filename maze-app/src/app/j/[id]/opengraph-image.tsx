@@ -1,5 +1,6 @@
 import { ImageResponse } from "next/og";
 import { createServiceClient } from "@/lib/supabase";
+import { DEMO_JOKES } from "@/lib/demo-data";
 
 export const runtime = "nodejs";
 export const size = { width: 1200, height: 630 };
@@ -24,11 +25,17 @@ export default async function OGImage({
 }) {
   const { id } = await params;
   const supabase = createServiceClient();
-  const { data: joke } = await supabase
-    .from("content")
-    .select("*")
-    .eq("id", id)
-    .single();
+  let joke = null;
+  if (supabase) {
+    const { data } = await supabase
+      .from("content")
+      .select("*")
+      .eq("id", id)
+      .single();
+    joke = data;
+  } else {
+    joke = DEMO_JOKES.find((j) => j.id === id) || null;
+  }
 
   if (!joke) {
     return new ImageResponse(

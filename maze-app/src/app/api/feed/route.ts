@@ -1,14 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase";
+import { DEMO_JOKES } from "@/lib/demo-data";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const category = searchParams.get("category");
-  const cursor = searchParams.get("cursor");
-  const sessionId = searchParams.get("session_id");
   const limit = 20;
 
   const supabase = createServiceClient();
+
+  // Demo mode: return demo jokes when Supabase isn't connected
+  if (!supabase) {
+    let items = DEMO_JOKES;
+    if (category && category !== "all") {
+      items = items.filter((j) => j.category === category);
+    }
+    return NextResponse.json({
+      items,
+      nextCursor: null,
+      hasMore: false,
+    });
+  }
+
+  const cursor = searchParams.get("cursor");
+  const sessionId = searchParams.get("session_id");
 
   // Build query
   let query = supabase
@@ -17,7 +32,7 @@ export async function GET(request: NextRequest) {
     .eq("is_active", true)
     .order("score", { ascending: false })
     .order("created_at", { ascending: false })
-    .limit(limit + 1); // fetch one extra to check hasMore
+    .limit(limit + 1);
 
   if (category && category !== "all") {
     query = query.eq("category", category);

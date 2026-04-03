@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { SupabaseClient } from "@supabase/supabase-js";
 import { createServiceClient } from "@/lib/supabase";
 
 interface IngestResult {
@@ -10,7 +11,7 @@ interface IngestResult {
 }
 
 // JokeAPI — free, no auth, 6 categories
-async function fetchJokeAPI(): Promise<IngestResult> {
+async function fetchJokeAPI(supabase: SupabaseClient): Promise<IngestResult> {
   const result: IngestResult = {
     source: "jokeapi",
     fetched: 0,
@@ -77,7 +78,6 @@ async function fetchJokeAPI(): Promise<IngestResult> {
   }
 
   // Bulk insert
-  const supabase = createServiceClient();
   for (const joke of jokes) {
     const { error } = await supabase.from("content").upsert(
       {
@@ -103,7 +103,7 @@ async function fetchJokeAPI(): Promise<IngestResult> {
 }
 
 // icanhazdadjoke — free, no auth, dad jokes
-async function fetchDadJokes(): Promise<IngestResult> {
+async function fetchDadJokes(supabase: SupabaseClient): Promise<IngestResult> {
   const result: IngestResult = {
     source: "icanhazdadjoke",
     fetched: 0,
@@ -111,8 +111,6 @@ async function fetchDadJokes(): Promise<IngestResult> {
     duplicates: 0,
     errors: [],
   };
-
-  const supabase = createServiceClient();
 
   // Fetch multiple pages of dad jokes via search
   const searchTerms = [
@@ -180,7 +178,7 @@ async function fetchDadJokes(): Promise<IngestResult> {
 }
 
 // Official Joke API — free, no auth, ~300 jokes
-async function fetchOfficialJokeAPI(): Promise<IngestResult> {
+async function fetchOfficialJokeAPI(supabase: SupabaseClient): Promise<IngestResult> {
   const result: IngestResult = {
     source: "official_joke_api",
     fetched: 0,
@@ -194,8 +192,6 @@ async function fetchOfficialJokeAPI(): Promise<IngestResult> {
       "https://official-joke-api.appspot.com/jokes/ten",
     );
     const jokes = await res.json();
-
-    const supabase = createServiceClient();
 
     for (const joke of jokes) {
       result.fetched++;
@@ -250,6 +246,16 @@ function mapOfficialCategory(type: string): string {
 }
 
 export async function GET(request: Request) {
+  const supabase = createServiceClient();
+
+  // Demo mode: Supabase not connected
+  if (!supabase) {
+    return NextResponse.json({
+      success: false,
+      error: "Supabase not configured. Set NEXT_PUBLIC_SUPABASE_URL and keys.",
+    });
+  }
+
   // Simple auth via secret header to prevent abuse
   const authHeader = request.headers.get("authorization");
   const expectedToken = process.env.INGEST_SECRET;
@@ -262,15 +268,14 @@ export async function GET(request: Request) {
 
   // Fetch from all sources in parallel
   const [jokeApi, dadJokes, officialApi] = await Promise.all([
-    fetchJokeAPI(),
-    fetchDadJokes(),
-    fetchOfficialJokeAPI(),
+    fetchJokeAPI(supabase),
+    fetchDadJokes(supabase),
+    fetchOfficialJokeAPI(supabase),
   ]);
 
   results.push(jokeApi, dadJokes, officialApi);
 
   // Log ingestion
-  const supabase = createServiceClient();
   const totalFetched = results.reduce((sum, r) => sum + r.fetched, 0);
   const totalInserted = results.reduce((sum, r) => sum + r.inserted, 0);
   const totalDuplicates = results.reduce((sum, r) => sum + r.duplicates, 0);
