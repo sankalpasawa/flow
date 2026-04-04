@@ -28,46 +28,64 @@ To be onboarded through Sutra when the founder is ready. Ideas discussed:
 - [ ] Implement Level 2 hooks (PreToolUse file boundary enforcement)
 - [ ] Onboard next company through Sutra when founder decides
 
-## Hard Isolation: Git Submodule Architecture (must do)
+## Hard Isolation: Git Submodule Architecture (PRIORITY — Asawa-level initiative)
 
-Restructure from single repo to meta repo with submodules. This is the only way to get true hard enforcement on both reads AND writes.
+**Owner**: CEO of Asawa (Sankalp). Run from `/asawa` role.
+**Why**: True isolation requires separate repos. Hooks block writes but not reads. An agent launched as CEO of Maze can currently read Sutra source, DayFlow code, and PPR secrets.
 
-**Current problem**: All companies share one repo. The LLM can read any file even if hooks block writes. Instructions are soft. A `/sutra-onboard` session can read Sutra's internal process docs.
+**Start this with**: `/asawa` then "Restructure into submodule architecture"
 
-**Target architecture**:
+### Current Problem
+All companies share one repo. The LLM can read any file even if hooks block writes. Instructions are soft. A `/sutra-onboard` session can read Sutra's internal process docs.
+
+### Target Architecture
 ```
 asawa-holding/              ← Meta repo (CEO of Asawa clones with --recursive)
-├── sutra/                  ← Submodule (separate git repo)
-├── dayflow/                ← Submodule (separate git repo)
-├── {new companies}/        ← Each a submodule (separate git repo)
-└── holding/                ← Holding-level docs (in meta repo itself)
+├── holding/                ← Asawa-level docs (HUMAN-AI-INTERACTION.md, ENFORCEMENT-FRAMEWORK.md, hooks/)
+├── sutra/                  ← Submodule → github.com/sankalpasawa/sutra
+├── dayflow/                ← Submodule → github.com/sankalpasawa/dayflow
+├── maze/                   ← Submodule → github.com/sankalpasawa/maze
+├── ppr/                    ← Submodule → github.com/sankalpasawa/ppr
+└── {new companies}/        ← Each a submodule
 ```
 
-**What this gives us**:
-- CEO of DayFlow clones `dayflow` repo only. Physically cannot see Sutra source.
-- CEO of Sutra clones `sutra` repo only. Cannot see client code.
-- CEO of Asawa clones meta repo with `--recursive`. Sees everything.
-- New founder gets their own repo. Gets OS copy, not Sutra source.
+### What Each Role Clones
+| Role | Clones | Can Read | Can Write |
+|------|--------|----------|-----------|
+| `/asawa` | `asawa-holding --recursive` | Everything | Everything |
+| `/sutra` | `sutra` repo only | Sutra source + pulls client feedback | Sutra files + pushes to client repos |
+| `/company dayflow` | `dayflow` repo only | DayFlow code + baked OS | DayFlow files + feedback-to-sutra/ |
+| `/company maze` | `maze` repo only | Maze code + baked OS | Maze files + feedback-to-sutra/ |
 
-**How Sutra delivers to clients** (post-restructure):
-- Sutra generates OS files during onboarding
-- Pushes OUTPUT to the new company's repo (not Sutra source, just the deliverable)
-- Client has a copy of their OS, not access to Sutra internals
+### How Principles Flow Without Repo Access
+Compile-time baking: Sutra bakes Asawa principles (HUMAN-AI-INTERACTION.md, ENFORCEMENT-FRAMEWORK.md) into each company's OS during onboarding/upgrade. Company has a COPY in their repo, not a runtime reference to Asawa's repo.
 
-**Feedback flows via git**:
-- Client pushes to `feedback-to-sutra/` in their repo
-- Sutra pulls from client repos to read feedback
-- Sutra pushes updates to `feedback-from-sutra/` in client repos
+### How Feedback Flows Up
+- Company writes to `feedback-to-sutra/` in their own repo
+- Sutra pulls from company repos to read feedback
+- Sutra pushes updates to `feedback-from-sutra/` in company repos
+- Asawa CEO sees everything via `--recursive` clone
 
-**Steps to implement**:
-- [ ] Create separate GitHub repos: `asawa-holding`, `sutra`, `dayflow`
-- [ ] Move files to correct repos
-- [ ] Set up submodules in meta repo
+### How Hooks Deploy After Separation
+- Each company repo gets its own `.claude/hooks/` with compiled hook bundle
+- Hook templates live in `asawa-holding/holding/hooks/` (the meta repo)
+- Sutra copies + configures hooks into company repos during onboarding
+- Hooks are self-contained — no cross-repo reads
+
+### Steps to Implement
+- [ ] Create separate GitHub repos: `asawa-holding`, `sutra`, `dayflow`, `maze`, `ppr`
+- [ ] Move files to correct repos (preserve git history where possible)
+- [ ] Set up submodules in `asawa-holding` meta repo
+- [ ] Bake Asawa principles into each company's OS (compile-time copies, not references)
+- [ ] Move hook templates to `asawa-holding/holding/hooks/`
+- [ ] Deploy compiled hooks to each company's `.claude/hooks/`
 - [ ] Update `/sutra-onboard` to create new repos and push OS files
 - [ ] Update feedback flow to work across repos (git pull/push)
-- [ ] Update `start.sh` to clone the right repo per role
+- [ ] Update role commands (`/asawa`, `/sutra`, `/company`) to work with separate repos
 - [ ] Test: CEO of DayFlow cannot read Sutra source (physically impossible)
-- [ ] Migrate existing DayFlow code and history
+- [ ] Test: CEO of Sutra cannot read DayFlow code (physically impossible)
+- [ ] Test: CEO of Asawa can read and write everything
+- [ ] Migrate existing code and history to new repos
 
 ## Human-AI Interaction Framework (PRIORITY — foundational to everything)
 
