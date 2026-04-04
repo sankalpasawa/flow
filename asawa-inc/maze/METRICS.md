@@ -16,7 +16,8 @@
 
 | # | Feature | Mode | Ship Time | Breaks | Quality (1-10) | Notes |
 |---|---------|------|-----------|--------|----------------|-------|
-| — | — | — | — | — | — | No features shipped yet |
+| INIT-0.1 | Privacy Policy | SUTRA | ~15 min | 0 | 7 | Static page. Unblocks Growth + Data. Audit: 17P/8~/12F — artifacts missing. |
+| INIT-0.2 | RLS Rewrite | SUTRA | ~30 min | 0 (exposed 2 pre-existing) | 8 | 12 policies. Exposed upsert bugs. Audit: 14P/9~/16F — artifacts missing, migration stale. |
 
 ## Onboarding Metrics
 
