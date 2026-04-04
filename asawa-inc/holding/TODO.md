@@ -146,7 +146,9 @@ Current tier classification uses change SIZE (file count, layer crossings) as a 
 
 For any given problem, what is the RIGHT level of process? This depends on:
 
-**Problem Parameters:**
+**Founder's starting parameters** (template — not exhaustive, situation-specific factors will emerge):
+
+*Problem Parameters:*
 - [ ] How important is it (to the bet, to the user, to the system)
 - [ ] How sensitive is it (security, data, legal, financial)
 - [ ] How critical is it (blocks other work, on critical path)
@@ -155,12 +157,54 @@ For any given problem, what is the RIGHT level of process? This depends on:
 - [ ] How time-sensitive is it (deadline, competitive pressure, user expectation)
 - [ ] What is the cost of getting it wrong (reversible vs irreversible, blast radius)
 
-**Context Parameters:**
+*Context Parameters:*
 - [ ] Stage of the company (pre-launch, beta, growth, scale)
 - [ ] Maturity of the department handling it (first time vs experienced)
 - [ ] Maturity of the problem domain (solved problem vs novel territory)
 - [ ] Available data (data-rich decisions vs intuition-based)
 - [ ] Existing process coverage (does a process already exist for this type of problem?)
+
+**Additional parameters to research and discover** (this list is intentionally incomplete — the research phase should expand it):
+
+*Organizational Parameters:*
+- [ ] Who is affected (single developer vs whole team vs users vs partners)
+- [ ] Cross-department dependency count (isolated vs coordinated)
+- [ ] Institutional knowledge availability (has someone done this before in the org?)
+- [ ] Parallel work conflicts (does this touch files/systems other work is touching?)
+- [ ] Communication overhead required (async ok vs sync coordination needed)
+
+*Technical Parameters:*
+- [ ] System coupling (isolated change vs ripple through layers)
+- [ ] Test coverage of affected area (well-tested vs untested territory)
+- [ ] Rollback difficulty (one revert vs data migration vs can't undo)
+- [ ] Performance/scale implications (local impact vs system-wide)
+- [ ] Third-party dependency risk (internal only vs external API reliance)
+
+*Knowledge Parameters:*
+- [ ] Novelty (routine task vs first time ever in this org)
+- [ ] Domain expertise required (generalist vs specialist knowledge)
+- [ ] Research debt (well-understood problem vs needs investigation first)
+- [ ] Pattern availability (established pattern exists vs must invent approach)
+- [ ] Documentation state of the affected area (well-documented vs tribal knowledge)
+
+*Human Parameters:*
+- [ ] Founder energy/attention available (fresh vs end of long session)
+- [ ] Emotional weight of the decision (routine vs identity-defining)
+- [ ] Stakeholder expectations (internal only vs external-facing promise)
+- [ ] Learning value (is this a teaching moment for the system?)
+
+*Temporal Parameters:*
+- [ ] Where in the quarter/sprint cycle (beginning vs end)
+- [ ] Relationship to upcoming milestones (far from vs blocking a deadline)
+- [ ] Seasonal/external timing (normal operations vs event-driven urgency)
+- [ ] Compounding effects (one-time vs sets a precedent for future decisions)
+
+**NOTE**: These parameters are a STARTING TEMPLATE from the founder's thinking + initial expansion. The research phase should:
+1. Challenge these — are any redundant? Are any measuring the same thing differently?
+2. Discover what's missing — what parameters do mature orgs use that aren't listed?
+3. Find which parameters matter most — not all carry equal weight
+4. Determine which are situation-specific vs universal
+5. Design how parameters interact (a low-importance + high-sensitivity item needs different process than high-importance + low-sensitivity)
 
 ### What Sutra Should Do
 
