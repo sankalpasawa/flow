@@ -1,4 +1,16 @@
-# DayFlow — Claude Instructions
+# DEPRECATED — DO NOT USE THIS REPO
+
+**This repo has been replaced by `asawa-holding`.** All companies, code, and OS files have been migrated.
+
+```
+Go to: cd ~/Claude/asawa-holding && claude
+```
+
+If you are reading this, you are in the wrong repo. Stop and switch.
+
+---
+
+# (Old instructions below — do not follow)
 
 ## Context Loading (read this first every session)
 
