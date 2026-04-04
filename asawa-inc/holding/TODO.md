@@ -137,6 +137,84 @@ Current tier classification uses change SIZE (file count, layer crossings) as a 
 - [ ] **Monthly calibration** — promote soft gates to hard gates based on violation frequency. Demote hard gates that have 0 fires (unnecessary friction). Review compliance scores across all companies. Output: new version of enforcement hooks deployed via Sutra.
 - [ ] **Build the review dashboard** — automated report from hook logs + sensor output. Shows: violations/week, override frequency, compliance score per company, time-to-ship impact (is enforcement slowing things down?).
 
+## Adaptive Protocol Engine (PRIORITY — the meta-skill of Sutra)
+
+**Owner**: CEO of Sutra. Start with `/sutra` role.
+**Why**: Sutra currently applies the same process to every problem. A privacy policy page and an auth system rewrite get the same pipeline. This is wrong. The process should adapt to the problem.
+
+### The Core Question
+
+For any given problem, what is the RIGHT level of process? This depends on:
+
+**Problem Parameters:**
+- [ ] How important is it (to the bet, to the user, to the system)
+- [ ] How sensitive is it (security, data, legal, financial)
+- [ ] How critical is it (blocks other work, on critical path)
+- [ ] How complex is it (number of departments, files, decisions, approaches)
+- [ ] How foundational is it (shapes everything downstream, hard to change later)
+- [ ] How time-sensitive is it (deadline, competitive pressure, user expectation)
+- [ ] What is the cost of getting it wrong (reversible vs irreversible, blast radius)
+
+**Context Parameters:**
+- [ ] Stage of the company (pre-launch, beta, growth, scale)
+- [ ] Maturity of the department handling it (first time vs experienced)
+- [ ] Maturity of the problem domain (solved problem vs novel territory)
+- [ ] Available data (data-rich decisions vs intuition-based)
+- [ ] Existing process coverage (does a process already exist for this type of problem?)
+
+### What Sutra Should Do
+
+Given these parameters, Sutra should:
+1. **Classify the problem** — score it across the parameters above
+2. **Select the appropriate protocol** — from existing defined processes, or synthesize a new one
+3. **Apply the right depth** — full SUTRA pipeline for complex/foundational, lightweight for simple/reversible
+4. **Learn from the outcome** — did the protocol match the problem? Too heavy? Too light? Feed back.
+5. **Evolve the protocol** — next time this type of problem appears, the system already knows the right depth
+
+### The Meta-Skill
+
+This is not a fixed classification table (like COMPLEXITY-TIERS.md which uses file count as proxy). This is a **dynamic routing engine** that evaluates the problem in real-time and selects the appropriate process. It's the difference between:
+
+- Current: "Standard tier = SHAPE.md required" (static rule)
+- Target: "This problem is high-sensitivity + low-complexity + time-sensitive → use lightweight security review + skip full lifecycle + capture LEARN.md" (dynamic routing)
+
+### How It Evolves
+
+The protocol engine itself should evolve:
+- Every LEARN.md feeds back: "was the protocol too heavy or too light?"
+- Over time, the system calibrates: "for security changes at Stage 1, lightweight review is sufficient"
+- When the company stage changes, protocols auto-adjust
+- When a department matures (shipped 10 features), its default process lightens
+- When a new problem type appears, the system creates a protocol and refines it over iterations
+
+### Research Required
+
+- [ ] Study how real companies scale their processes (Spotify model, Shape Up, Toyota kata)
+- [ ] Study adaptive process frameworks (Cynefin for problem classification, Wardley mapping for maturity)
+- [ ] Study how complexity science applies to organizational process design
+- [ ] Study how militaries adapt protocols to situation severity (rules of engagement tiers)
+- [ ] Study how medical triage systems classify and route (severity × urgency matrix)
+- [ ] Study how legal systems apply proportional process (small claims vs federal court)
+- [ ] Look at existing AI agent orchestration patterns for dynamic routing
+- [ ] Synthesize: what are the universal parameters that determine process depth?
+
+### Where This Lives
+
+This becomes Sutra's core intelligence — the engine that makes every other protocol and process adaptive. It sits above Layer 2's sub-layers:
+
+```
+Sutra Meta-Engine (adaptive protocol selection)
+  ├── Evaluates: problem parameters + context parameters
+  ├── Selects from: a-company-architecture/ processes
+  ├── Configures: b-agent-architecture/ agent behavior
+  ├── Respects: c-human-agent-interface/ sovereignty rules
+  └── Feeds back: LEARN.md → refines future routing
+```
+
+### Origin
+
+Maze onboarding 2026-04-04. Ran SUTRA mode on two simple features (privacy policy, RLS rewrite). Compliance audit showed 28 failures. Rebuilt with full process — code output was identical. Founder insight: "The process has two outputs — code and knowledge. The code is for the user. The knowledge is for the system. But the DEPTH of process should match the problem, not be one-size-fits-all."
+
 ## Expert & Consultant Research Protocol (TODO — build into Sutra)
 
 Every domain the founder operates in should have reference experts identified — real people, consultants, frameworks, and thought leaders who have built what we're building. We don't need to hire them, but we need to know they exist.
