@@ -28,6 +28,16 @@ export default function Home() {
 
       {/* Feed */}
       <Feed />
+
+      {/* Footer */}
+      <div className="max-w-lg mx-auto mt-12 pt-6 border-t border-border/30 text-center">
+        <a
+          href="/privacy"
+          className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+        >
+          Privacy Policy
+        </a>
+      </div>
     </main>
   );
 }
