@@ -1,12 +1,21 @@
 # DayFlow — Claude Instructions
 
 ## On Every Session Start
-1. Read this file and `TODO.md`
+1. Read this file, `TODO.md`, and `COMPANY_IDEAS.md`
 2. Run setup if `node_modules` doesn't exist: `cd mobile && npm install`
 3. Start dev server if not running: `cd mobile && npx expo start --web`
 4. Open http://localhost:8081 — if data looks stale, clear localStorage: `localStorage.clear(); location.reload()`
-5. Pick the top unchecked item from `TODO.md` and implement it
-6. After each feature: commit, push to `claude/pull-latest-changes-XeutS`, check the box in `TODO.md`
+5. Process any new ideas in `COMPANY_IDEAS.md` — implement, break into tasks, or ask for clarification
+6. Pick the top unchecked item from `TODO.md` and implement it
+7. After each feature: commit, push to `claude/pull-latest-changes-XeutS`, check the box in `TODO.md`
+
+## Company Ideas Tracker (`COMPANY_IDEAS.md`)
+- Sankalp drops raw ideas from phone into the **Ideas Inbox** section
+- Each session: read all unprocessed ideas and for each one:
+  - **Actionable now** → implement it, mark ✅, move to Processed
+  - **Needs breakdown** → create TODO.md tasks, mark 🗂️, move to Processed
+  - **Needs clarification** → add a question inline, mark ❓
+- Always commit + push after processing ideas
 
 ## New Machine Setup
 ```bash
