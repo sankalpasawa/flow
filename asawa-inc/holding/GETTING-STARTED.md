@@ -103,7 +103,7 @@ Your company lives at `asawa-inc/{your-company}/`. Your OS is at `OPERATING-SYST
 
 ### 89 Skills Available
 
-Full catalog at `asawa-inc/sutra/layer2-operating-system/SKILL-CATALOG.md`.
+Full catalog at `asawa-inc/sutra/layer2-operating-system/b-agent-architecture/SKILL-CATALOG.md`.
 
 Organized by what you're doing:
 - **Planning**: /office-hours, /gsd:plan-phase, /autoplan, /plan-ceo-review
@@ -160,7 +160,7 @@ Rule: Never switch companies within a session. Start a new session.
 - **Asawa Inc. website**: https://asawa-inc.vercel.app
 - **Sutra website**: https://sutra-os.vercel.app
 - **System map** (what exists): `asawa-inc/holding/SYSTEM-MAP.md`
-- **Skill catalog**: `asawa-inc/sutra/layer2-operating-system/SKILL-CATALOG.md`
+- **Skill catalog**: `asawa-inc/sutra/layer2-operating-system/b-agent-architecture/SKILL-CATALOG.md`
 - **Onboarding process**: `asawa-inc/sutra/layer2-operating-system/CLIENT-ONBOARDING.md`
 
 ---

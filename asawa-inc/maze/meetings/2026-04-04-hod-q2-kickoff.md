@@ -91,7 +91,7 @@
 - SUTRA-CONFIG A/B test not being tracked (all features built in DIRECT mode)
 - Feature ship log in METRICS.md is empty
 
-**Architecture concern**: The shared AI provider layer (`asawa-inc/shared/`) is good but the Conductor pattern is future. Current single-model approach is correct for the scale.
+**Architecture concern**: The AI provider layer (`asawa-inc/holding/`) is good but the Conductor pattern is future. Current single-model approach is correct for the scale.
 
 ---
 

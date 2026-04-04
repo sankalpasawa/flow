@@ -261,7 +261,7 @@ When Sutra onboards a new client, include this in the OS:
 ## Available Skills
 
 You have 89 skills across two systems (gstack + GSD).
-See asawa-inc/sutra/layer2-operating-system/SKILL-CATALOG.md for the complete catalog.
+See asawa-inc/sutra/layer2-operating-system/b-agent-architecture/SKILL-CATALOG.md for the complete catalog.
 
 Quick start:
 - New project: /gsd:new-project

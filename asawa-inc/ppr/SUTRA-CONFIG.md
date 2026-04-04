@@ -3,7 +3,7 @@
 ## Complexity Tier: 1 (Personal)
 
 Solo founder, personal wedding tool, hard deadline (July 5, 2026), 0 external users.
-See `asawa-inc/sutra/layer2-operating-system/COMPLEXITY-TIERS.md` for tier definitions.
+See `asawa-inc/sutra/layer2-operating-system/a-company-architecture/COMPLEXITY-TIERS.md` for tier definitions.
 
 ### What's mandatory at Tier 1
 - Product brief, tech stack, architecture rules, build order, categories ✅ (done at onboarding)

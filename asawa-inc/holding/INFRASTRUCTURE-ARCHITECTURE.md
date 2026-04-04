@@ -102,13 +102,13 @@ Any approved provider can be swapped for any other approved provider without bre
 ## File Structure
 
 ```
-asawa-inc/shared/
-├── ARCHITECTURE.md           # This file — the design
-├── AI-PROVIDERS.md           # Provider registry + policies
-├── EXTERNAL-SYSTEMS.md       # External API registry
-├── OVERRIDE-RULES.md         # What companies can/cannot change
+asawa-inc/holding/
+├── INFRASTRUCTURE-ARCHITECTURE.md  # This file — the design
+├── AI-PROVIDERS.md                 # Provider registry + policies
+├── EXTERNAL-SYSTEMS.md             # External API registry
+├── OVERRIDE-RULES.md               # What companies can/cannot change
 └── templates/
-    └── ai-provider.ts        # Code template for AI integration
+    └── ai-provider.ts              # Code template for AI integration
 ```
 
 ## How It Flows

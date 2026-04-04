@@ -52,7 +52,7 @@ To pause and resume later: `/gsd:pause-work` → `/gsd:resume-work`
 
 ### 89 Skills Available
 
-You have access to 89 skills (gstack + GSD). See `asawa-inc/sutra/layer2-operating-system/SKILL-CATALOG.md` for the complete catalog organized by what you're trying to do.
+You have access to 89 skills (gstack + GSD). See `asawa-inc/sutra/layer2-operating-system/b-agent-architecture/SKILL-CATALOG.md` for the complete catalog organized by what you're trying to do.
 
 ### How Sutra Learns
 
