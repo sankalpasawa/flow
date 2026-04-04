@@ -19,16 +19,22 @@ const CATEGORIES = [
 export function Feed() {
   const [items, setItems] = useState<ContentItem[]>([]);
   const [category, setCategory] = useState("all");
-  const [cursor, setCursor] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
+
+  // Refs for values that the observer callback needs (avoids stale closures)
+  const cursorRef = useRef<string | null>(null);
+  const loadingRef = useRef(false);
   const observerRef = useRef<IntersectionObserver | null>(null);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
   const fetchFeed = useCallback(
     async (reset = false) => {
-      const isInitial = reset || items.length === 0;
+      if (loadingRef.current) return; // prevent double-fetch
+      loadingRef.current = true;
+
+      const isInitial = reset;
       if (isInitial) setLoading(true);
       else setLoadingMore(true);
 
@@ -37,8 +43,8 @@ export function Feed() {
         category,
         session_id: sessionId,
       });
-      if (!reset && cursor) {
-        params.set("cursor", cursor);
+      if (!reset && cursorRef.current) {
+        params.set("cursor", cursorRef.current);
       }
 
       try {
@@ -50,25 +56,25 @@ export function Feed() {
         } else {
           setItems((prev) => [...prev, ...data.items]);
         }
-        setCursor(data.nextCursor);
+        cursorRef.current = data.nextCursor;
         setHasMore(data.hasMore);
       } catch (err) {
         console.error("Feed fetch error:", err);
       } finally {
         setLoading(false);
         setLoadingMore(false);
+        loadingRef.current = false;
       }
     },
-    [category, cursor, items.length],
+    [category], // only depends on category — stable across page fetches
   );
 
   // Initial load + category change
   useEffect(() => {
-    setCursor(null);
+    cursorRef.current = null;
     setHasMore(true);
     fetchFeed(true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [category]);
+  }, [fetchFeed]);
 
   // Infinite scroll via IntersectionObserver
   useEffect(() => {
@@ -76,7 +82,7 @@ export function Feed() {
 
     observerRef.current = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && hasMore && !loading && !loadingMore) {
+        if (entries[0].isIntersecting && hasMore && !loadingRef.current) {
           fetchFeed(false);
         }
       },
@@ -88,7 +94,7 @@ export function Feed() {
     }
 
     return () => observerRef.current?.disconnect();
-  }, [hasMore, loading, loadingMore, fetchFeed]);
+  }, [hasMore, fetchFeed]);
 
   return (
     <div className="w-full max-w-lg mx-auto">
