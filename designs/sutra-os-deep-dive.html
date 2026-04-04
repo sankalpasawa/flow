@@ -1,0 +1,1141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sutra OS — Deep Dive: The System & How It Mapped to Maze</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: #09090b;
+    color: #fafafa;
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+  }
+
+  /* ─── SLIDE CONTAINER ─── */
+  .deck { width: 100vw; height: 100vh; position: relative; }
+
+  .slide {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column; justify-content: center;
+    padding: 60px 80px;
+    opacity: 0; transform: translateX(50px);
+    transition: opacity 0.45s ease, transform 0.45s ease;
+    pointer-events: none;
+    overflow-y: auto;
+  }
+  .slide.active { opacity: 1; transform: translateX(0); pointer-events: auto; }
+  .slide.prev  { opacity: 0; transform: translateX(-50px); }
+
+  .slide::-webkit-scrollbar { width: 4px; }
+  .slide::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 4px; }
+
+  /* ─── BG THEMES ─── */
+  .bg-title   { background: linear-gradient(140deg, #09090b, #18181b 40%, #1c1917 100%); }
+  .bg-vision  { background: linear-gradient(140deg, #0c0a1a, #1a1333 50%, #0f0d22 100%); }
+  .bg-layers  { background: linear-gradient(140deg, #0a1a14, #133322 50%, #0d2218 100%); }
+  .bg-onboard { background: linear-gradient(140deg, #1a140a, #332a13 50%, #22190d 100%); }
+  .bg-intake  { background: linear-gradient(140deg, #0a141a, #132233 50%, #0d1822 100%); }
+  .bg-market  { background: linear-gradient(140deg, #1a0a14, #331322 50%, #220d18 100%); }
+  .bg-shape   { background: linear-gradient(140deg, #14140a, #2a2a13 50%, #1f1f0d 100%); }
+  .bg-arch    { background: linear-gradient(140deg, #0a0a1a, #161633 50%, #0d0d22 100%); }
+  .bg-config  { background: linear-gradient(140deg, #0a1a1a, #133333 50%, #0d2222 100%); }
+  .bg-enforce { background: linear-gradient(140deg, #1a0a0a, #331313 50%, #220d0d 100%); }
+  .bg-skills  { background: linear-gradient(140deg, #100a1a, #211333 50%, #170d22 100%); }
+  .bg-dept    { background: linear-gradient(140deg, #0a1a10, #133320 50%, #0d2216 100%); }
+  .bg-ab      { background: linear-gradient(140deg, #1a1a0a, #333313 50%, #22220d 100%); }
+  .bg-ci      { background: linear-gradient(140deg, #0a101a, #131d33 50%, #0d1522 100%); }
+  .bg-maze    { background: linear-gradient(140deg, #1a0a18, #331330 50%, #220d20 100%); }
+  .bg-map     { background: linear-gradient(140deg, #0a1a0f, #13331e 50%, #0d2214 100%); }
+  .bg-signal  { background: linear-gradient(140deg, #1a160a, #332b13 50%, #221e0d 100%); }
+  .bg-end     { background: linear-gradient(140deg, #09090b, #18181b 40%, #1c1917 100%); }
+
+  /* ─── TYPOGRAPHY ─── */
+  .slide-num {
+    position: absolute; top: 24px; right: 32px;
+    font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.2);
+    letter-spacing: 2px; font-family: 'JetBrains Mono', monospace;
+  }
+
+  .badge {
+    display: inline-block; font-size: 11px; font-weight: 700;
+    letter-spacing: 4px; text-transform: uppercase;
+    color: rgba(255,255,255,0.35); margin-bottom: 12px;
+  }
+
+  h1 { font-size: 56px; font-weight: 900; line-height: 1.1; letter-spacing: -2px; margin-bottom: 20px; }
+  h2 { font-size: 38px; font-weight: 800; line-height: 1.15; letter-spacing: -1px; margin-bottom: 16px; }
+  h3 { font-size: 20px; font-weight: 700; margin-bottom: 10px; color: rgba(255,255,255,0.85); }
+  h4 { font-size: 15px; font-weight: 700; margin-bottom: 6px; color: rgba(255,255,255,0.6); letter-spacing: 1px; text-transform: uppercase; }
+
+  .sub { font-size: 20px; font-weight: 400; color: rgba(255,255,255,0.55); line-height: 1.5; max-width: 750px; }
+
+  /* ─── COLORS ─── */
+  .c-p { color: #a78bfa; } .c-g { color: #6ee7b7; } .c-a { color: #fbbf24; }
+  .c-r { color: #fb7185; } .c-b { color: #60a5fa; } .c-c { color: #22d3ee; }
+  .c-o { color: #fb923c; } .c-w { color: rgba(255,255,255,0.7); }
+
+  /* ─── LAYOUT ─── */
+  .g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; margin-top: 20px; }
+  .g3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; margin-top: 20px; }
+  .g4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 20px; margin-top: 20px; }
+  .flex { display: flex; gap: 20px; align-items: flex-start; }
+  .mt { margin-top: 20px; }
+
+  /* ─── CARDS ─── */
+  .card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 14px; padding: 22px;
+  }
+  .card-glow-p { border-color: rgba(167,139,250,0.25); }
+  .card-glow-g { border-color: rgba(110,231,183,0.25); }
+  .card-glow-a { border-color: rgba(251,191,36,0.25); }
+  .card-glow-r { border-color: rgba(251,113,133,0.25); }
+  .card-glow-b { border-color: rgba(96,165,250,0.25); }
+  .card-glow-c { border-color: rgba(34,211,238,0.25); }
+
+  .lbl { font-size: 10px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: rgba(255,255,255,0.3); margin-bottom: 6px; }
+  .val { font-size: 26px; font-weight: 800; line-height: 1.2; }
+  .desc { font-size: 13px; color: rgba(255,255,255,0.45); margin-top: 6px; line-height: 1.4; }
+
+  .big { font-size: 48px; font-weight: 900; letter-spacing: -2px; line-height: 1; }
+
+  /* ─── TAGS ─── */
+  .tag {
+    display: inline-block; font-size: 10px; font-weight: 700;
+    letter-spacing: 1px; padding: 3px 8px; border-radius: 5px;
+    text-transform: uppercase;
+  }
+  .tag-p { background: rgba(167,139,250,0.15); color: #a78bfa; }
+  .tag-g { background: rgba(110,231,183,0.15); color: #6ee7b7; }
+  .tag-a { background: rgba(251,191,36,0.15); color: #fbbf24; }
+  .tag-r { background: rgba(251,113,133,0.15); color: #fb7185; }
+  .tag-b { background: rgba(96,165,250,0.15); color: #60a5fa; }
+  .tag-c { background: rgba(34,211,238,0.15); color: #22d3ee; }
+  .tag-o { background: rgba(251,146,60,0.15); color: #fb923c; }
+
+  /* ─── LISTS ─── */
+  .fl { list-style: none; }
+  .fl li {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 8px 0; font-size: 15px; color: rgba(255,255,255,0.75);
+    line-height: 1.35; border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .fl li:last-child { border: none; }
+  .dot { flex-shrink:0; width:7px; height:7px; border-radius:50%; margin-top:5px; }
+  .dot-p { background:#a78bfa; } .dot-g { background:#6ee7b7; } .dot-a { background:#fbbf24; }
+  .dot-r { background:#fb7185; } .dot-b { background:#60a5fa; } .dot-c { background:#22d3ee; }
+  .dot-o { background:#fb923c; }
+
+  /* ─── FLOW ─── */
+  .flow { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .fstep {
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 10px; padding: 12px 16px; font-size: 13px; font-weight: 600;
+    text-align: center; min-width: 100px;
+  }
+  .farr { font-size: 18px; color: rgba(255,255,255,0.25); }
+
+  /* ─── TABLES ─── */
+  .tb { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .tb th {
+    text-align: left; padding: 8px 14px; font-weight: 700; font-size: 10px;
+    letter-spacing: 2px; text-transform: uppercase; color: rgba(255,255,255,0.35);
+    border-bottom: 1px solid rgba(255,255,255,0.12);
+  }
+  .tb td {
+    padding: 10px 14px; color: rgba(255,255,255,0.75);
+    border-bottom: 1px solid rgba(255,255,255,0.04); vertical-align: top;
+  }
+
+  /* ─── PHASE BAR ─── */
+  .pbar { display: flex; gap: 4px; margin-top: 16px; }
+  .pbar-item {
+    flex: 1; padding: 10px 8px; border-radius: 8px; text-align: center;
+    font-size: 11px; font-weight: 700; letter-spacing: 1px;
+    background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08);
+  }
+  .pbar-item.on { border-color: rgba(110,231,183,0.4); color: #6ee7b7; }
+  .pbar-num { font-size: 18px; font-weight: 900; display: block; margin-bottom: 2px; }
+
+  /* ─── ARROW CONNECTOR ─── */
+  .conn { text-align: center; color: rgba(255,255,255,0.15); font-size: 20px; padding: 8px 0; }
+
+  /* ─── QUOTE ─── */
+  .quote {
+    background: rgba(255,255,255,0.03); border-left: 3px solid #a78bfa;
+    padding: 16px 20px; border-radius: 0 10px 10px 0;
+    font-size: 16px; font-style: italic; color: rgba(255,255,255,0.6); line-height: 1.5;
+  }
+  .quote-who { font-style: normal; font-weight: 700; font-size: 12px; color: #a78bfa; margin-top: 8px; }
+
+  /* ─── CODE ─── */
+  code {
+    font-family: 'JetBrains Mono', monospace; font-size: 12px;
+    background: rgba(255,255,255,0.06); padding: 2px 6px; border-radius: 4px;
+  }
+
+  /* ─── MAZE MAPPING INDICATOR ─── */
+  .maze-used {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 10px; font-weight: 700; letter-spacing: 1px;
+    color: #6ee7b7; text-transform: uppercase;
+    background: rgba(110,231,183,0.1); padding: 3px 8px; border-radius: 4px;
+  }
+  .maze-skip {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 10px; font-weight: 700; letter-spacing: 1px;
+    color: rgba(255,255,255,0.3); text-transform: uppercase;
+    background: rgba(255,255,255,0.04); padding: 3px 8px; border-radius: 4px;
+  }
+
+  /* ─── NAV ─── */
+  .nav {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    display: flex; align-items: center; gap: 12px; z-index: 100;
+    background: rgba(0,0,0,0.7); backdrop-filter: blur(12px);
+    padding: 8px 16px; border-radius: 999px;
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+  .nav button {
+    background: rgba(255,255,255,0.08); border: none; color: white;
+    width: 32px; height: 32px; border-radius: 50%; cursor: pointer;
+    font-size: 14px; display: flex; align-items: center; justify-content: center;
+    transition: background 0.2s;
+  }
+  .nav button:hover { background: rgba(255,255,255,0.15); }
+  .nav-dots { display: flex; gap: 4px; }
+  .nav-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: rgba(255,255,255,0.15); transition: all 0.3s; cursor: pointer;
+  }
+  .nav-dot.active { background: #a78bfa; width: 20px; border-radius: 3px; }
+  .slide-title-bar {
+    position: fixed; top: 0; left: 0; right: 0;
+    background: rgba(9,9,11,0.8); backdrop-filter: blur(8px);
+    padding: 12px 32px; font-size: 12px; font-weight: 600;
+    color: rgba(255,255,255,0.3); z-index: 90;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    display: flex; justify-content: space-between; letter-spacing: 1px;
+  }
+  .key-hint { font-size: 11px; color: rgba(255,255,255,0.15); }
+  kbd {
+    background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 3px; padding: 1px 5px; font-family: inherit; font-size: 10px;
+  }
+</style>
+</head>
+<body>
+
+<div class="slide-title-bar">
+  <span>SUTRA OS  /  DEEP DIVE  /  ASAWA INC.</span>
+  <span class="key-hint"><kbd>&larr;</kbd> <kbd>&rarr;</kbd> to navigate</span>
+</div>
+
+<div class="deck" id="deck">
+
+<!-- ═══════════ SLIDE 1: TITLE ═══════════ -->
+<div class="slide bg-title active" data-i="0">
+  <div class="slide-num">01/20</div>
+  <div class="badge">Asawa Inc. &mdash; CEO Briefing</div>
+  <h1>Sutra <span style="color:rgba(255,255,255,0.3);">(&#2360;&#2370;&#2340;&#2381;&#2352;)</span><br><span class="c-p">The Operating System</span></h1>
+  <p class="sub">A living operating system for companies. Not documentation. Not a framework you read once. A system that actively pushes updates to client companies and learns from their feedback.</p>
+  <div class="g4 mt">
+    <div class="card"><div class="lbl">Layers</div><div class="val c-p">4</div><div class="desc">Research &rarr; Governance &rarr; Modules &rarr; Skills</div></div>
+    <div class="card"><div class="lbl">Skills available</div><div class="val c-b">89</div><div class="desc">32 gstack + 57 GSD</div></div>
+    <div class="card"><div class="lbl">Active clients</div><div class="val c-g">3</div><div class="desc">DayFlow, PPR, Maze</div></div>
+    <div class="card"><div class="lbl">Current version</div><div class="val c-a">v1.1</div><div class="desc">Released 2026-04-04</div></div>
+  </div>
+</div>
+
+<!-- ═══════════ SLIDE 2: VISION ═══════════ -->
+<div class="slide bg-vision" data-i="1">
+  <div class="slide-num">02/20</div>
+  <div class="badge">The Vision</div>
+  <h2>A Self-Improving <span class="c-p">Two-Way Loop</span></h2>
+  <p class="sub">Each client company that uses Sutra makes Sutra better for ALL client companies. Network effect on organizational knowledge.</p>
+
+  <div class="g2 mt">
+    <div>
+      <h3>The Loop</h3>
+      <div class="card card-glow-p">
+        <div style="text-align:center;">
+          <div class="fstep" style="display:inline-block; border-color:rgba(167,139,250,0.3); margin-bottom:8px;"><strong class="c-p">SUTRA</strong><br><span style="font-size:11px; color:rgba(255,255,255,0.4);">Principles, OS, sensors, guidelines</span></div>
+          <div class="conn">&darr; pushes &darr;</div>
+          <div class="fstep" style="display:inline-block; border-color:rgba(110,231,183,0.3); margin-bottom:8px;"><strong class="c-g">CLIENT COMPANY</strong><br><span style="font-size:11px; color:rgba(255,255,255,0.4);">Implements. Runs. Encounters reality.</span></div>
+          <div class="conn">&darr; feeds back &darr;</div>
+          <div class="fstep" style="display:inline-block; border-color:rgba(167,139,250,0.3);"><strong class="c-p">SUTRA</strong><br><span style="font-size:11px; color:rgba(255,255,255,0.4);">Learns. Updates. Pushes to ALL clients.</span></div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <h3>6 Agent Types</h3>
+      <h4 style="margin-top:12px;">Sutra-side</h4>
+      <ul class="fl">
+        <li><span class="dot dot-p"></span><strong>Publisher</strong> &mdash; pushes OS updates to all clients, adapts to each context</li>
+        <li><span class="dot dot-p"></span><strong>Learner</strong> &mdash; reads feedback from all clients, finds cross-company patterns</li>
+        <li><span class="dot dot-p"></span><strong>Researcher</strong> &mdash; studies books, frameworks, new practices continuously</li>
+      </ul>
+      <h4 style="margin-top:12px;">Client-side</h4>
+      <ul class="fl">
+        <li><span class="dot dot-g"></span><strong>Executor</strong> &mdash; runs using Sutra's OS (Sense &rarr; Shape &rarr; Ship &rarr; Learn)</li>
+        <li><span class="dot dot-g"></span><strong>Reporter</strong> &mdash; auto-logs bugs, violations, gaps back to Sutra</li>
+        <li><span class="dot dot-g"></span><strong>Adapter</strong> &mdash; takes generic principles, adapts to client domain</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ SLIDE 3: 4 LAYERS ═══════════ -->
+<div class="slide bg-layers" data-i="2">
+  <div class="slide-num">03/20</div>
+  <div class="badge">Architecture</div>
+  <h2>The <span class="c-g">4-Layer</span> Stack</h2>
+  <p class="sub">From academic research to executable skills. Each layer builds on the one below.</p>
+
+  <div style="margin-top:24px;">
+    <div class="card card-glow-p" style="margin-bottom:8px;">
+      <div style="display:flex; align-items:center; gap:16px;">
+        <div><span class="tag tag-p">L4</span></div>
+        <div style="flex:1;"><strong class="c-p" style="font-size:18px;">Department Skills & Principles</strong><br><span class="desc">16 functional areas with principles, failure modes, cross-functional maps. Sources: Cagan, Fowler, Norman, Ries, etc.</span></div>
+        <div><span class="maze-used">Used for Maze</span></div>
+      </div>
+    </div>
+    <div class="conn">&uarr;</div>
+    <div class="card card-glow-g" style="margin-bottom:8px;">
+      <div style="display:flex; align-items:center; gap:16px;">
+        <div><span class="tag tag-g">L3</span></div>
+        <div style="flex:1;"><strong class="c-g" style="font-size:18px;">Product-Type Modules</strong><br><span class="desc">Stage-based templates per product type (B2C consumer, SaaS, marketplace). 9 department templates. Scalable Stage 1 &rarr; 3.</span></div>
+        <div><span class="maze-used">Used for Maze</span></div>
+      </div>
+    </div>
+    <div class="conn">&uarr;</div>
+    <div class="card card-glow-a" style="margin-bottom:8px;">
+      <div style="display:flex; align-items:center; gap:16px;">
+        <div><span class="tag tag-a">L2</span></div>
+        <div style="flex:1;"><strong class="c-a" style="font-size:18px;">Operating System (Governance)</strong><br><span class="desc">8-phase onboarding. 7-phase decision flow. 4 enforcement levels. 60 routing rules. A/B test framework. Version management. Feedback loops.</span></div>
+        <div><span class="maze-used">Used for Maze</span></div>
+      </div>
+    </div>
+    <div class="conn">&uarr;</div>
+    <div class="card card-glow-b" style="margin-bottom:8px;">
+      <div style="display:flex; align-items:center; gap:16px;">
+        <div><span class="tag tag-b">L1</span></div>
+        <div style="flex:1;"><strong class="c-b" style="font-size:18px;">Abstraction & Research</strong><br><span class="desc">45+ sources synthesized. 15 operating principles. McChrystal, Laloux, Dalio, Hastings, Ries, Collins, Catmull. Beer's Viable System Model.</span></div>
+        <div><span class="maze-skip">Foundation</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ SLIDE 4: LAYER 1 ═══════════ -->
+<div class="slide bg-intake" data-i="3">
+  <div class="slide-num">04/20</div>
+  <div class="badge">Layer 1 &mdash; Research Foundation</div>
+  <h2><span class="c-b">15 Principles</span> from 45 Sources</h2>
+
+  <div class="g2">
+    <div>
+      <ul class="fl">
+        <li><span class="dot dot-b"></span><strong>Shared consciousness</strong> &mdash; McChrystal: everyone sees the whole picture</li>
+        <li><span class="dot dot-b"></span><strong>Advice process</strong> &mdash; Laloux: anyone can decide, must consult impacted</li>
+        <li><span class="dot dot-b"></span><strong>Appetite-shaped ventures</strong> &mdash; Basecamp: fix the time, flex the scope</li>
+        <li><span class="dot dot-b"></span><strong>Flywheel focus</strong> &mdash; Collins: identify + accelerate the core loop</li>
+        <li><span class="dot dot-b"></span><strong>Build-Measure-Learn</strong> &mdash; Ries: ship to learn, not to ship</li>
+        <li><span class="dot dot-b"></span><strong>Task-relevant maturity</strong> &mdash; Grove: process scales with competence</li>
+        <li><span class="dot dot-b"></span><strong>PR/FAQ test</strong> &mdash; Amazon: write the press release first</li>
+        <li><span class="dot dot-b"></span><strong>Braintrust</strong> &mdash; Catmull: honest feedback without authority</li>
+      </ul>
+    </div>
+    <div>
+      <ul class="fl">
+        <li><span class="dot dot-b"></span><strong>Single-threaded leadership</strong> &mdash; Amazon: one owner per initiative</li>
+        <li><span class="dot dot-b"></span><strong>Keeper test</strong> &mdash; Hastings: would you fight to keep this?</li>
+        <li><span class="dot dot-b"></span><strong>Principles-as-code</strong> &mdash; Dalio: embed culture in prompts</li>
+        <li><span class="dot dot-b"></span><strong>Input metrics</strong> &mdash; Amazon: measure what you control</li>
+        <li><span class="dot dot-b"></span><strong>Developmental edge</strong> &mdash; Kegan: grow people at their boundary</li>
+        <li><span class="dot dot-b"></span><strong>Peacetime/wartime</strong> &mdash; Horowitz: different situations need different modes</li>
+        <li><span class="dot dot-b"></span><strong>Protect the ugly baby</strong> &mdash; Catmull: new ideas are fragile</li>
+      </ul>
+      <div class="card card-glow-b mt">
+        <div class="lbl">Core insight</div>
+        <p style="font-size:14px; color:rgba(255,255,255,0.6);">Asawa Inc. is a <strong class="c-b">"programmable holding company"</strong> where culture is code &mdash; principles embedded in agent prompts, not posters on walls.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ SLIDE 5: LAYER 2 — OPERATING MODEL ═══════════ -->
+<div class="slide bg-onboard" data-i="4">
+  <div class="slide-num">05/20</div>
+  <div class="badge">Layer 2 &mdash; Operating System</div>
+  <h2>The <span class="c-a">7-Phase Decision Flow</span></h2>
+  <p class="sub">Every action in every company follows this cycle.</p>
+
+  <div class="pbar mt">
+    <div class="pbar-item on"><span class="pbar-num">1</span>SENSE</div>
+    <div class="pbar-item on"><span class="pbar-num">2</span>SHAPE</div>
+    <div class="pbar-item on"><span class="pbar-num">3</span>DECIDE</div>
+    <div class="pbar-item on"><span class="pbar-num">4</span>SPECIFY</div>
+    <div class="pbar-item on"><span class="pbar-num">5</span>EXECUTE</div>
+    <div class="pbar-item on"><span class="pbar-num">6</span>SHIP</div>
+    <div class="pbar-item on"><span class="pbar-num">7</span>LEARN</div>
+  </div>
+
+  <div class="g2 mt">
+    <div>
+      <table class="tb">
+        <tr><th>Phase</th><th>What happens</th><th>Skills</th></tr>
+        <tr><td class="c-a"><strong>SENSE</strong></td><td>Where are we? What's broken?</td><td><code>/gsd:progress</code> <code>/canary</code></td></tr>
+        <tr><td class="c-a"><strong>SHAPE</strong></td><td>Refine the idea. Research.</td><td><code>/office-hours</code> <code>/gsd:discuss-phase</code></td></tr>
+        <tr><td class="c-a"><strong>DECIDE</strong></td><td>CEO + Design + Eng review.</td><td><code>/autoplan</code> <code>/codex</code></td></tr>
+        <tr><td class="c-a"><strong>SPECIFY</strong></td><td>Create executable plan.</td><td><code>/gsd:plan-phase</code> <code>/gsd:ui-phase</code></td></tr>
+      </table>
+    </div>
+    <div>
+      <table class="tb">
+        <tr><th>Phase</th><th>What happens</th><th>Skills</th></tr>
+        <tr><td class="c-a"><strong>EXECUTE</strong></td><td>Build it. Fix bugs. QA.</td><td><code>/gsd:execute-phase</code> <code>/qa</code></td></tr>
+        <tr><td class="c-a"><strong>SHIP</strong></td><td>PR, deploy, canary.</td><td><code>/ship</code> <code>/land-and-deploy</code></td></tr>
+        <tr><td class="c-a"><strong>LEARN</strong></td><td>Retro. Doc updates. Feedback.</td><td><code>/retro</code> <code>/document-release</code></td></tr>
+      </table>
+      <div class="card mt">
+        <div class="lbl">Two execution modes</div>
+        <div class="flex" style="gap:12px; margin-top:8px;">
+          <span class="tag tag-a">SUTRA</span><span class="desc">Full pipeline: shape &rarr; review &rarr; build &rarr; QA &rarr; ship &rarr; canary</span>
+        </div>
+        <div class="flex" style="gap:12px; margin-top:8px;">
+          <span class="tag tag-r">DIRECT</span><span class="desc">Minimal: build &rarr; review &rarr; ship</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ SLIDE 6: 8-PHASE ONBOARDING ═══════════ -->
+<div class="slide bg-onboard" data-i="5">
+  <div class="slide-num">06/20</div>
+  <div class="badge">Layer 2 &mdash; Onboarding Engine</div>
+  <h2><span class="c-a">8 Phases</span> &mdash; Idea to Deployed OS</h2>
+
+  <div class="pbar mt">
+    <div class="pbar-item on"><span class="pbar-num">1</span>INTAKE<br><span style="font-size:9px; color:rgba(255,255,255,0.3);">5 min</span></div>
+    <div class="pbar-item on"><span class="pbar-num">2</span>MARKET<br><span style="font-size:9px; color:rgba(255,255,255,0.3);">10 min</span></div>
+    <div class="pbar-item on"><span class="pbar-num">3</span>SHAPE<br><span style="font-size:9px; color:rgba(255,255,255,0.3);">10 min</span></div>
+    <div class="pbar-item on"><span class="pbar-num">4</span>DECIDE<br><span style="font-size:9px; color:rgba(255,255,255,0.3);">2 min</span></div>
+    <div class="pbar-item on"><span class="pbar-num">5</span>ARCHITECT<br><span style="font-size:9px; color:rgba(255,255,255,0.3);">15 min</span></div>
+    <div class="pbar-item on"><span class="pbar-num">6</span>CONFIGURE<br><span style="font-size:9px; color:rgba(255,255,255,0.3);">10 min</span></div>
+    <div class="pbar-item on"><span class="pbar-num">7</span>DEPLOY<br><span style="font-size:9px; color:rgba(255,255,255,0.3);">5 min</span></div>
+    <div class="pbar-item on"><span class="pbar-num">8</span>ACTIVATE<br><span style="font-size:9px; color:rgba(255,255,255,0.3);">5 min</span></div>
+  </div>
+
+  <div class="g2 mt">
+    <div>
+      <ul class="fl">
+        <li><span class="dot dot-a"></span><strong>P1 INTAKE</strong> &mdash; 10 conversational questions. Extract: what, who, bet, platform, skills, 2yr vision. Output: <code>INTAKE.md</code></li>
+        <li><span class="dot dot-a"></span><strong>P2 MARKET</strong> &mdash; Research 5-10 competitors, market size, APIs, gaps. Output: <code>MARKET-BRIEF.md</code></li>
+        <li><span class="dot dot-a"></span><strong>P3 SHAPE</strong> &mdash; PR/FAQ test, feature carve (P0/P1/P2), risk map, success metrics. Output: <code>PRODUCT-BRIEF.md</code></li>
+        <li><span class="dot dot-a"></span><strong>P4 DECIDE</strong> &mdash; GO / RESHAPE / KILL. Three questions: bet clear? scope small? worth time?</li>
+      </ul>
+    </div>
+    <div>
+      <ul class="fl">
+        <li><span class="dot dot-g"></span><strong>P5 ARCHITECT</strong> &mdash; Product type classification, tech stack, data model, deploy, design approach. Output: <code>ARCHITECTURE.md</code></li>
+        <li><span class="dot dot-g"></span><strong>P6 CONFIGURE</strong> &mdash; Generate full OS: select template, replace placeholders, set metrics, set A/B config. Output: <em>13 files</em></li>
+        <li><span class="dot dot-g"></span><strong>P7 DEPLOY</strong> &mdash; Create company folder, register with Sutra, update Daily Pulse, deploy infrastructure</li>
+        <li><span class="dot dot-g"></span><strong>P8 ACTIVATE</strong> &mdash; Brief founder, select skills, start Feature #1. Company is now operating.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card mt" style="border-color: rgba(251,191,36,0.2);">
+    <p style="font-size:14px; color:rgba(255,255,255,0.5);"><strong class="c-a">Gate rule:</strong> Each phase has a gate. Can't proceed to P5 without a GO in P4. Can't proceed to P6 without an Architecture Card. Phases are sequential.</p>
+  </div>
+</div>
+
+<!-- ═══════════ SLIDE 7: COMPLEXITY TIERS ═══════════ -->
+<div class="slide bg-enforce" data-i="6">
+  <div class="slide-num">07/20</div>
+  <div class="badge">Layer 2 &mdash; Scaling</div>
+  <h2><span class="c-r">Complexity Tiers</span> &mdash; OS Scales With You</h2>
+  <p class="sub">The OS is always present. The surface area changes.</p>
+
+  <div class="g3 mt">
+    <div class="card card-glow-b">
+      <div class="lbl">Tier 1 &mdash; Personal</div>
+      <div class="val c-b" style="font-size:20px;">"Just me, just shipping"</div>
+      <div class="desc" style="margin-top:12px;">Solo founder, 0 external users, hard deadline > perfect process.</div>
+      <div style="margin-top:12px;">
+        <span class="tag tag-b">PPR</span>
+      </div>
+      <ul class="fl" style="margin-top:8px; font-size:13px;">
+        <li><span class="dot dot-b"></span>Core OS only</li>
+        <li><span class="dot dot-b"></span>Metrics: 2-3, no ship log</li>
+        <li><span class="dot dot-b"></span>Compliance: every 3rd feature</li>
+        <li><span class="dot dot-b"></span>Enforcement: soft (flag, don't block)</li>
+        <li><span class="dot dot-b"></span>Skip: departments, standups, Daily Pulse</li>
+      </ul>
+    </div>
+    <div class="card card-glow-a">
+      <div class="lbl">Tier 2 &mdash; Product</div>
+      <div class="val c-a" style="font-size:20px;">"Real users, real consequences"</div>
+      <div class="desc" style="margin-top:12px;">External users depend on it. Quality matters.</div>
+      <div style="margin-top:12px;">
+        <span class="tag tag-a">DayFlow</span>
+      </div>
+      <ul class="fl" style="margin-top:8px; font-size:13px;">
+        <li><span class="dot dot-a"></span>Full OS minus some departments</li>
+        <li><span class="dot dot-a"></span>Ship log required</li>
+        <li><span class="dot dot-a"></span>Compliance: every deploy</li>
+        <li><span class="dot dot-a"></span>A/B testing active (SUTRA vs DIRECT)</li>
+        <li><span class="dot dot-a"></span>Security + Quality active</li>
+      </ul>
+    </div>
+    <div class="card card-glow-r">
+      <div class="lbl">Tier 3 &mdash; Company</div>
+      <div class="val c-r" style="font-size:20px;">"Team, revenue, regulation"</div>
+      <div class="desc" style="margin-top:12px;">Multiple contributors. Full accountability.</div>
+      <div style="margin-top:12px;">
+        <span class="tag" style="background:rgba(255,255,255,0.05); color:rgba(255,255,255,0.3);">FUTURE</span>
+      </div>
+      <ul class="fl" style="margin-top:8px; font-size:13px;">
+        <li><span class="dot dot-r"></span>Full Sutra OS. Nothing optional.</li>
+        <li><span class="dot dot-r"></span>All departments active</li>
+        <li><span class="dot dot-r"></span>Hard enforcement on everything</li>
+        <li><span class="dot dot-r"></span>Daily Pulse + Standups</li>
+        <li><span class="dot dot-r"></span>Incident response process</li>
+      </ul>
+    </div>
+  </div>
+  <div class="card mt"><p style="font-size:13px; color:rgba(255,255,255,0.4);"><strong>Rule:</strong> Tier only goes UP, never down. Once you have external users, you don't go back to personal-tier process. Maze classified as Tier 1 at intake (0 users) but will graduate to Tier 2 when it gets external users.</p></div>
+</div>
+
+<!-- ═══════════ SLIDE 8: ENFORCEMENT ═══════════ -->
+<div class="slide bg-enforce" data-i="7">
+  <div class="slide-num">08/20</div>
+  <div class="badge">Layer 2 &mdash; Governance</div>
+  <h2>4 Levels of <span class="c-r">Enforcement</span></h2>
+
+  <div class="g2 mt">
+    <div>
+      <div class="card card-glow-r" style="margin-bottom:12px;">
+        <div class="flex" style="align-items:center; gap:12px;">
+          <span class="big c-r" style="font-size:32px;">L1</span>
+          <div>
+            <strong>Document-Level Markers</strong>
+            <div class="desc">Every rule marked: <span class="tag tag-r">HARD</span> <span class="tag tag-a">SOFT</span> <span class="tag tag-p">FOUNDER-OVERRIDE</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="card card-glow-r" style="margin-bottom:12px;">
+        <div class="flex" style="align-items:center; gap:12px;">
+          <span class="big c-r" style="font-size:32px;">L2</span>
+          <div>
+            <strong>Session-Level Compliance</strong>
+            <div class="desc">6-point checklist before shipping. OS loaded? Tests pass? Design spec matched? Metrics logged?</div>
+          </div>
+        </div>
+      </div>
+      <div class="card card-glow-r" style="margin-bottom:12px;">
+        <div class="flex" style="align-items:center; gap:12px;">
+          <span class="big c-r" style="font-size:32px;">L3</span>
+          <div>
+            <strong>Pre-Commit Hooks</strong>
+            <div class="desc">File boundary enforcement, metrics verification, mode compliance, OS loaded check.</div>
+          </div>
+        </div>
+      </div>
+      <div class="card card-glow-r">
+        <div class="flex" style="align-items:center; gap:12px;">
+          <span class="big c-r" style="font-size:32px;">L4</span>
+          <div>
+            <strong>Cross-Session Checks</strong>
+            <div class="desc">Sutra agent checks all clients weekly. Mode compliance, metrics, feedback, OS version.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <h3>Violation Handling</h3>
+      <table class="tb">
+        <tr><th>Type</th><th>Action</th><th>Example</th></tr>
+        <tr><td><span class="tag tag-r">BLOCK</span></td><td>Prevents action</td><td>Skipping Phase 4 DECIDE</td></tr>
+        <tr><td><span class="tag tag-a">FLAG</span></td><td>Surfaces in Daily Pulse</td><td>Missing feedback after incident</td></tr>
+        <tr><td><span class="tag tag-b">LOG</span></td><td>Records occurrence</td><td>Mode violation (used DIRECT when SUTRA configured)</td></tr>
+      </table>
+
+      <h3 style="margin-top:20px;">Infrastructure Isolation Rule</h3>
+      <div class="card card-glow-r mt">
+        <p style="font-size:13px; color:rgba(255,255,255,0.6); line-height:1.5;">
+          <strong class="c-r">HARD for Tier 2+:</strong> Before running parallel deploys, DB migrations, or CI jobs, verify they target different resources.<br><br>
+          <strong>Origin:</strong> PPR deploy collision &mdash; two projects named <code>website/</code> deployed in parallel, second overwrote first. Became v1.1 rule.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ SLIDE 9: SKILL CATALOG ═══════════ -->
+<div class="slide bg-skills" data-i="8">
+  <div class="slide-num">09/20</div>
+  <div class="badge">Layer 2 &mdash; Capabilities</div>
+  <h2><span class="c-p">89 Skills</span> in 11 Categories</h2>
+  <p class="sub">Organized by what you're trying to DO, not which tool it comes from.</p>
+
+  <div class="g3 mt">
+    <div class="card"><div class="lbl">1. Starting projects</div><div class="val" style="font-size:16px;"><code>/office-hours</code> <code>/gsd:new-project</code> <code>/design-consultation</code> <code>/setup-deploy</code></div></div>
+    <div class="card"><div class="lbl">2. Planning features</div><div class="val" style="font-size:16px;"><code>/autoplan</code> <code>/gsd:plan-phase</code> <code>/plan-ceo-review</code> <code>/plan-eng-review</code> <code>/plan-design-review</code></div></div>
+    <div class="card"><div class="lbl">3. Building</div><div class="val" style="font-size:16px;"><code>/gsd:execute-phase</code> <code>/gsd:quick</code> <code>/gsd:fast</code> <code>/gsd:autonomous</code></div></div>
+    <div class="card"><div class="lbl">4. Debugging</div><div class="val" style="font-size:16px;"><code>/investigate</code> <code>/gsd:debug</code> <code>/gsd:forensics</code></div></div>
+    <div class="card"><div class="lbl">5. Testing & QA</div><div class="val" style="font-size:16px;"><code>/qa</code> <code>/qa-only</code> <code>/browse</code> <code>/design-review</code> <code>/benchmark</code></div></div>
+    <div class="card"><div class="lbl">6. Code review</div><div class="val" style="font-size:16px;"><code>/review</code> <code>/codex</code> <code>/gsd:review</code></div></div>
+    <div class="card"><div class="lbl">7. Shipping</div><div class="val" style="font-size:16px;"><code>/ship</code> <code>/land-and-deploy</code> <code>/canary</code> <code>/gsd:ship</code></div></div>
+    <div class="card"><div class="lbl">8. Documentation</div><div class="val" style="font-size:16px;"><code>/document-release</code> <code>/retro</code> <code>/learn</code></div></div>
+    <div class="card"><div class="lbl">9. Session mgmt</div><div class="val" style="font-size:16px;"><code>/gsd:progress</code> <code>/gsd:pause-work</code> <code>/gsd:resume-work</code> <code>/gsd:note</code></div></div>
+    <div class="card"><div class="lbl">10. Safety</div><div class="val" style="font-size:16px;"><code>/careful</code> <code>/freeze</code> <code>/guard</code> <code>/cso</code></div></div>
+    <div class="card"><div class="lbl">11. Workstreams</div><div class="val" style="font-size:16px;"><code>/gsd:workstreams</code> <code>/gsd:new-workspace</code> <code>/gsd:manager</code></div></div>
+    <div class="card" style="border-color: rgba(167,139,250,0.2);">
+      <div class="lbl">Two systems unified</div>
+      <div class="flex" style="margin-top:6px; gap:12px;">
+        <span class="tag tag-p">gstack &mdash; 32</span>
+        <span class="tag tag-b">GSD &mdash; 57</span>
+      </div>
+      <div class="desc" style="margin-top:6px;">Founder never thinks "which system" &mdash; catalog maps intent to skill.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ SLIDE 10: DEPARTMENTS ═══════════ -->
+<div class="slide bg-dept" data-i="9">
+  <div class="slide-num">10/20</div>
+  <div class="badge">Layer 3 &mdash; Product Modules</div>
+  <h2><span class="c-g">9 Department</span> Templates</h2>
+  <p class="sub">Each department has: mission, team roles, OKRs, processes, inbox protocol, routing rules, decision authority.</p>
+
+  <div class="g3 mt">
+    <div class="card card-glow-g"><div class="val c-g" style="font-size:18px;">Product</div><div class="desc">WHAT and WHY. RICE scoring. Feature intake. Roadmap. Routes to Design + Eng.</div></div>
+    <div class="card card-glow-g"><div class="val c-g" style="font-size:18px;">Design</div><div class="desc">Visual quality. Design system pillars. Pixel QA. 10-item review checklist. Routes to Eng.</div></div>
+    <div class="card card-glow-g"><div class="val c-g" style="font-size:18px;">Engineering</div><div class="desc">Build reliable software. Architecture rules. Code review standards. Routes to Quality.</div></div>
+    <div class="card card-glow-g"><div class="val c-g" style="font-size:18px;">Quality</div><div class="desc">7-point QA checklist. Sensors. Regression tracking. Routes to Design + Eng.</div></div>
+    <div class="card card-glow-g"><div class="val c-g" style="font-size:18px;">Security</div><div class="desc">API keys, RLS, input sanitization. Always P0. Routes to Eng.</div></div>
+    <div class="card card-glow-g"><div class="val c-g" style="font-size:18px;">Data</div><div class="desc">Event tracking. Funnel analysis. Retention metrics. Routes to Product + Growth.</div></div>
+    <div class="card card-glow-g"><div class="val c-g" style="font-size:18px;">Growth</div><div class="desc">Channels. Viral loops. Share rate. Viral coefficient. Routes to Product.</div></div>
+    <div class="card card-glow-g"><div class="val c-g" style="font-size:18px;">Operations</div><div class="desc">Cross-functional coordination. Tech debt. Monitoring. Routes everywhere.</div></div>
+    <div class="card card-glow-g"><div class="val c-g" style="font-size:18px;">Content</div><div class="desc">Copy. Content pipeline. Moderation. Quality gates. Routes to Product + Design.</div></div>
+  </div>
+
+  <div class="card mt"><p style="font-size:13px; color:rgba(255,255,255,0.4);"><strong>60 cross-department routing rules</strong> ensure signals never get lost. Example: "Low retention metric (D7 < 40%)" routes to Growth + Product. "Error rate spike (>1%)" routes to Engineering as P0.</p></div>
+</div>
+
+<!-- ═══════════ SLIDE 11: A/B TEST FRAMEWORK ═══════════ -->
+<div class="slide bg-ab" data-i="10">
+  <div class="slide-num">11/20</div>
+  <div class="badge">Layer 2 &mdash; Self-Validation</div>
+  <h2>A/B Test: Does Sutra <span class="c-a">Actually Help</span>?</h2>
+  <p class="sub">Sutra earns its place with data, not faith. Every client can test whether the OS improves outcomes.</p>
+
+  <div class="g2 mt">
+    <div>
+      <h3>The Experiment</h3>
+      <div class="card" style="margin-top:8px;">
+        <table class="tb">
+          <tr><th>Metric</th><th>What it measures</th></tr>
+          <tr><td class="c-a"><strong>Ship time</strong></td><td>Hours from start to deployed</td></tr>
+          <tr><td class="c-a"><strong>Break rate</strong></td><td>Bugs introduced by this feature</td></tr>
+          <tr><td class="c-a"><strong>Rework cycles</strong></td><td>Times feature needed re-doing after "done"</td></tr>
+          <tr><td class="c-a"><strong>Design quality</strong></td><td>QA score (0-10)</td></tr>
+          <tr><td class="c-a"><strong>Knowledge captured</strong></td><td>Did we learn something? (yes/no)</td></tr>
+        </table>
+      </div>
+
+      <h3 style="margin-top:16px;">Decision Matrix</h3>
+      <ul class="fl" style="font-size:13px;">
+        <li><span class="dot dot-g"></span>SUTRA faster AND fewer breaks &rarr; Use SUTRA as default</li>
+        <li><span class="dot dot-a"></span>SUTRA slower but fewer breaks &rarr; AUTO mode (SUTRA for risky, DIRECT for small)</li>
+        <li><span class="dot dot-r"></span>DIRECT faster AND same breaks &rarr; Strip Sutra back. It's overhead.</li>
+        <li><span class="dot dot-b"></span>Mixed / unclear &rarr; Run 5 more features</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Maze's A/B Config</h3>
+      <div class="maze-used" style="margin-bottom:12px;">Applied to Maze</div>
+      <div class="card card-glow-a">
+        <table class="tb">
+          <tr><th>#</th><th>Feature</th><th>Mode</th></tr>
+          <tr><td>1</td><td>Content feed + infinite scroll</td><td><span class="tag tag-a">SUTRA</span></td></tr>
+          <tr><td>2</td><td>WhatsApp sharing flow</td><td><span class="tag tag-r">DIRECT</span></td></tr>
+          <tr><td>3</td><td>AI joke generation</td><td><span class="tag tag-a">SUTRA</span></td></tr>
+          <tr><td>4</td><td>Like/dislike personalization</td><td><span class="tag tag-r">DIRECT</span></td></tr>
+          <tr><td>5</td><td>Content ingestion pipeline</td><td><span class="tag tag-a">SUTRA</span></td></tr>
+          <tr><td>6</td><td>Category navigation</td><td><span class="tag tag-r">DIRECT</span></td></tr>
+          <tr><td>7</td><td>Optional auth</td><td><span class="tag tag-a">SUTRA</span></td></tr>
+          <tr><td>8</td><td>OG image generation</td><td><span class="tag tag-r">DIRECT</span></td></tr>
+        </table>
+      </div>
+      <div class="card mt">
+        <div class="lbl">Meta-learning</div>
+        <div class="desc">Across all clients, Sutra tracks: which stages benefit most? Which functions need structure? What's the minimum viable process? This data makes Sutra better for every future client.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ SLIDE 12: CONTINUOUS IMPROVEMENT ═══════════ -->
+<div class="slide bg-ci" data-i="11">
+  <div class="slide-num">12/20</div>
+  <div class="badge">Layer 2 &mdash; Learning System</div>
+  <h2><span class="c-b">Continuous Improvement</span> Loop</h2>
+
+  <div class="g2 mt">
+    <div>
+      <h3>Finding Classification</h3>
+      <div class="card" style="margin-top:8px;">
+        <table class="tb">
+          <tr><th>Type</th><th>Where it goes</th></tr>
+          <tr><td>Code bug</td><td>Company's <code>TODO.md</code></td></tr>
+          <tr><td>Process bug</td><td><code>feedback-to-sutra/</code></td></tr>
+          <tr><td>New protocol</td><td>Sutra docs (immediate, hard-enforced)</td></tr>
+          <tr><td>Performance</td><td><code>METRICS.md</code> + <code>TODO</code></td></tr>
+          <tr><td>Security</td><td><code>TODO [P0-Security]</code> &mdash; blocks shipping</td></tr>
+          <tr><td>Cross-company</td><td>Check if applies to all clients &rarr; version</td></tr>
+        </table>
+      </div>
+    </div>
+    <div>
+      <h3>Auto-Generation Triggers</h3>
+      <ul class="fl">
+        <li><span class="dot dot-b"></span><strong>After every feature:</strong> log metrics, create TODOs for breaks</li>
+        <li><span class="dot dot-b"></span><strong>After every bug fix:</strong> root cause analysis, feedback if preventable</li>
+        <li><span class="dot dot-b"></span><strong>After every session:</strong> preserve state, write findings</li>
+        <li><span class="dot dot-b"></span><strong>Weekly (Sutra session):</strong> batch findings, update docs, publish version</li>
+      </ul>
+
+      <h3 style="margin-top:16px;">Version Bump Types</h3>
+      <div class="flex" style="gap:8px; flex-wrap:wrap;">
+        <span class="tag tag-b">PATCH</span><span class="desc">Checklist items</span>
+        <span class="tag tag-a">MINOR</span><span class="desc">New templates</span>
+        <span class="tag tag-r">MAJOR</span><span class="desc">Process restructures</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card mt card-glow-b">
+    <p style="font-size:14px; color:rgba(255,255,255,0.6); line-height:1.5;">
+      <strong class="c-b">Cross-company learning:</strong> When Company A discovers a pattern, Sutra checks if it applies to Company B and C.
+      PPR's parallel deploy collision became a rule for ALL companies in Sutra v1.1.
+    </p>
+  </div>
+</div>
+
+<!-- ═══════════ SLIDE 13: VERSION HISTORY ═══════════ -->
+<div class="slide bg-ci" data-i="12">
+  <div class="slide-num">13/20</div>
+  <div class="badge">Layer 2 &mdash; Versioning</div>
+  <h2>Release <span class="c-b">History</span></h2>
+
+  <div class="g2 mt">
+    <div>
+      <div class="card card-glow-b" style="margin-bottom:12px;">
+        <div class="flex" style="align-items:center; gap:12px;">
+          <div class="big c-b" style="font-size:36px;">v1.0</div>
+          <div>
+            <div class="desc">2026-04-03 &mdash; Triggered by DayFlow creation</div>
+            <ul class="fl" style="font-size:13px; margin-top:4px;">
+              <li><span class="dot dot-b"></span>Stage 1 Pre-Launch OS (12 rules)</li>
+              <li><span class="dot dot-b"></span>Basic product knowledge system</li>
+              <li><span class="dot dot-b"></span>Functional principles</li>
+              <li><span class="dot dot-b"></span>Intent + boundaries + effort delegation</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="card card-glow-a" style="margin-bottom:12px;">
+        <div class="flex" style="align-items:center; gap:12px;">
+          <div class="big c-a" style="font-size:36px;">v1.1</div>
+          <div>
+            <div class="desc">2026-04-04 &mdash; Triggered by PPR + Maze onboarding</div>
+            <ul class="fl" style="font-size:13px; margin-top:4px;">
+              <li><span class="dot dot-a"></span>Complexity tiers (Tier 1/2/3)</li>
+              <li><span class="dot dot-a"></span>Infrastructure guardrail (parallel ops)</li>
+              <li><span class="dot dot-a"></span>Enforcement tiering by complexity</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="card" style="border-color: rgba(255,255,255,0.1);">
+        <div class="flex" style="align-items:center; gap:12px;">
+          <div class="big c-w" style="font-size:36px;">v2.0</div>
+          <div>
+            <div class="desc">Future &mdash; When DayFlow hits 25 users</div>
+            <ul class="fl" style="font-size:13px; margin-top:4px;">
+              <li><span class="dot dot-c"></span>Analytics + metrics process</li>
+              <li><span class="dot dot-c"></span>User research process</li>
+              <li><span class="dot dot-c"></span>Retention tracking</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <h3>Client Pinning</h3>
+      <table class="tb">
+        <tr><th>Client</th><th>Pinned to</th><th>Status</th></tr>
+        <tr><td>DayFlow</td><td><span class="tag tag-b">v1.0</span></td><td>Running, no feedback yet</td></tr>
+        <tr><td>PPR</td><td><span class="tag tag-b">v1.0</span></td><td>First feedback sent (became v1.1)</td></tr>
+        <tr><td>Maze</td><td><span class="tag tag-b">v1.0</span></td><td>Just onboarded</td></tr>
+      </table>
+
+      <h3 style="margin-top:20px;">How Upgrades Work</h3>
+      <div class="card mt">
+        <ul class="fl" style="font-size:13px;">
+          <li><span class="dot dot-g"></span>Client reads RELEASES.md to see what's new</li>
+          <li><span class="dot dot-g"></span>Decides: upgrade or stay</li>
+          <li><span class="dot dot-g"></span>If upgrade: copies new version, adapts to context</li>
+          <li><span class="dot dot-g"></span>Client can skip any version &mdash; their choice</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ SLIDE 14: DEPARTMENT PRINCIPLES ═══════════ -->
+<div class="slide bg-dept" data-i="13">
+  <div class="slide-num">14/20</div>
+  <div class="badge">Layer 4 &mdash; Principles</div>
+  <h2><span class="c-g">16 Functions</span> with Research-Backed Principles</h2>
+  <p class="sub">Each function has: 7 key principles, failure modes, cross-functional interaction maps. All sourced from industry leaders.</p>
+
+  <div class="g3 mt">
+    <div class="card">
+      <h4>Product &mdash; Cagan, Torres</h4>
+      <ul class="fl" style="font-size:12px;">
+        <li><span class="dot dot-g"></span>Value risk first</li>
+        <li><span class="dot dot-g"></span>Outcome over output</li>
+        <li><span class="dot dot-g"></span>Say no by default (10:1)</li>
+        <li><span class="dot dot-g"></span>Ship to learn</li>
+      </ul>
+      <div class="desc" style="margin-top:6px;"><strong>Failure:</strong> Feature factory, validation theater</div>
+    </div>
+    <div class="card">
+      <h4>Engineering &mdash; Ousterhout, Fowler</h4>
+      <ul class="fl" style="font-size:12px;">
+        <li><span class="dot dot-g"></span>Complexity is root enemy</li>
+        <li><span class="dot dot-g"></span>Deep modules over shallow</li>
+        <li><span class="dot dot-g"></span>Make it work/right/fast (in order)</li>
+        <li><span class="dot dot-g"></span>Tests enable change</li>
+      </ul>
+      <div class="desc" style="margin-top:6px;"><strong>Failure:</strong> Premature abstraction, gold-plating</div>
+    </div>
+    <div class="card">
+      <h4>Design &mdash; Norman, Rams, Ive</h4>
+      <ul class="fl" style="font-size:12px;">
+        <li><span class="dot dot-g"></span>Good design is invisible</li>
+        <li><span class="dot dot-g"></span>Design for mental model</li>
+        <li><span class="dot dot-g"></span>Remove until it breaks</li>
+        <li><span class="dot dot-g"></span>Design is how it works</li>
+      </ul>
+      <div class="desc" style="margin-top:6px;"><strong>Failure:</strong> Pixel-perfect paralysis, a11y afterthought</div>
+    </div>
+    <div class="card">
+      <h4>Security</h4>
+      <ul class="fl" style="font-size:12px;">
+        <li><span class="dot dot-g"></span>Always P0 priority</li>
+        <li><span class="dot dot-g"></span>API keys never exposed</li>
+        <li><span class="dot dot-g"></span>RLS on user data</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>Growth</h4>
+      <ul class="fl" style="font-size:12px;">
+        <li><span class="dot dot-g"></span>Find the channel</li>
+        <li><span class="dot dot-g"></span>Viral loops &gt; paid</li>
+        <li><span class="dot dot-g"></span>Retention first</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>Data</h4>
+      <ul class="fl" style="font-size:12px;">
+        <li><span class="dot dot-g"></span>Measure what you control</li>
+        <li><span class="dot dot-g"></span>Instrument from day one</li>
+        <li><span class="dot dot-g"></span>Cohort &gt; aggregate</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ SLIDE 15: NOW — MAPPING TO MAZE ═══════════ -->
+<div class="slide bg-maze" data-i="14">
+  <div class="slide-num">15/20</div>
+  <div class="badge">Application</div>
+  <h2>How Sutra <span class="c-r">Mapped to Maze</span></h2>
+  <p class="sub">Every Sutra capability that was activated, customized, or skipped during Maze's onboarding.</p>
+
+  <div class="g2 mt">
+    <div>
+      <h3>What Sutra Activated</h3>
+      <ul class="fl">
+        <li><span class="dot dot-g"></span><strong>8-phase onboarding</strong> &mdash; all 8 phases executed in 15 minutes (target: 60 min)</li>
+        <li><span class="dot dot-g"></span><strong>PR/FAQ + Feature Carve</strong> &mdash; 8 P0 features identified, 13 total evaluated</li>
+        <li><span class="dot dot-g"></span><strong>Risk Map</strong> &mdash; 7 risks with mitigations, scored by market evidence</li>
+        <li><span class="dot dot-g"></span><strong>Market Research</strong> &mdash; 9 competitors analyzed, market gap identified</li>
+        <li><span class="dot dot-g"></span><strong>Architecture Card</strong> &mdash; product type: content-platform. Full data model + pipelines.</li>
+        <li><span class="dot dot-g"></span><strong>A/B Test Config</strong> &mdash; 8 features alternating SUTRA/DIRECT</li>
+        <li><span class="dot dot-g"></span><strong>Metrics + Success Criteria</strong> &mdash; 7 targets, stage graduation criteria</li>
+        <li><span class="dot dot-g"></span><strong>CLAUDE.md</strong> &mdash; full dev instructions for AI sessions</li>
+        <li><span class="dot dot-g"></span><strong>TODO.md</strong> &mdash; 25 tasks in dependency order</li>
+        <li><span class="dot dot-g"></span><strong>Skill routing table</strong> &mdash; 13 gstack + 5 GSD skills mapped</li>
+        <li><span class="dot dot-g"></span><strong>Session isolation</strong> &mdash; Maze can only edit its own files</li>
+        <li><span class="dot dot-g"></span><strong>Feedback channel</strong> &mdash; <code>feedback-to-sutra/</code> active (1 item already)</li>
+      </ul>
+    </div>
+    <div>
+      <h3>What Sutra Skipped (Tier 1)</h3>
+      <ul class="fl">
+        <li><span class="dot dot-r"></span><strong>Department functions</strong> &mdash; solo founder = all departments in one person</li>
+        <li><span class="dot dot-r"></span><strong>Daily Pulse</strong> &mdash; skipped at Tier 1</li>
+        <li><span class="dot dot-r"></span><strong>Standup protocol</strong> &mdash; skipped at Tier 1</li>
+        <li><span class="dot dot-r"></span><strong>Agent incentives</strong> &mdash; no competing agents needed</li>
+        <li><span class="dot dot-r"></span><strong>Hard enforcement hooks</strong> &mdash; soft only (flag, don't block)</li>
+        <li><span class="dot dot-r"></span><strong>Ship log</strong> &mdash; optional at Tier 1</li>
+        <li><span class="dot dot-r"></span><strong>Weekly planning ceremony</strong> &mdash; replaced with "check TODO.md"</li>
+      </ul>
+
+      <h3 style="margin-top:16px;">What Sutra Customized</h3>
+      <ul class="fl">
+        <li><span class="dot dot-a"></span><strong>Product type</strong> &rarr; content-platform (not productivity-tool)</li>
+        <li><span class="dot dot-a"></span><strong>Content pipeline</strong> section added (not standard)</li>
+        <li><span class="dot dot-a"></span><strong>WhatsApp sharing</strong> as growth mechanism (specific to Maze)</li>
+        <li><span class="dot dot-a"></span><strong>Personalization model</strong> &mdash; category-weighted scoring (custom)</li>
+        <li><span class="dot dot-a"></span><strong>Design approach</strong> &rarr; design-in-code (Tailwind, no Figma)</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ SLIDE 16: MAZE FILES MAPPING ═══════════ -->
+<div class="slide bg-map" data-i="15">
+  <div class="slide-num">16/20</div>
+  <div class="badge">Delivery</div>
+  <h2><span class="c-g">13 Files</span> &mdash; Sutra Source &rarr; Maze Output</h2>
+
+  <table class="tb mt">
+    <tr><th>Maze File</th><th>Generated From</th><th>Sutra Source</th></tr>
+    <tr><td><strong class="c-g">OPERATING-SYSTEM-V1.md</strong></td><td>Phase 6 CONFIGURE</td><td><code>layer3-modules/b2c-consumer-app/STAGE-1.md</code> template, customized</td></tr>
+    <tr><td><strong class="c-g">ARCHITECTURE.md</strong></td><td>Phase 5 ARCHITECT</td><td>Product type classification + tech stack selection matrix</td></tr>
+    <tr><td><strong class="c-g">PRODUCT-BRIEF.md</strong></td><td>Phase 3 SHAPE</td><td>PR/FAQ + Feature Carve + Risk Map + Success Metrics exercises</td></tr>
+    <tr><td><strong class="c-g">MARKET-BRIEF.md</strong></td><td>Phase 2 MARKET</td><td>Competitor research + market gap + technical landscape</td></tr>
+    <tr><td><strong class="c-g">INTAKE.md</strong></td><td>Phase 1 INTAKE</td><td>10-question conversational intake (adapted from feedback)</td></tr>
+    <tr><td><strong class="c-g">TODO.md</strong></td><td>Phase 6 CONFIGURE</td><td>P0 features &rarr; dependency-ordered task list</td></tr>
+    <tr><td><strong class="c-g">METRICS.md</strong></td><td>Phase 6 CONFIGURE</td><td>Success metrics from PRODUCT-BRIEF + cost tracking template</td></tr>
+    <tr><td><strong class="c-g">CLAUDE.md</strong></td><td>Phase 6 CONFIGURE</td><td>Dev instructions template + tech stack + architecture rules</td></tr>
+    <tr><td><strong class="c-g">SUTRA-CONFIG.md</strong></td><td>Phase 6 CONFIGURE</td><td>A/B Test Framework (alternating SUTRA/DIRECT)</td></tr>
+    <tr><td><strong class="c-g">SUTRA-VERSION.md</strong></td><td>Phase 7 DEPLOY</td><td>Version pinning protocol</td></tr>
+    <tr><td><strong class="c-g">STATUS.md</strong></td><td>Phase 7 DEPLOY</td><td>Client registry + phase log</td></tr>
+    <tr><td><strong class="c-g">onboarding-signals.md</strong></td><td>Phase 8 ACTIVATE</td><td>Sutra's learning log (internal)</td></tr>
+    <tr><td><strong class="c-g">feedback-to-sutra/</strong></td><td>Phase 7 DEPLOY</td><td>Feedback channel (VERSION-UPDATES protocol)</td></tr>
+  </table>
+</div>
+
+<!-- ═══════════ SLIDE 17: ONBOARDING SIGNALS ═══════════ -->
+<div class="slide bg-signal" data-i="16">
+  <div class="slide-num">17/20</div>
+  <div class="badge">Self-improvement</div>
+  <h2>What Sutra <span class="c-a">Learned</span> from Maze</h2>
+  <p class="sub">11 signals captured during 15-minute onboarding. These improve Sutra for the next client.</p>
+
+  <div class="g2 mt">
+    <div>
+      <h3 class="c-g">Quality Signals</h3>
+      <ul class="fl">
+        <li><span class="dot dot-g"></span><strong>Rich initial description</strong> &mdash; Experienced founders front-load context. Sutra can extract multiple answers from one message.</li>
+        <li><span class="dot dot-g"></span><strong>Clear bet articulation</strong> &mdash; "Maze works if she comes repeatedly there." Clean, measurable, honest.</li>
+        <li><span class="dot dot-g"></span><strong>Instant commit</strong> &mdash; No hesitation at Phase 4. "Let's go." 3 questions are a formality when founder already knows.</li>
+        <li><span class="dot dot-g"></span><strong>15 min vs 60 min target</strong> &mdash; Experienced founder + clear vision + batched questions = 4x faster.</li>
+      </ul>
+    </div>
+    <div>
+      <h3 class="c-a">Friction Signals</h3>
+      <ul class="fl">
+        <li><span class="dot dot-a"></span><strong>Wanted to batch questions</strong> &mdash; "We ask more questions together." Sequential questioning too slow for experienced founders.</li>
+        <li><span class="dot dot-a"></span><strong>Skipped Q5</strong> &mdash; "I'm just creating it because I can." Not every product needs a broken market. Accept passion projects.</li>
+        <li><span class="dot dot-a"></span><strong>Name spelling confusion</strong> &mdash; "Maze is spelling M-A-Z-E." Sutra should confirm spelling explicitly.</li>
+      </ul>
+
+      <h3 class="c-r" style="margin-top:16px;">Feedback Generated</h3>
+      <div class="card card-glow-r">
+        <p style="font-size:13px; color:rgba(255,255,255,0.6); line-height:1.5;">
+          <strong>Supabase org confusion</strong> &mdash; Sutra paused wrong project on wrong account. Learning: "Don't ask me anything" means product decisions, NOT destructive infrastructure actions. Verify ownership before modifying external resources.
+        </p>
+        <div style="margin-top:6px;"><span class="tag tag-r">PENDING</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ SLIDE 18: FULL CAPABILITY MAP ═══════════ -->
+<div class="slide bg-skills" data-i="17">
+  <div class="slide-num">18/20</div>
+  <div class="badge">Complete Picture</div>
+  <h2>Full Sutra <span class="c-p">Capability Map</span></h2>
+
+  <div class="g2 mt" style="font-size:13px;">
+    <div>
+      <table class="tb">
+        <tr><th colspan="3" style="color:#a78bfa;">Governance Capabilities</th></tr>
+        <tr><td>8-phase onboarding</td><td><span class="maze-used">Maze</span></td><td>All 8 phases</td></tr>
+        <tr><td>7-phase decision flow</td><td><span class="maze-used">Maze</span></td><td>Embedded in OS</td></tr>
+        <tr><td>Complexity tiering</td><td><span class="maze-used">Maze</span></td><td>Classified as Tier 1</td></tr>
+        <tr><td>4-level enforcement</td><td><span class="maze-used">Maze</span></td><td>L1 (doc markers) active</td></tr>
+        <tr><td>A/B test framework</td><td><span class="maze-used">Maze</span></td><td>8 features configured</td></tr>
+        <tr><td>Version management</td><td><span class="maze-used">Maze</span></td><td>Pinned to v1.0</td></tr>
+        <tr><td>Continuous improvement</td><td><span class="maze-used">Maze</span></td><td>1 feedback sent</td></tr>
+        <tr><td>Session isolation</td><td><span class="maze-used">Maze</span></td><td>Boundary enforced</td></tr>
+        <tr><td>Cross-dept routing (60 rules)</td><td><span class="maze-skip">Tier 2+</span></td><td>Solo founder</td></tr>
+        <tr><td>Standup protocol</td><td><span class="maze-skip">Tier 3</span></td><td>Skipped</td></tr>
+        <tr><td>Daily Pulse</td><td><span class="maze-skip">Tier 3</span></td><td>Skipped</td></tr>
+        <tr><td>Incident response</td><td><span class="maze-skip">Tier 3</span></td><td>Skipped</td></tr>
+      </table>
+    </div>
+    <div>
+      <table class="tb">
+        <tr><th colspan="3" style="color:#a78bfa;">Product Capabilities</th></tr>
+        <tr><td>Product type modules</td><td><span class="maze-used">Maze</span></td><td>content-platform</td></tr>
+        <tr><td>Stage-based scaling</td><td><span class="maze-used">Maze</span></td><td>Stage 1 Pre-launch</td></tr>
+        <tr><td>9 department templates</td><td><span class="maze-skip">Tier 2+</span></td><td>Solo founder</td></tr>
+        <tr><td>Skill catalog (89)</td><td><span class="maze-used">Maze</span></td><td>18 skills mapped</td></tr>
+        <tr><td>16 functional principles</td><td><span class="maze-used">Maze</span></td><td>Embedded in OS</td></tr>
+        <tr><td>PR/FAQ exercise</td><td><span class="maze-used">Maze</span></td><td>Completed</td></tr>
+        <tr><td>Feature carve</td><td><span class="maze-used">Maze</span></td><td>8 P0 / 5 P1 / 3 P2</td></tr>
+        <tr><td>Risk mapping</td><td><span class="maze-used">Maze</span></td><td>7 risks with mitigations</td></tr>
+        <tr><td>Metrics + graduation</td><td><span class="maze-used">Maze</span></td><td>7 targets + 5 criteria</td></tr>
+        <tr><td>Content strategy</td><td><span class="maze-used">Maze</span></td><td>Custom (3 APIs + AI)</td></tr>
+        <tr><td>Data model generation</td><td><span class="maze-used">Maze</span></td><td>4 tables + indexes</td></tr>
+        <tr><td>Deploy architecture</td><td><span class="maze-used">Maze</span></td><td>Vercel + Cron + Edge</td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ SLIDE 19: SUTRA vs MAZE COMPARISON ═══════════ -->
+<div class="slide bg-maze" data-i="18">
+  <div class="slide-num">19/20</div>
+  <div class="badge">Comparison</div>
+  <h2>Sutra is <span class="c-r">Generic</span>, Maze OS is <span class="c-g">Specific</span></h2>
+
+  <table class="tb mt">
+    <tr><th style="width:30%;">Sutra (generic)</th><th style="width:5%;"></th><th style="width:30%;">Maze OS (customized)</th><th>How</th></tr>
+    <tr><td>"Content platform" template</td><td class="c-p">&rarr;</td><td>Humor feed with joke types + meme images</td><td>Product type &rarr; content subtypes</td></tr>
+    <tr><td>"Define your core bet"</td><td class="c-p">&rarr;</td><td>Retention: "she comes back repeatedly"</td><td>Intake Q6 answer</td></tr>
+    <tr><td>"Multiple content sources"</td><td class="c-p">&rarr;</td><td>JokeAPI + icanhazdadjoke + HumorAPI + AI</td><td>Market research found specific APIs</td></tr>
+    <tr><td>"Define viral loop"</td><td class="c-p">&rarr;</td><td>WhatsApp share &rarr; OG preview &rarr; tap &rarr; feed</td><td>Platform-specific (India + WhatsApp)</td></tr>
+    <tr><td>"Track N metrics"</td><td class="c-p">&rarr;</td><td>D1 30%, share rate 15%, viral coeff >0.5</td><td>Core bet &rarr; specific targets</td></tr>
+    <tr><td>"Use appropriate tech stack"</td><td class="c-p">&rarr;</td><td>Next.js 16 + Tailwind + Supabase + Vercel AI SDK</td><td>Platform + founder skills + SSR requirement</td></tr>
+    <tr><td>"Design approach varies"</td><td class="c-p">&rarr;</td><td>Design-in-code, dark + vibrant, playful</td><td>Solo founder + web MVP + speed</td></tr>
+    <tr><td>"Stage-appropriate process"</td><td class="c-p">&rarr;</td><td>12 rules only, no departments, soft enforcement</td><td>Tier 1 classification</td></tr>
+    <tr><td>"Alternate SUTRA/DIRECT"</td><td class="c-p">&rarr;</td><td>Feed=SUTRA, Sharing=DIRECT, AI=SUTRA...</td><td>A/B framework applied to 8 features</td></tr>
+  </table>
+</div>
+
+<!-- ═══════════ SLIDE 20: CLOSING ═══════════ -->
+<div class="slide bg-end" data-i="19">
+  <div class="slide-num">20/20</div>
+  <div class="badge">Summary</div>
+  <h1>Sutra is a <span class="c-p">compiler</span></h1>
+  <p class="sub" style="max-width:800px;">
+    It takes a raw idea as input, runs it through 8 phases of research, shaping, architecture, and configuration,
+    and outputs a complete operating system customized to that specific company. Then it keeps learning.
+  </p>
+
+  <div class="g4 mt">
+    <div class="card card-glow-b">
+      <div class="lbl">Layer 1</div>
+      <div class="val c-b" style="font-size:18px;">Research</div>
+      <div class="desc">45 sources, 15 principles</div>
+    </div>
+    <div class="card card-glow-a">
+      <div class="lbl">Layer 2</div>
+      <div class="val c-a" style="font-size:18px;">Governance</div>
+      <div class="desc">8 phases, 4 enforcement levels, 89 skills</div>
+    </div>
+    <div class="card card-glow-g">
+      <div class="lbl">Layer 3</div>
+      <div class="val c-g" style="font-size:18px;">Modules</div>
+      <div class="desc">9 departments, stage-based scaling</div>
+    </div>
+    <div class="card card-glow-p">
+      <div class="lbl">Layer 4</div>
+      <div class="val c-p" style="font-size:18px;">Principles</div>
+      <div class="desc">16 functions, research-backed</div>
+    </div>
+  </div>
+
+  <div class="g3 mt">
+    <div class="card">
+      <div class="lbl">Maze used</div>
+      <div class="big c-g" style="font-size:36px;">21</div>
+      <div class="desc">capabilities activated</div>
+    </div>
+    <div class="card">
+      <div class="lbl">Maze skipped</div>
+      <div class="big c-r" style="font-size:36px;">7</div>
+      <div class="desc">capabilities (Tier 1 scaling)</div>
+    </div>
+    <div class="card">
+      <div class="lbl">Maze customized</div>
+      <div class="big c-a" style="font-size:36px;">5</div>
+      <div class="desc">capabilities adapted to context</div>
+    </div>
+  </div>
+
+  <div class="quote mt">
+    "Each client company that uses Sutra makes Sutra better for ALL client companies. The more companies use it, the more feedback Sutra gets, the better the principles become."
+    <div class="quote-who">Sutra Vision Document</div>
+  </div>
+</div>
+
+</div><!-- /deck -->
+
+<!-- NAV -->
+<div class="nav">
+  <button onclick="go(-1)">&larr;</button>
+  <div class="nav-dots" id="dots"></div>
+  <button onclick="go(1)">&rarr;</button>
+</div>
+
+<script>
+const S = document.querySelectorAll('.slide');
+let c = 0;
+const D = document.getElementById('dots');
+S.forEach((_, i) => {
+  const d = document.createElement('div');
+  d.className = 'nav-dot' + (i===0?' active':'');
+  d.onclick = () => jump(i);
+  D.appendChild(d);
+});
+function jump(i) {
+  if(i<0||i>=S.length) return;
+  S[c].classList.remove('active'); S[c].classList.add(i>c?'prev':'');
+  c=i;
+  S[c].classList.remove('prev'); S[c].classList.add('active');
+  document.querySelectorAll('.nav-dot').forEach((d,j) => d.classList.toggle('active', j===c));
+}
+function go(d) { jump(c+d); }
+document.addEventListener('keydown', e => {
+  if(e.key==='ArrowRight'||e.key===' '){e.preventDefault();go(1);}
+  if(e.key==='ArrowLeft'){e.preventDefault();go(-1);}
+});
+let tx=0;
+document.addEventListener('touchstart', e => tx=e.touches[0].clientX);
+document.addEventListener('touchend', e => { const d=tx-e.changedTouches[0].clientX; if(Math.abs(d)>50) go(d>0?1:-1); });
+</script>
+
+</body>
+</html>
