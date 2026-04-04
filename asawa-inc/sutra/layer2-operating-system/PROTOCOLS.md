@@ -169,6 +169,44 @@ origin: "Sutra operating model. Every action must produce a measurable signal."
 
 ---
 
+### PROTO-009: Follow the Sprint Sequence
+
+```yaml
+id: PROTO-009
+name: Follow the Sprint Sequence
+type: federal
+source:
+  - Sutra P1 (make work visible — the sprint plan IS the visible work)
+  - Sutra P7 (decisions need an owner — the plan owner decided the sequence)
+trigger: Agent completes a task and is about to start the next one
+check: Does an active sprint plan exist? (HOD meeting, TODO.md sprint, or any sequenced plan). If yes, what is the NEXT item in the designed sequence?
+if_yes: Start that item. Not what feels right. Not what's fastest. What the plan says.
+if_no: Ask the CEO what's next. Do not self-select.
+enforcement: SOFT (post-commit reminder: "Sprint says next: {item}")
+origin: "Maze session 2026-04-04/05. Agent completed INIT-0 blockers and jumped to deploy instead of following the HOD sprint sequence. Day 2-3 (PostHog) was skipped. Agent's momentum overrode the designed sequence."
+```
+
+---
+
+### PROTO-010: Narration Is Not Artifact
+
+```yaml
+id: PROTO-010
+name: Narration Is Not Artifact
+type: constitutional
+source:
+  - Asawa P1 (make work visible — if not written to a file, it doesn't exist)
+  - Asawa P8 (never bypass a running process — narrating a step is not completing it)
+trigger: Agent is executing a process pipeline (SUTRA mode, feature lifecycle, HOD meeting)
+check: For each process stage completed, does a FILE exist on disk? (Not a message in chat. Not a line in a commit message. A file.)
+if_yes: Stage is complete. Proceed to next.
+if_no: Stage is NOT complete. Write the artifact FIRST. Then proceed.
+enforcement: HARD (process-gate should check for stage artifacts before allowing code edits)
+origin: "Maze session 2026-04-04. Two features shipped with SUTRA mode declared in commit messages but zero artifacts on disk. Independent auditors scored 28 FAILs. Founder: 'It was theater.' The pipeline was described verbally in chat but never executed as files. Chat is ephemeral — only files count."
+```
+
+---
+
 ## How Protocols Evolve
 
 1. **Bottom-up**: A company discovers a gap (like the shared/ incident) → logs it → Sutra evaluates → if valid, creates a new protocol
@@ -189,3 +227,5 @@ Every protocol records its origin. This is the institutional memory of why rules
 | PROTO-006 | process-gate.sh | HARD |
 | PROTO-007 | process-gate.sh | HARD |
 | PROTO-008 | (future: ship-metric-check.sh) | SOFT |
+| PROTO-009 | (future: sprint-sequence-check.sh) | SOFT |
+| PROTO-010 | process-gate.sh (extend to check artifacts) | HARD |
