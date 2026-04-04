@@ -10,12 +10,22 @@
 7. After each feature: commit, push to `claude/pull-latest-changes-XeutS`, check the box in `TODO.md`
 
 ## Company Ideas Tracker (`COMPANY_IDEAS.md`)
-- Sankalp drops raw ideas from phone into the **Ideas Inbox** section
+- Sankalp drops raw ideas from phone into the **Ideas Inbox** section, tagged by company
 - Each session: read all unprocessed ideas and for each one:
-  - **Actionable now** → implement it, mark ✅, move to Processed
-  - **Needs breakdown** → create TODO.md tasks, mark 🗂️, move to Processed
+  - **Actionable now** → implement/document it, mark ✅, move to Processed
+  - **Needs breakdown** → create tasks in the file, mark 🗂️, move to Processed
   - **Needs clarification** → add a question inline, mark ❓
 - Always commit + push after processing ideas
+
+### Companies tracked
+- **DayFlow** — the Expo app in this repo. Tasks go to TODO.md.
+- **Asawa Holdings** — investment/holding company. Protocols:
+  - Research-driven only, no gut trades
+  - Target: beat 99% of market participants
+  - Focus: small/mid cap (₹500Cr–₹10,000Cr), concentrated 6-8 stock portfolio
+  - Before any position: screen hard → deep research → 1-page thesis → pre-mortem
+  - Exit on thesis break, not price movement
+  - Ideas/decisions go into COMPANY_IDEAS.md under [Asawa Holdings] tag
 
 ## New Machine Setup
 ```bash

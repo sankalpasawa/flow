@@ -2,13 +2,17 @@
 
 Ideas added from phone — Claude picks these up each session, thinks through them, and either implements or breaks into TODO tasks.
 
+Ideas are tagged by company. Current companies:
+- **Asawa Holdings** — investment/holding company. Protocols: research-driven, beat 99% of market, ₹5L initial deployment, framework in Processed Ideas below.
+- **DayFlow** — the Expo app in this repo (see TODO.md for app tasks)
+
 ## How This Works
-- Sankalp adds raw ideas here from phone (voice-to-text, notes, etc.)
+- Sankalp adds raw ideas here from phone (voice-to-text, notes, etc.), tagging the company
 - Claude reads this each session, processes each idea:
-  - **If actionable now** → implement and mark ✅
-  - **If needs breakdown** → add tasks to TODO.md and mark 🗂️
+  - **If actionable now** → implement/document and mark ✅
+  - **If needs breakdown** → add tasks and mark 🗂️
   - **If needs more info** → add a question and mark ❓
-- Format: one idea per entry, with date added
+- Format: one idea per entry, with date added and company tag
 
 ---
 
@@ -26,9 +30,9 @@ Ideas added from phone — Claude picks these up each session, thinks through th
 
 ---
 
-### 🗂️ [2026-04-04] Deploy ₹5L in current market dip — beat 99%
+### 🗂️ [2026-04-04] [Asawa Holdings] Deploy ₹5L in current market dip — beat 99%
 
-**Refined idea:** Invest ₹5,00,000 during current market dip. Research-driven, not gut-feel. Goal: outperform 99% of market participants.
+**Refined idea:** Invest ₹5,00,000 during current market dip under Asawa Holdings. Research-driven, not gut-feel. Goal: outperform 99% of market participants.
 
 ---
 
