@@ -107,6 +107,24 @@ ai_config:
 
 ---
 
+## Roadmap
+
+### Conductor Pattern (Future — when 5+ AI use cases exist across portfolio)
+
+When the portfolio has multiple companies with multiple AI tasks at different complexity levels, implement a **Conductor orchestration layer** at the Asawa shared level:
+
+- A lightweight routing model (7B) decides which provider/model handles each request
+- Routes by task complexity: easy → cheap (Gemini Flash), hard → powerful (Claude Sonnet)
+- Routes by task type: creative → Gemini, reasoning → Claude, speed → Groq, batch → DeepSeek
+- Optimizes across cost + quality + latency automatically
+- Single entry point for all AI calls across all companies
+
+**Trigger**: When total AI spend across the portfolio exceeds $50/month OR 3+ companies have 2+ distinct AI use cases each.
+
+**Reference**: [Conductor-Based Orchestration of LLMs](https://www.emergentmind.com/topics/conductor-based-orchestration-of-llms)
+
+---
+
 ## Audit Trail
 
 Every AI provider addition or removal is tracked in git history of this file.
