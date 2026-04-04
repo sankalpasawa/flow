@@ -137,6 +137,17 @@ Current tier classification uses change SIZE (file count, layer crossings) as a 
 - [ ] **Monthly calibration** — promote soft gates to hard gates based on violation frequency. Demote hard gates that have 0 fires (unnecessary friction). Review compliance scores across all companies. Output: new version of enforcement hooks deployed via Sutra.
 - [ ] **Build the review dashboard** — automated report from hook logs + sensor output. Shows: violations/week, override frequency, compliance score per company, time-to-ship impact (is enforcement slowing things down?).
 
+## Expert & Consultant Research Protocol (TODO — build into Sutra)
+
+Every domain the founder operates in should have reference experts identified — real people, consultants, frameworks, and thought leaders who have built what we're building. We don't need to hire them, but we need to know they exist.
+
+- [ ] **Build the protocol**: For each company onboarded, research phase (Phase 2: MARKET) should also identify 3-5 industry experts or consultants relevant to that domain. Not just competitors — people who advise on building in that space.
+- [ ] **For Asawa (holding company)**: Find experts in building holding company structures, multi-company portfolios, long-term durable company systems. Consultants who advise on: portfolio governance, operational scaling across companies, systemic company building.
+- [ ] **For each client company**: During onboarding, identify domain-specific advisors. Examples: Maze → comedy industry experts, content platform advisors. PPR → wedding industry consultants, event planning frameworks. DayFlow → productivity methodology experts.
+- [ ] **Where this lives**: Add as a section in MARKET-BRIEF.md output during onboarding. Also create a `REFERENCES.md` per company listing identified experts, their frameworks, and key insights.
+- [ ] **How it's used**: Not for hiring. For learning. When the founder faces a decision in a domain, the reference list provides: "Who has solved this before? What did they learn?"
+- [ ] **Add to CLIENT-ONBOARDING.md Phase 2**: Extend market research to include expert/consultant identification alongside competitor analysis.
+
 ## Asawa Inc as a Sutra Client (meta — add later)
 
 Asawa Inc is itself a company. Sutra provides operating systems to companies. Should Asawa run on Sutra too?
