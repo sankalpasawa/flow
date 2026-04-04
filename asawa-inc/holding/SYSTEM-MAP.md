@@ -19,7 +19,34 @@ Asawa Inc. (holding)
 └── (Next company — onboard via /sutra-onboard)
 ```
 
+## The Structure (Updated)
+
+```
+Asawa Inc. (holding)
+├── shared/ (LOCKED — shared infrastructure, all companies inherit)
+│   ├── ARCHITECTURE.md         — Inheritance model (Asawa → Sutra → Company)
+│   ├── AI-PROVIDERS.md         — Approved AI providers, models, policies
+│   ├── EXTERNAL-SYSTEMS.md     — All external API dependencies
+│   ├── OVERRIDE-RULES.md       — What each layer can/cannot change
+│   └── templates/ai-provider.ts — Code template for AI integration
+│
+├── Sutra (operating system company)
+│   ├── Layer 1: Research & theory
+│   ├── Layer 2: Operating system (now includes shared infra setup in onboarding)
+│   ├── Layer 3: Modules
+│   └── Layer 4: Functional principles
+│
+├── DayFlow (iOS productivity app) — Sutra v1.0
+├── PPR (wedding command center) — Sutra v1.0
+├── Maze (humor feed platform) — Sutra v1.0
+│
+└── (Next company — onboard via /sutra-onboard)
+```
+
 ## What Already Exists (by capability)
+
+### "I want shared infrastructure across companies"
+DONE: `asawa-inc/shared/` — AI provider registry, external systems registry, override rules, code templates. Inheritance: Asawa (locked) → Sutra (adoptable) → Company (overridable).
 
 ### "I want to onboard a new company"
 DONE: `/sutra-onboard` command, 8-phase CLIENT-ONBOARDING.md, START-HERE.md

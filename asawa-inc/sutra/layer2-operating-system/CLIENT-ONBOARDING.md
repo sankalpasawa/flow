@@ -446,7 +446,14 @@ Stage → determines process intensity
 6. **Set A/B test config** (SUTRA mode for first feature, alternating after)
 7. **Generate TODO.md** from P0 feature list with build order
 8. **Set gstack skills** appropriate for platform and stage
-9. **Self-check**: grep for "DayFlow", "{placeholder}", or any generic text. Replace all.
+9. **Configure shared infrastructure** — read `asawa-inc/shared/AI-PROVIDERS.md` and `EXTERNAL-SYSTEMS.md`:
+   - Select AI provider from approved list based on use case + cost constraints
+   - Copy `asawa-inc/shared/templates/ai-provider.ts` to company's `src/lib/ai.ts`
+   - Configure the provider/model override for this company
+   - Register any new external systems the company needs in `EXTERNAL-SYSTEMS.md`
+   - Add `## AI Configuration` section to the company's OS file
+   - Follow override rules from `asawa-inc/shared/OVERRIDE-RULES.md`
+10. **Self-check**: grep for "DayFlow", "{placeholder}", or any generic text. Replace all.
 
 ### Output: Company OS Package
 
