@@ -16,6 +16,9 @@ Ideas added from phone — Claude picks these up each session, thinks through th
 
 <!-- Add new ideas below this line -->
 
+### [2026-04-04] Trading in the market
+Raw idea: "I am thinking of trading in the market"
+
 
 ---
 
