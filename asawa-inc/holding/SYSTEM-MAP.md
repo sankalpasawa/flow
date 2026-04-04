@@ -1,126 +1,153 @@
 # Asawa Inc. — System Map
 
-*Before suggesting anything, check here first. If it exists, don't rebuild it.*
+*Before suggesting anything, check here first. If it exists, don't rebuild it. (PROTO-001)*
 
 ## The Structure
 
 ```
-Asawa Inc. (holding)
-├── Sutra (operating system company)
-│   ├── Layer 1: Research & theory (45+ sources synthesized)
-│   ├── Layer 2: Operating system (processes, onboarding, skills, enforcement)
-│   ├── Layer 3: Modules (B2C template, 9 departments)
-│   └── Layer 4: Functional principles (by department)
+asawa-inc/
 │
-├── DayFlow (product company — iOS productivity app)
-│   ├── OS v2, Sutra config, metrics, testing framework
-│   └── Pinned to Sutra v1.0, A/B test mode
+├── holding/                                    ← ASAWA (governance + infrastructure)
+│   ├── Governance
+│   │   ├── HUMAN-AI-INTERACTION.md             7 principles for human-AI collaboration
+│   │   ├── ENFORCEMENT-FRAMEWORK.md            Hooks, gates, override protocol
+│   │   ├── SESSION-ISOLATION.md                5 levels of company separation
+│   │   ├── AGENT-INCENTIVES.md                 What each agent optimizes for
+│   │   ├── INSTRUCTION-ROUTING.md              How policies become hooks
+│   │   └── PRINCIPLES.md                       Founding principles (P8+)
+│   │
+│   ├── Infrastructure
+│   │   ├── AI-PROVIDERS.md                     Approved AI providers + policies
+│   │   ├── EXTERNAL-SYSTEMS.md                 External API dependencies
+│   │   ├── OVERRIDE-RULES.md                   Who can change what
+│   │   ├── INFRASTRUCTURE-ARCHITECTURE.md      Inheritance model
+│   │   └── templates/ai-provider.ts            Code template for AI integration
+│   │
+│   ├── Coordination
+│   │   ├── DAILY-PULSE.md                      Cross-company health view
+│   │   ├── SYSTEM-MAP.md                       This file — what exists
+│   │   ├── TODO.md                             Holding company backlog
+│   │   └── GETTING-STARTED.md                  Entry point for new sessions
+│   │
+│   └── hooks/                                  Hook templates (compiled to companies)
 │
-└── (Next company — onboard via /sutra-onboard)
-```
-
-## The Structure (Updated)
-
-```
-Asawa Inc. (holding)
-├── shared/ (LOCKED — shared infrastructure, all companies inherit)
-│   ├── ARCHITECTURE.md         — Inheritance model (Asawa → Sutra → Company)
-│   ├── AI-PROVIDERS.md         — Approved AI providers, models, policies
-│   ├── EXTERNAL-SYSTEMS.md     — All external API dependencies
-│   ├── OVERRIDE-RULES.md       — What each layer can/cannot change
-│   └── templates/ai-provider.ts — Code template for AI integration
+├── sutra/                                      ← OPERATING SYSTEM
+│   ├── layer1-abstraction/                     Research foundation (45+ sources)
+│   │
+│   ├── layer2-operating-system/                The OS core
+│   │   ├── OPERATING-MODEL.md                  Master document (P1-P8, T1-T6, Idea Flow)
+│   │   ├── ENFORCEMENT.md                      Cross-cutting enforcement rules
+│   │   ├── PROTOCOLS.md                        Convergence layer (principles → executable rules)
+│   │   ├── CLIENT-ONBOARDING.md                8-phase company intake
+│   │   ├── VERSION-UPDATES.md                  OS evolution protocol
+│   │   ├── PROCESSES.md                        Process index
+│   │   │
+│   │   ├── a-company-architecture/             How real companies work
+│   │   │   ├── CHARTER.md                      Org structure, governance
+│   │   │   ├── ROUTING.md                      Cross-department info flow (60 routes)
+│   │   │   ├── COMPLEXITY-TIERS.md             Personal → Product → Company scaling
+│   │   │   ├── STANDUP-PROTOCOL.md             Daily rhythm
+│   │   │   ├── CONTINUOUS-IMPROVEMENT.md       Feedback loops
+│   │   │   ├── COMPLICATIONS.md                Edge case handling
+│   │   │   └── processes/
+│   │   │       ├── DAILY-STANDUP.md
+│   │   │       ├── DECISION-MAKING.md
+│   │   │       ├── FEATURE-LIFECYCLE.md
+│   │   │       ├── HOD-MEETING.md
+│   │   │       ├── INCIDENT-RESPONSE.md
+│   │   │       └── WEEKLY-PLANNING.md
+│   │   │
+│   │   ├── b-agent-architecture/               How AI agents operate
+│   │   │   ├── SKILL-CATALOG.md                89 skills mapped by situation
+│   │   │   ├── GSTACK-INTEGRATION.md           Sutra phases → skills
+│   │   │   ├── AB-TEST-FRAMEWORK.md            SUTRA vs DIRECT mode
+│   │   │   └── AGENT-PROTOCOLS.md              Coordination, delegation, escalation
+│   │   │
+│   │   └── c-human-agent-interface/            How humans + agents collaborate
+│   │       ├── INVOLVEMENT-LEVELS.md           Hands-on / Strategic / Delegated
+│   │       └── SOVEREIGNTY.md                  WHAT=human, HOW=agent, override protocol
+│   │
+│   ├── layer3-modules/                         Domain-specific templates
+│   │   └── b2c-consumer-app/
+│   │       ├── STAGE-1-PRE-LAUNCH.md
+│   │       └── departments/ (9 departments)
+│   │
+│   └── layer4-department-skills/               Functional principles by role
+│       └── PRINCIPLES-BY-FUNCTION.md           17 domains, 100+ principles
 │
-├── Sutra (operating system company)
-│   ├── Layer 1: Research & theory
-│   ├── Layer 2: Operating system (now includes shared infra setup in onboarding)
-│   ├── Layer 3: Modules
-│   └── Layer 4: Functional principles
-│
-├── DayFlow (iOS productivity app) — Sutra v1.0
-├── PPR (wedding command center) — Sutra v1.0
-├── Maze (humor feed platform) — Sutra v1.0
-│
-└── (Next company — onboard via /sutra-onboard)
+├── dayflow/                                    Client #1 — iOS productivity app
+├── ppr/                                        Client #2 — Wedding command center
+└── maze/                                       Client #3 — Humor feed platform
 ```
 
 ## What Already Exists (by capability)
 
-### "I want shared infrastructure across companies"
-DONE: `asawa-inc/shared/` — AI provider registry, external systems registry, override rules, code templates. Inheritance: Asawa (locked) → Sutra (adoptable) → Company (overridable).
+### "I want to understand how the system is structured"
+DONE: This file. Also `GETTING-STARTED.md` for new sessions, `INFRASTRUCTURE-ARCHITECTURE.md` for inheritance model.
 
 ### "I want to onboard a new company"
 DONE: `/sutra-onboard` command, 8-phase CLIENT-ONBOARDING.md, START-HERE.md
 
-### "I want to know which skill to use"
-DONE: SKILL-CATALOG.md — 89 skills (gstack + GSD) mapped by situation
+### "I want principles compiled into executable rules"
+DONE: `PROTOCOLS.md` — 8 protocols compiled from Asawa + Sutra principles. Each has trigger, check, enforcement, origin.
 
-### "I want skills mapped to the operating model"
-DONE: GSTACK-INTEGRATION.md — every Sutra phase → gstack + GSD skills
+### "I want to know how humans and agents collaborate"
+DONE: `c-human-agent-interface/` — INVOLVEMENT-LEVELS.md (3 levels), SOVEREIGNTY.md (WHAT=human, HOW=agent, override protocol). Also `holding/HUMAN-AI-INTERACTION.md` (7 foundational principles).
+
+### "I want to know how agents should behave"
+DONE: `b-agent-architecture/` — AGENT-PROTOCOLS.md (coordination, delegation, escalation), SKILL-CATALOG.md (89 skills), GSTACK-INTEGRATION.md (phase→skill mapping).
+
+### "I want to know how a company should be structured"
+DONE: `a-company-architecture/` — CHARTER, ROUTING (60 routes), COMPLEXITY-TIERS, 6 processes (standup, weekly, decisions, features, incidents, HOD meetings).
+
+### "I want AI providers managed centrally"
+DONE: `holding/AI-PROVIDERS.md` — 6 approved providers, default models, security + cost policies (LOCKED). Conductor pattern on roadmap.
+
+### "I want external dependencies registered"
+DONE: `holding/EXTERNAL-SYSTEMS.md` — all APIs, databases, services across the portfolio.
+
+### "I want to know which skill to use"
+DONE: `b-agent-architecture/SKILL-CATALOG.md` — 89 skills (gstack + GSD) mapped by situation.
 
 ### "I want to track metrics"
 DONE: METRICS.md per company, AB-TEST-FRAMEWORK.md, DAILY-PULSE.md
 
 ### "I want agents with competing incentives"
-DONE: AGENT-INCENTIVES.md — Sutra agents vs DayFlow agents, productive tension
+DONE: `holding/AGENT-INCENTIVES.md` — productive tension between speed, quality, documentation.
 
 ### "I want session isolation between companies"
-DONE: SESSION-ISOLATION.md — 5 levels (instructions, hooks, directory, agent, fresh context)
+DONE: `holding/SESSION-ISOLATION.md` — 5 levels.
 
 ### "I want hard enforcement of rules"
-DONE: ENFORCEMENT.md — default HARD, compliance checks, violation handling
+DONE: `ENFORCEMENT.md` (rules) + `holding/ENFORCEMENT-FRAMEWORK.md` (mechanism) + 6 hooks deployed.
 
 ### "I want the OS to scale with company complexity"
-DONE: COMPLEXITY-TIERS.md — 3 tiers (Personal → Product → Company). OS is mandatory, depth scales. Tier assigned during onboarding, affects enforcement, metrics, process weight.
+DONE: `a-company-architecture/COMPLEXITY-TIERS.md` — 3 tiers.
 
 ### "I want findings to flow to the right place"
-DONE: CONTINUOUS-IMPROVEMENT.md — bugs → TODO, process gaps → feedback-to-sutra/
+DONE: `a-company-architecture/CONTINUOUS-IMPROVEMENT.md`
 
 ### "I want Sutra to evolve from client feedback"
-DONE: VERSION-UPDATES.md — feedback arrives → Sutra evaluates → publishes version → notifies clients
-
-### "I want to test if Sutra's process helps"
-DONE: AB-TEST-FRAMEWORK.md + SUTRA-CONFIG.md — alternating SUTRA/DIRECT mode per feature
-
-### "I want a daily status report"
-DONE: DAILY-PULSE.md — format defined, auto-generation TODO
-
-### "I want websites for companies"
-DONE: Sutra website (asawa-inc/sutra/website/), Asawa website (asawa-inc/holding/website/). Default in onboarding checklist.
-
-### "I want to visualize company evolution"
-DONE: designs/company-evolution.html — building-by-building timeline
-
-### "I want to package Sutra for distribution"
-STARTED: asawa-inc/sutra/package/ — npm installer structure. TODO: MCP server for hiding internals.
-
-### "I want adversarial reviews"
-DONE: 5 reviews in holding/reviews/ (investor, competitor, first-user, minimalist, skeptic)
-
-### "I want department templates"
-DONE: 9 departments in layer3-modules/b2c-consumer-app/departments/
+DONE: `VERSION-UPDATES.md`
 
 ### "I want processes for daily/weekly work"
-DONE: 5 processes in layer2/processes/ (standup, weekly planning, decision-making, feature lifecycle, incident response)
+DONE: 6 processes in `a-company-architecture/processes/`
 
 ## What Does NOT Exist Yet
 
 | Gap | Where It Should Go | Priority |
 |-----|-------------------|----------|
-| Level 2 hooks actually implemented (PreToolUse) | .claude/settings.json | HIGH — enforcement is documented but not wired |
-| Daily Pulse auto-generation at session start | Holding company protocol | HIGH |
-| Sutra v1.1 (incorporating all feedback from this session) | Sutra releases | MEDIUM |
-| DayFlow validation of new protocols | dayflow/feedback-from-sutra/ | MEDIUM — next DayFlow session |
-| MCP server for hiding Sutra internals | Sutra distribution | LOW — when real clients exist |
-| ~~Founder involvement level config per company~~ | ~~Sutra onboarding Phase 1~~ | DONE — replaced by COMPLEXITY-TIERS.md |
-| More product type templates beyond B2C | Sutra layer 3 modules | MEDIUM — as new companies onboard |
-| Vercel deployment of websites | Requires `vercel login` | HIGH |
+| Daily Pulse auto-generation at session start | Hook + DAILY-PULSE.md | HIGH |
+| Sutra v1.1 (incorporating feedback from Maze onboarding) | Sutra releases | MEDIUM |
+| Hard isolation via git submodules | See holding/TODO.md | HIGH |
+| More product type templates beyond B2C | Sutra layer 3 modules | MEDIUM |
+| Hook for PROTO-001 (new-path-detector) | .claude/hooks/ | LOW |
+| Hook for PROTO-002 (agent-completion-check) | .claude/hooks/ | MEDIUM |
 
-## File Count: 83
+## Client Registry
 
-| Area | Files | What's There |
-|------|-------|-------------|
-| Holding | 11 | Governance, reviews, isolation, incentives, websites |
-| Sutra | 30 | OS, processes, modules, departments, skills, onboarding |
-| DayFlow | 10 | OS, config, metrics, testing, knowledge system |
-| Designs | 31 | Mockups, visualizations, research |
-| Commands | 1 | /sutra-onboard |
+| # | Company | Type | Platform | Stage | Sutra Version |
+|---|---------|------|----------|-------|---------------|
+| 1 | DayFlow | Productivity tool | iOS (Expo) | Pre-launch | v1.0 |
+| 2 | PPR | Productivity tool | Web (Next.js) | Pre-launch | v1.0 |
+| 3 | Maze | Content platform | Web (Next.js) | Pre-launch | v1.0 |
