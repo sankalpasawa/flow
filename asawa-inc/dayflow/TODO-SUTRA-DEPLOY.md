@@ -1,8 +1,28 @@
-# DayFlow — Full Sutra Deployment Checklist
+# DayFlow — Full Sutra Deployment
 
-**Context**: DayFlow has Sutra OS files but doesn't use them. The enforcement framework (hooks, audit trail, override protocol) was built on 2026-04-04. Now deploy the actual Sutra processes.
+## Framing: Mid-Stage Company Onboarding
 
-**Priority**: Do these in order. Each builds on the previous.
+**DayFlow is NOT a greenfield deploy.** It's an existing company with:
+- Working app (Expo React Native, 5 screens, real user data)
+- 400+ lines of CLAUDE.md conventions accumulated over weeks
+- Existing architecture debt (dual DB paths, web DB parser, no shared interface)
+- A PRODUCT-KNOWLEDGE-SYSTEM.md that exists but isn't consulted
+- An OS (OPERATING-SYSTEM-V2.md) that was written but never enforced
+- Habits: "just code it" is the default, process is theoretical
+
+**Treat this as**: Sutra onboarding a company that's been running without an OS. Not a rewrite. Not a cleanup. A systematic installation of process onto a running system.
+
+**The approach**: Plan first, show the founder the plan, get approval, then execute phase by phase. Each phase should leave the company better than it found it without breaking what works.
+
+## Phase 0: Assess (before touching anything)
+- Audit current state: what works, what's broken, what's ignored
+- Map existing conventions (CLAUDE.md) to Sutra processes — what overlaps, what conflicts, what's missing
+- Identify the top 3 risks of deploying process onto this codebase
+- Present the plan to the founder before executing
+
+**This phase produces a DEPLOYMENT-PLAN.md that the founder reviews.**
+
+## Phase 1-7: Execute (after founder approves)
 
 ## 1. Node Structure (replace flat TODO.md)
 - Rewrite TODO.md as Missions → Commitments → Tasks
