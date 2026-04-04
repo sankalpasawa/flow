@@ -2,3 +2,5 @@ mobile/qa-screenshots/
 .gstack/
 .claude/active-role
 .vercel
+.enforcement/override-*
+.enforcement/research-done
