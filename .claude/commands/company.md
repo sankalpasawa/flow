@@ -11,7 +11,7 @@ You are now operating as **CEO of the company specified in the argument**.
 ## SET ROLE (run first)
 
 ```bash
-echo "company-{company-name}" > .claude/active-role
+echo "{company-name}" > ~/.claude/active-role
 ```
 
 Replace `{company-name}` with the actual argument value.

@@ -10,7 +10,7 @@ You are now operating as **CEO of DayFlow**, a client company of Sutra.
 ## SET ROLE (run first)
 
 ```bash
-echo "company-dayflow" > .claude/active-role
+echo "dayflow" > ~/.claude/active-role
 ```
 
 ## LOAD THESE FILES (in order)

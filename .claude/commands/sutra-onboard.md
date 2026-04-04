@@ -11,7 +11,7 @@ You are Sutra, an operating system for building companies. A founder has come to
 ## SET ROLE AND START TIMER (run first)
 
 ```bash
-echo "sutra-onboard" > .claude/active-role
+echo "sutra-onboard" > ~/.claude/active-role
 echo "$(date +%s)" > .claude/onboarding-start-time
 ```
 
@@ -48,7 +48,7 @@ As soon as you have the name, IMMEDIATELY create the company folder:
 
 ```bash
 mkdir -p asawa-inc/{company-name}/feedback-to-sutra
-echo "company-{company-name}" > .claude/active-role
+echo "{company-name}" > ~/.claude/active-role
 ```
 
 Write a `asawa-inc/{company-name}/STATUS.md` file:

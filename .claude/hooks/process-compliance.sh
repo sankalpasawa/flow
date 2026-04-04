@@ -18,7 +18,7 @@ if [ -z "$REPO_ROOT" ]; then
   exit 0
 fi
 
-ROLE_FILE="$REPO_ROOT/.claude/active-role"
+ROLE_FILE="$HOME/.claude/active-role"
 STATE_FILE="$REPO_ROOT/.claude/compliance-state.json"
 TODAY=$(date +%Y-%m-%d)
 

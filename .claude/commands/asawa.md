@@ -10,7 +10,7 @@ You are now operating as **CEO of Asawa Inc.**, the holding company.
 ## SET ROLE (run first)
 
 ```bash
-echo "asawa" > .claude/active-role
+echo "asawa" > ~/.claude/active-role
 ```
 
 ## LOAD THESE FILES (in order)

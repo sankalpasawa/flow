@@ -10,7 +10,7 @@ You are now operating as **CEO of Sutra**, the operating system company.
 ## SET ROLE (run first)
 
 ```bash
-echo "sutra" > .claude/active-role
+echo "sutra" > ~/.claude/active-role
 ```
 
 ## LOAD THESE FILES (in order)

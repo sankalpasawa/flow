@@ -9,7 +9,7 @@
 # The active role is determined by the existence of a .claude/active-role file.
 # If no role file exists, all edits are allowed (CEO of Asawa default).
 
-ROLE_FILE="$(git rev-parse --show-toplevel 2>/dev/null)/.claude/active-role"
+ROLE_FILE="$HOME/.claude/active-role"
 
 # If no role file, allow everything (CEO of Asawa)
 if [ ! -f "$ROLE_FILE" ]; then
