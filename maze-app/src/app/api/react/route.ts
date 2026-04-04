@@ -22,14 +22,24 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, demo: true });
   }
 
-  // Ensure session exists
-  await supabase.from("sessions").upsert(
-    {
+  // Ensure session exists (insert if new, update if exists)
+  const { data: existingSession } = await supabase
+    .from("sessions")
+    .select("id")
+    .eq("id", session_id)
+    .single();
+
+  if (existingSession) {
+    await supabase
+      .from("sessions")
+      .update({ last_seen_at: new Date().toISOString() })
+      .eq("id", session_id);
+  } else {
+    await supabase.from("sessions").insert({
       id: session_id,
       last_seen_at: new Date().toISOString(),
-    },
-    { onConflict: "id" },
-  );
+    });
+  }
 
   // For like/dislike, remove opposite reaction first
   if (action === "like" || action === "dislike") {
@@ -42,20 +52,15 @@ export async function POST(request: NextRequest) {
       .eq("action", opposite);
   }
 
-  // Insert interaction (ignore duplicate for like/dislike)
-  const { error } = await supabase.from("interactions").upsert(
-    {
-      session_id,
-      content_id,
-      action,
-    },
-    {
-      onConflict: "session_id,content_id,action",
-      ignoreDuplicates: true,
-    },
-  );
+  // Insert interaction (catch duplicate for like/dislike)
+  const { error } = await supabase.from("interactions").insert({
+    session_id,
+    content_id,
+    action,
+  });
 
-  if (error) {
+  if (error && error.code !== "23505") {
+    // 23505 = unique constraint violation (duplicate reaction) — ignore
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
