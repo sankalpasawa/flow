@@ -11,9 +11,11 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  if (!["like", "dislike", "share", "view"].includes(action)) {
+  if (!["like", "dislike", "share", "view", "unreact"].includes(action)) {
     return NextResponse.json({ error: "Invalid action" }, { status: 400 });
   }
+
+  const unreactType = action === "unreact" ? request.headers.get("x-unreact-type") : null;
 
   const supabase = createServiceClient();
 
@@ -39,6 +41,30 @@ export async function POST(request: NextRequest) {
       id: session_id,
       last_seen_at: new Date().toISOString(),
     });
+  }
+
+  // Handle unreact (toggle off a like or dislike)
+  if (action === "unreact") {
+    const type = unreactType as "like" | "dislike";
+    if (!type || !["like", "dislike"].includes(type)) {
+      return NextResponse.json({ error: "x-unreact-type header required (like or dislike)" }, { status: 400 });
+    }
+
+    // Delete the interaction
+    await supabase
+      .from("interactions")
+      .delete()
+      .eq("session_id", session_id)
+      .eq("content_id", content_id)
+      .eq("action", type);
+
+    // Decrement the count
+    await supabase.rpc("decrement_content_score", {
+      cid: content_id,
+      col: type === "like" ? "like_count" : "dislike_count",
+    });
+
+    return NextResponse.json({ success: true });
   }
 
   // For like/dislike, remove opposite reaction first

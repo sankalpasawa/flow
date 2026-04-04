@@ -41,10 +41,13 @@ export function JokeCard({ item, onReaction }: JokeCardProps) {
 
   async function handleReaction(action: "like" | "dislike") {
     const newReaction = reaction === action ? null : action;
+    const previousReaction = reaction;
     setReaction(newReaction);
 
+    const sessionId = getSessionId();
+
     if (newReaction) {
-      const sessionId = getSessionId();
+      // Toggling ON — send like or dislike
       await fetch("/api/react", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -55,6 +58,20 @@ export function JokeCard({ item, onReaction }: JokeCardProps) {
         }),
       });
       onReaction?.(item.id, action);
+    } else if (previousReaction) {
+      // Toggling OFF — send unreact with the type being removed
+      await fetch("/api/react", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-unreact-type": previousReaction,
+        },
+        body: JSON.stringify({
+          session_id: sessionId,
+          content_id: item.id,
+          action: "unreact",
+        }),
+      });
     }
   }
 
