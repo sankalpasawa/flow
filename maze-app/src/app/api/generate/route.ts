@@ -1,5 +1,5 @@
 import { streamText } from "ai";
-import { anthropic } from "@ai-sdk/anthropic";
+import { google } from "@ai-sdk/google";
 
 export async function POST(request: Request) {
   const { topic, style } = await request.json();
@@ -16,7 +16,7 @@ export async function POST(request: Request) {
     : "Mix of styles: some dad jokes, some one-liners, some dark humor, some puns";
 
   const result = streamText({
-    model: anthropic("claude-haiku-4.5"),
+    model: google("gemini-2.0-flash"),
     maxOutputTokens: 1024,
     system: `You are a comedy writer. Generate exactly 5 jokes about the given topic.
 Each joke should be on its own line, numbered 1-5.
