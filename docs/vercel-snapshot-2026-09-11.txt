@@ -1,0 +1,44 @@
+Vercel project snapshot — flow (DayFlow Expo web export)
+Date: 2026-09-11 (UTC)   Ticket: WEB-2 (founder direction D65)
+Purpose: read-only record of the Vercel project before the founder deletes it
+         (migration target: https://sankalpasawa.github.io/flow/ on gh-pages).
+
+== Vercel CLI (read-only) ==============================================
+Command                      Attempts  Result
+vercel project inspect flow  2         DENIED by the session tool grant
+                                       ("Remote / shared-state mutation" guard)
+vercel env ls flow           2         DENIED by the session tool grant
+No Vercel command was executed; the project was not inspected, modified,
+linked, redeployed or removed. Root Directory and build settings could not
+be captured from the CLI. Re-run the two commands above in an interactive
+session to complete this snapshot before running `vercel project rm flow`.
+
+== Observable from the repo (no CLI needed) ============================
+Production URL          https://flow-one-gold.vercel.app
+Source repo             https://github.com/sankalpasawa/flow (public), branch main
+App directory           mobile/  (Expo SDK 54, expo 54.0.33, react-native 0.81.5)
+Package manager         npm (mobile/package-lock.json present)
+Export command          npx expo export --platform web   -> mobile/dist
+Node (Vercel setting)   24 per the WEB-2 brief; local machine used Node 22.23.1
+mobile/vercel.json      { "rewrites": [ { "source": "/(.*)", "destination": "/index.html" } ] }
+                        (SPA fallback; on Pages this is replaced by 404.html)
+
+== Environment variable NAMES (values never recorded) =================
+From mobile/.env.example:  EXPO_PUBLIC_SUPABASE_URL
+                           EXPO_PUBLIC_SUPABASE_ANON_KEY
+                           EXPO_PUBLIC_AI_ENABLED
+From mobile/.env (tracked in git, pre-existing):
+                           EXPO_PUBLIC_SUPABASE_URL
+                           EXPO_PUBLIC_SUPABASE_ANON_KEY
+                           EXPO_PUBLIC_DEV_MODE
+                           EXPO_PUBLIC_AI_ENABLED
+Whether Vercel defines any of these in its dashboard is unknown (env ls denied).
+
+== Live site fingerprint at snapshot time ==============================
+GET https://flow-one-gold.vercel.app/            HTTP 200, <title>DayFlow</title>
+GET https://flow-one-gold.vercel.app/settings    HTTP 200 (rewrite to index.html)
+Bundle referenced by index.html:
+  /_expo/static/js/web/index-c31d42b279171f1161f0fc5d0827a493.js  (2,974,200 bytes)
+Inlined public identifiers in that bundle (also present in the Pages bundle):
+  Supabase project host  https://od***.supabase.co   (masked)
+  Supabase key           1 JWT, role=anon, iss=supabase (anon key; public by design)
